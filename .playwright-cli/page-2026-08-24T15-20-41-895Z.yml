@@ -1,0 +1,238 @@
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e67]:
+      - generic:
+        - generic: 考研408
+        - generic: 方向
+    - generic [ref=e68]:
+      - generic:
+        - generic: AI工程
+        - generic: 方向
+    - generic [ref=e69]:
+      - generic:
+        - generic: 游戏开发
+        - generic: 方向
+    - generic [ref=e70]:
+      - generic:
+        - generic: 前端开发
+        - generic: 方向
+    - generic [ref=e71]:
+      - generic:
+        - generic: 计算机研究生
+        - generic: 目标
+    - generic [ref=e72]: 数据结构
+    - generic [ref=e73]: 计算机组成原理
+    - generic [ref=e74]: 操作系统
+    - generic [ref=e75]: 计算机网络
+    - generic [ref=e76]: 408综合分析
+    - generic [ref=e446]: 线性表
+    - generic [ref=e447]: 树与二叉树
+    - generic [ref=e448]: 图
+    - generic [ref=e449]: 查找
+    - generic [ref=e450]: 排序
+    - generic [ref=e451]: 数据表示与运算
+    - generic [ref=e452]: 存储系统
+    - generic [ref=e453]: 指令系统
+    - generic [ref=e454]: 进程与线程
+    - generic [ref=e455]: 内存管理
+    - generic [ref=e456]: TCP可靠传输
+    - generic [ref=e457]: HTTP与应用层
+  - generic:
+    - generic:
+      - generic "iTeach 知识地图" [ref=e311]:
+        - generic [ref=e316]: iTeach
+        - generic [ref=e516]: 知识地图
+      - button "当前方向 考研408" [ref=e517] [cursor=pointer]:
+        - generic [ref=e518]: 当前方向
+        - strong [ref=e319]: 考研408
+      - navigation "视图操作" [ref=e519]:
+        - button "全景" [ref=e520] [cursor=pointer]
+        - button "重设目标" [ref=e524] [cursor=pointer]
+    - generic [ref=e322]:
+      - generic [ref=e323]: 目标区域
+      - heading "考研408" [level=1] [ref=e324]
+      - paragraph [ref=e325]: 计算机基础统考
+    - generic [ref=e528]:
+      - generic [ref=e529]: 拖拽旋转
+      - generic [ref=e530]: /滚轮缩放
+      - generic [ref=e531]: /点击进入
+    - button "规划路径" [active] [ref=e326] [cursor=pointer]
+    - complementary "知识深度" [ref=e532]:
+      - generic [ref=e534]:
+        - generic [ref=e535]:
+          - generic [ref=e536]: 目标
+          - generic [ref=e538]: "20"
+        - generic [ref=e539]:
+          - generic [ref=e540]: 方向
+          - generic [ref=e542]: "10"
+        - generic [ref=e543]:
+          - generic [ref=e544]: 课程 / 技能
+          - generic [ref=e546]: "00"
+        - generic [ref=e547]:
+          - generic [ref=e548]: 知识点
+          - generic [ref=e550]: "-10"
+        - generic [ref=e551]:
+          - generic [ref=e552]: 练习
+          - generic [ref=e554]: "-20"
+    - complementary [ref=e555]:
+      - generic [ref=e556]:
+        - generic [ref=e557]:
+          - strong [ref=e558]: 推荐学习路径
+          - generic [ref=e559]: 18 个连续节点
+        - button "关闭学习路径" [ref=e560] [cursor=pointer]
+      - generic [ref=e563]:
+        - button "01 考研408" [ref=e565] [cursor=pointer]:
+          - generic [ref=e566]: "01"
+          - text: 考研408
+        - button "02 数据结构" [ref=e569] [cursor=pointer]:
+          - generic [ref=e570]: "02"
+          - text: 数据结构
+        - button "03 线性表" [ref=e573] [cursor=pointer]:
+          - generic [ref=e574]: "03"
+          - text: 线性表
+        - button "04 链表操作题" [ref=e577] [cursor=pointer]:
+          - generic [ref=e578]: "04"
+          - text: 链表操作题
+        - button "05 树与二叉树" [ref=e581] [cursor=pointer]:
+          - generic [ref=e582]: "05"
+          - text: 树与二叉树
+        - button "06 二叉树遍历题" [ref=e585] [cursor=pointer]:
+          - generic [ref=e586]: "06"
+          - text: 二叉树遍历题
+        - button "07 图" [ref=e589] [cursor=pointer]:
+          - generic [ref=e590]: "07"
+          - text: 图
+        - button "08 图算法综合题" [ref=e593] [cursor=pointer]:
+          - generic [ref=e594]: "08"
+          - text: 图算法综合题
+        - button "09 计算机组成原理" [ref=e597] [cursor=pointer]:
+          - generic [ref=e598]: "09"
+          - text: 计算机组成原理
+        - button "10 数据表示与运算" [ref=e601] [cursor=pointer]:
+          - generic [ref=e602]: "10"
+          - text: 数据表示与运算
+        - button "11 存储系统" [ref=e605] [cursor=pointer]:
+          - generic [ref=e606]: "11"
+          - text: 存储系统
+        - button "12 Cache地址映射题" [ref=e609] [cursor=pointer]:
+          - generic [ref=e610]: "12"
+          - text: Cache地址映射题
+        - button "13 操作系统" [ref=e613] [cursor=pointer]:
+          - generic [ref=e614]: "13"
+          - text: 操作系统
+        - button "14 进程与线程" [ref=e617] [cursor=pointer]:
+          - generic [ref=e618]: "14"
+          - text: 进程与线程
+        - button "15 进程调度题" [ref=e621] [cursor=pointer]:
+          - generic [ref=e622]: "15"
+          - text: 进程调度题
+        - button "16 计算机网络" [ref=e625] [cursor=pointer]:
+          - generic [ref=e626]: "16"
+          - text: 计算机网络
+        - button "17 TCP可靠传输" [ref=e629] [cursor=pointer]:
+          - generic [ref=e630]: "17"
+          - text: TCP可靠传输
+        - button "18 TCP状态分析题" [ref=e633] [cursor=pointer]:
+          - generic [ref=e634]: "18"
+          - text: TCP状态分析题
+    - navigation "知识节点导航" [ref=e345]:
+      - button "计算机研究生" [ref=e346] [cursor=pointer]
+      - button "考研408" [ref=e347] [cursor=pointer]
+      - button "数据结构" [ref=e348] [cursor=pointer]
+      - button "计算机组成原理" [ref=e349] [cursor=pointer]
+      - button "操作系统" [ref=e350] [cursor=pointer]
+      - button "计算机网络" [ref=e351] [cursor=pointer]
+      - button "408综合分析" [ref=e352] [cursor=pointer]
+      - button "线性表" [ref=e353] [cursor=pointer]
+      - button "树与二叉树" [ref=e354] [cursor=pointer]
+      - button "图" [ref=e355] [cursor=pointer]
+      - button "查找" [ref=e356] [cursor=pointer]
+      - button "排序" [ref=e357] [cursor=pointer]
+      - button "数据表示与运算" [ref=e358] [cursor=pointer]
+      - button "存储系统" [ref=e359] [cursor=pointer]
+      - button "指令系统" [ref=e360] [cursor=pointer]
+      - button "进程与线程" [ref=e361] [cursor=pointer]
+      - button "内存管理" [ref=e362] [cursor=pointer]
+      - button "TCP可靠传输" [ref=e363] [cursor=pointer]
+      - button "HTTP与应用层" [ref=e364] [cursor=pointer]
+      - button "链表操作题" [ref=e365] [cursor=pointer]
+      - button "二叉树遍历题" [ref=e366] [cursor=pointer]
+      - button "图算法综合题" [ref=e367] [cursor=pointer]
+      - button "Cache地址映射题" [ref=e368] [cursor=pointer]
+      - button "进程调度题" [ref=e369] [cursor=pointer]
+      - button "TCP状态分析题" [ref=e370] [cursor=pointer]
+      - button "AI工程师" [ref=e371] [cursor=pointer]
+      - button "AI工程" [ref=e372] [cursor=pointer]
+      - button "Python工程基础" [ref=e373] [cursor=pointer]
+      - button "机器学习" [ref=e374] [cursor=pointer]
+      - button "深度学习" [ref=e375] [cursor=pointer]
+      - button "数据工程" [ref=e376] [cursor=pointer]
+      - button "LLM应用工程" [ref=e377] [cursor=pointer]
+      - button "Python数据模型" [ref=e378] [cursor=pointer]
+      - button "异步与并发" [ref=e379] [cursor=pointer]
+      - button "监督学习" [ref=e380] [cursor=pointer]
+      - button "模型评估" [ref=e381] [cursor=pointer]
+      - button "特征工程" [ref=e382] [cursor=pointer]
+      - button "神经网络基础" [ref=e383] [cursor=pointer]
+      - button "Transformer" [ref=e384] [cursor=pointer]
+      - button "数据清洗" [ref=e385] [cursor=pointer]
+      - button "向量数据库" [ref=e386] [cursor=pointer]
+      - button "提示设计" [ref=e387] [cursor=pointer]
+      - button "检索增强生成" [ref=e388] [cursor=pointer]
+      - button "模型服务与评估" [ref=e389] [cursor=pointer]
+      - button "数据处理管道" [ref=e390] [cursor=pointer]
+      - button "分类模型评估" [ref=e391] [cursor=pointer]
+      - button "反向传播推导" [ref=e392] [cursor=pointer]
+      - button "Transformer张量推演" [ref=e393] [cursor=pointer]
+      - button "RAG检索链路" [ref=e394] [cursor=pointer]
+      - button "模型服务评测" [ref=e395] [cursor=pointer]
+      - button "游戏开发工程师" [ref=e396] [cursor=pointer]
+      - button "游戏开发" [ref=e397] [cursor=pointer]
+      - button "游戏编程基础" [ref=e398] [cursor=pointer]
+      - button "游戏数学" [ref=e399] [cursor=pointer]
+      - button "游戏引擎" [ref=e400] [cursor=pointer]
+      - button "游戏系统" [ref=e401] [cursor=pointer]
+      - button "图形与性能" [ref=e402] [cursor=pointer]
+      - button "程序结构与内存" [ref=e403] [cursor=pointer]
+      - button "事件与状态机" [ref=e404] [cursor=pointer]
+      - button "向量与坐标系" [ref=e405] [cursor=pointer]
+      - button "矩阵与变换" [ref=e406] [cursor=pointer]
+      - button "碰撞检测" [ref=e407] [cursor=pointer]
+      - button "场景与实体" [ref=e408] [cursor=pointer]
+      - button "输入系统" [ref=e409] [cursor=pointer]
+      - button "动画系统" [ref=e410] [cursor=pointer]
+      - button "游戏循环" [ref=e411] [cursor=pointer]
+      - button "资源管理" [ref=e412] [cursor=pointer]
+      - button "渲染管线" [ref=e413] [cursor=pointer]
+      - button "性能分析" [ref=e414] [cursor=pointer]
+      - button "角色控制器" [ref=e415] [cursor=pointer]
+      - button "坐标变换练习" [ref=e416] [cursor=pointer]
+      - button "碰撞响应练习" [ref=e417] [cursor=pointer]
+      - button "角色状态机" [ref=e418] [cursor=pointer]
+      - button "资源加载流程" [ref=e419] [cursor=pointer]
+      - button "Draw Call分析" [ref=e420] [cursor=pointer]
+      - button "前端工程师" [ref=e421] [cursor=pointer]
+      - button "前端开发" [ref=e422] [cursor=pointer]
+      - button "Web基础" [ref=e423] [cursor=pointer]
+      - button "JavaScript与TypeScript" [ref=e424] [cursor=pointer]
+      - button "React工程" [ref=e425] [cursor=pointer]
+      - button "浏览器与网络" [ref=e426] [cursor=pointer]
+      - button "前端质量" [ref=e427] [cursor=pointer]
+      - button "语义化HTML" [ref=e428] [cursor=pointer]
+      - button "CSS布局" [ref=e429] [cursor=pointer]
+      - button "响应式设计" [ref=e430] [cursor=pointer]
+      - button "JavaScript事件循环" [ref=e431] [cursor=pointer]
+      - button "TypeScript类型系统" [ref=e432] [cursor=pointer]
+      - button "React状态与渲染" [ref=e433] [cursor=pointer]
+      - button "组件设计" [ref=e434] [cursor=pointer]
+      - button "路由与数据请求" [ref=e435] [cursor=pointer]
+      - button "浏览器渲染流程" [ref=e436] [cursor=pointer]
+      - button "HTTP与缓存" [ref=e437] [cursor=pointer]
+      - button "Web可访问性" [ref=e438] [cursor=pointer]
+      - button "测试与Web性能" [ref=e439] [cursor=pointer]
+      - button "可访问页面练习" [ref=e440] [cursor=pointer]
+      - button "响应式布局练习" [ref=e441] [cursor=pointer]
+      - button "TypeScript数据建模" [ref=e442] [cursor=pointer]
+      - button "React状态设计" [ref=e443] [cursor=pointer]
+      - button "请求与缓存练习" [ref=e444] [cursor=pointer]
+      - button "Web性能审计" [ref=e445] [cursor=pointer]

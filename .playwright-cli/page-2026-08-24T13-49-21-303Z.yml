@@ -1,0 +1,172 @@
+- main [ref=f5e3]:
+  - generic [ref=f5e5]:
+    - generic [ref=f5e161]: 计算机研究生
+    - generic [ref=f5e162]: 考研408
+    - generic [ref=f5e163]: 数据结构
+    - generic [ref=f5e164]: 计算机组成原理
+    - generic [ref=f5e165]: 操作系统
+    - generic [ref=f5e166]: 计算机网络
+    - generic [ref=f5e167]: 408综合分析
+    - generic [ref=f5e168]: AI工程师
+    - generic [ref=f5e169]: AI工程
+    - generic [ref=f5e170]: 游戏开发工程师
+    - generic [ref=f5e171]: 游戏开发
+    - generic [ref=f5e172]: 前端工程师
+    - generic [ref=f5e173]: 前端开发
+  - generic:
+    - generic:
+      - generic "知识宇宙" [ref=f5e8]:
+        - generic [ref=f5e13]:
+          - strong [ref=f5e14]: 知识宇宙
+          - generic [ref=f5e15]: KNOWLEDGE UNIVERSE
+      - generic [ref=f5e16]:
+        - button "当前目标 考研408" [expanded] [active] [ref=f5e17] [cursor=pointer]:
+          - generic [ref=f5e18]: 当前目标
+          - generic [ref=f5e19]: · 考研408
+        - button "关闭目标菜单" [ref=f5e174]
+        - menu [ref=f5e175]:
+          - generic [ref=f5e176]:
+            - generic [ref=f5e177]: 选择一个方向
+            - generic [ref=f5e178]: "04"
+          - menuitem "考研408 计算机研究生" [ref=f5e179] [cursor=pointer]:
+            - generic [ref=f5e180]:
+              - strong [ref=f5e181]: 考研408
+              - generic [ref=f5e182]: 计算机研究生
+          - menuitem "AI工程 AI工程师" [ref=f5e185] [cursor=pointer]:
+            - generic [ref=f5e186]:
+              - strong [ref=f5e187]: AI工程
+              - generic [ref=f5e188]: AI工程师
+          - menuitem "游戏开发 游戏开发工程师" [ref=f5e191] [cursor=pointer]:
+            - generic [ref=f5e192]:
+              - strong [ref=f5e193]: 游戏开发
+              - generic [ref=f5e194]: 游戏开发工程师
+          - menuitem "前端开发 前端工程师" [ref=f5e197] [cursor=pointer]:
+            - generic [ref=f5e198]:
+              - strong [ref=f5e199]: 前端开发
+              - generic [ref=f5e200]: 前端工程师
+      - generic [ref=f5e22]:
+        - button "重新设置目标" [ref=f5e23] [cursor=pointer]:
+          - generic [ref=f5e26]: 重新设置
+        - button "返回全景" [ref=f5e27] [cursor=pointer]
+    - button "生成学习路径" [ref=f5e31] [cursor=pointer]
+    - generic [ref=f5e34]:
+      - generic [ref=f5e36]:
+        - generic [ref=f5e38]: 目标
+        - generic [ref=f5e39]: Y 20
+      - generic [ref=f5e40]:
+        - generic [ref=f5e42]: 方向
+        - generic [ref=f5e43]: Y 10
+      - generic [ref=f5e44]:
+        - generic [ref=f5e46]: 课程 / 技能
+        - generic [ref=f5e47]: Y 0
+      - generic [ref=f5e48]:
+        - generic [ref=f5e50]: 知识点
+        - generic [ref=f5e51]: Y -10
+      - generic [ref=f5e52]:
+        - generic [ref=f5e54]: 练习
+        - generic [ref=f5e55]: Y -20
+    - generic [ref=f5e56]:
+      - strong [ref=f5e57]: 目标已激活
+      - generic [ref=f5e58]: 相关节点正在靠近你的目标
+    - generic [ref=f5e59]: 拖拽旋转 · 滚轮缩放 · 点击节点探索
+    - navigation "知识节点导航" [ref=f5e60]:
+      - button "计算机研究生" [ref=f5e61] [cursor=pointer]
+      - button "考研408" [ref=f5e62] [cursor=pointer]
+      - button "数据结构" [ref=f5e63] [cursor=pointer]
+      - button "计算机组成原理" [ref=f5e64] [cursor=pointer]
+      - button "操作系统" [ref=f5e65] [cursor=pointer]
+      - button "计算机网络" [ref=f5e66] [cursor=pointer]
+      - button "408综合分析" [ref=f5e67] [cursor=pointer]
+      - button "线性表" [ref=f5e68] [cursor=pointer]
+      - button "树与二叉树" [ref=f5e69] [cursor=pointer]
+      - button "图" [ref=f5e70] [cursor=pointer]
+      - button "查找" [ref=f5e71] [cursor=pointer]
+      - button "排序" [ref=f5e72] [cursor=pointer]
+      - button "数据表示与运算" [ref=f5e73] [cursor=pointer]
+      - button "存储系统" [ref=f5e74] [cursor=pointer]
+      - button "指令系统" [ref=f5e75] [cursor=pointer]
+      - button "进程与线程" [ref=f5e76] [cursor=pointer]
+      - button "内存管理" [ref=f5e77] [cursor=pointer]
+      - button "TCP可靠传输" [ref=f5e78] [cursor=pointer]
+      - button "HTTP与应用层" [ref=f5e79] [cursor=pointer]
+      - button "链表操作题" [ref=f5e80] [cursor=pointer]
+      - button "二叉树遍历题" [ref=f5e81] [cursor=pointer]
+      - button "图算法综合题" [ref=f5e82] [cursor=pointer]
+      - button "Cache地址映射题" [ref=f5e83] [cursor=pointer]
+      - button "进程调度题" [ref=f5e84] [cursor=pointer]
+      - button "TCP状态分析题" [ref=f5e85] [cursor=pointer]
+      - button "AI工程师" [ref=f5e86] [cursor=pointer]
+      - button "AI工程" [ref=f5e87] [cursor=pointer]
+      - button "Python工程基础" [ref=f5e88] [cursor=pointer]
+      - button "机器学习" [ref=f5e89] [cursor=pointer]
+      - button "深度学习" [ref=f5e90] [cursor=pointer]
+      - button "数据工程" [ref=f5e91] [cursor=pointer]
+      - button "LLM应用工程" [ref=f5e92] [cursor=pointer]
+      - button "Python数据模型" [ref=f5e93] [cursor=pointer]
+      - button "异步与并发" [ref=f5e94] [cursor=pointer]
+      - button "监督学习" [ref=f5e95] [cursor=pointer]
+      - button "模型评估" [ref=f5e96] [cursor=pointer]
+      - button "特征工程" [ref=f5e97] [cursor=pointer]
+      - button "神经网络基础" [ref=f5e98] [cursor=pointer]
+      - button "Transformer" [ref=f5e99] [cursor=pointer]
+      - button "数据清洗" [ref=f5e100] [cursor=pointer]
+      - button "向量数据库" [ref=f5e101] [cursor=pointer]
+      - button "提示设计" [ref=f5e102] [cursor=pointer]
+      - button "检索增强生成" [ref=f5e103] [cursor=pointer]
+      - button "模型服务与评估" [ref=f5e104] [cursor=pointer]
+      - button "数据处理管道" [ref=f5e105] [cursor=pointer]
+      - button "分类模型评估" [ref=f5e106] [cursor=pointer]
+      - button "反向传播推导" [ref=f5e107] [cursor=pointer]
+      - button "Transformer张量推演" [ref=f5e108] [cursor=pointer]
+      - button "RAG检索链路" [ref=f5e109] [cursor=pointer]
+      - button "模型服务评测" [ref=f5e110] [cursor=pointer]
+      - button "游戏开发工程师" [ref=f5e111] [cursor=pointer]
+      - button "游戏开发" [ref=f5e112] [cursor=pointer]
+      - button "游戏编程基础" [ref=f5e113] [cursor=pointer]
+      - button "游戏数学" [ref=f5e114] [cursor=pointer]
+      - button "游戏引擎" [ref=f5e115] [cursor=pointer]
+      - button "游戏系统" [ref=f5e116] [cursor=pointer]
+      - button "图形与性能" [ref=f5e117] [cursor=pointer]
+      - button "程序结构与内存" [ref=f5e118] [cursor=pointer]
+      - button "事件与状态机" [ref=f5e119] [cursor=pointer]
+      - button "向量与坐标系" [ref=f5e120] [cursor=pointer]
+      - button "矩阵与变换" [ref=f5e121] [cursor=pointer]
+      - button "碰撞检测" [ref=f5e122] [cursor=pointer]
+      - button "场景与实体" [ref=f5e123] [cursor=pointer]
+      - button "输入系统" [ref=f5e124] [cursor=pointer]
+      - button "动画系统" [ref=f5e125] [cursor=pointer]
+      - button "游戏循环" [ref=f5e126] [cursor=pointer]
+      - button "资源管理" [ref=f5e127] [cursor=pointer]
+      - button "渲染管线" [ref=f5e128] [cursor=pointer]
+      - button "性能分析" [ref=f5e129] [cursor=pointer]
+      - button "角色控制器" [ref=f5e130] [cursor=pointer]
+      - button "坐标变换练习" [ref=f5e131] [cursor=pointer]
+      - button "碰撞响应练习" [ref=f5e132] [cursor=pointer]
+      - button "角色状态机" [ref=f5e133] [cursor=pointer]
+      - button "资源加载流程" [ref=f5e134] [cursor=pointer]
+      - button "Draw Call分析" [ref=f5e135] [cursor=pointer]
+      - button "前端工程师" [ref=f5e136] [cursor=pointer]
+      - button "前端开发" [ref=f5e137] [cursor=pointer]
+      - button "Web基础" [ref=f5e138] [cursor=pointer]
+      - button "JavaScript与TypeScript" [ref=f5e139] [cursor=pointer]
+      - button "React工程" [ref=f5e140] [cursor=pointer]
+      - button "浏览器与网络" [ref=f5e141] [cursor=pointer]
+      - button "前端质量" [ref=f5e142] [cursor=pointer]
+      - button "语义化HTML" [ref=f5e143] [cursor=pointer]
+      - button "CSS布局" [ref=f5e144] [cursor=pointer]
+      - button "响应式设计" [ref=f5e145] [cursor=pointer]
+      - button "JavaScript事件循环" [ref=f5e146] [cursor=pointer]
+      - button "TypeScript类型系统" [ref=f5e147] [cursor=pointer]
+      - button "React状态与渲染" [ref=f5e148] [cursor=pointer]
+      - button "组件设计" [ref=f5e149] [cursor=pointer]
+      - button "路由与数据请求" [ref=f5e150] [cursor=pointer]
+      - button "浏览器渲染流程" [ref=f5e151] [cursor=pointer]
+      - button "HTTP与缓存" [ref=f5e152] [cursor=pointer]
+      - button "Web可访问性" [ref=f5e153] [cursor=pointer]
+      - button "测试与Web性能" [ref=f5e154] [cursor=pointer]
+      - button "可访问页面练习" [ref=f5e155] [cursor=pointer]
+      - button "响应式布局练习" [ref=f5e156] [cursor=pointer]
+      - button "TypeScript数据建模" [ref=f5e157] [cursor=pointer]
+      - button "React状态设计" [ref=f5e158] [cursor=pointer]
+      - button "请求与缓存练习" [ref=f5e159] [cursor=pointer]
+      - button "Web性能审计" [ref=f5e160] [cursor=pointer]

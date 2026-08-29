@@ -1,0 +1,51 @@
+- main [ref=e3]:
+  - dialog [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: 初次校准 / 01
+        - heading [level=1] [ref=e12]:
+          - text: 把目标放进
+          - emphasis [ref=e13]: 知识宇宙
+        - paragraph [ref=e14]: 知识会根据你的方向重新排列，形成一条可以探索的学习路径。
+        - generic "目标到练习的五层结构" [ref=e15]:
+          - generic [ref=e16]:
+            - text: 目标
+            - generic [ref=e18]: Y 20
+          - generic [ref=e19]:
+            - text: 方向
+            - generic [ref=e21]: Y 10
+          - generic [ref=e22]:
+            - text: 课程 / 技能
+            - generic [ref=e24]: Y 0
+          - generic [ref=e25]:
+            - text: 知识点
+            - generic [ref=e27]: Y -10
+          - generic [ref=e28]:
+            - text: 练习
+            - generic [ref=e30]: Y -20
+        - generic [ref=e31]: 你的画像仅保存在当前设备
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]: 学习坐标
+          - heading "建立你的学习画像" [level=2] [ref=e35]
+          - paragraph [ref=e36]: 告诉我们你现在的位置，以及准备到哪里。
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]: 专业
+            - textbox "专业" [ref=e40]:
+              - /placeholder: 例如：软件工程
+          - generic [ref=e41]:
+            - generic [ref=e42]: 当前身份
+            - textbox "当前身份" [ref=e43]:
+              - /placeholder: 例如：本科生
+          - generic [ref=e44]:
+            - generic [ref=e45]: 学习目标
+            - textbox "学习目标" [ref=e46]:
+              - /placeholder: 例如：计算机考研408
+          - generic "快捷目标" [ref=e47]:
+            - button "考研408" [ref=e48] [cursor=pointer]
+            - button "AI工程" [ref=e49] [cursor=pointer]
+            - button "游戏开发" [ref=e50] [cursor=pointer]
+            - button "前端开发" [ref=e51] [cursor=pointer]
+          - button "生成我的知识宇宙" [ref=e52] [cursor=pointer]
+          - paragraph [ref=e55]: 画像只保存在当前浏览器中。

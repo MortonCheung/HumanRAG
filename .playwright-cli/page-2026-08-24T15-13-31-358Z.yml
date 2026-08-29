@@ -1,0 +1,68 @@
+- main [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e67]:
+      - generic:
+        - generic: 考研408
+        - generic: 方向
+    - generic [ref=e68]:
+      - generic:
+        - generic: AI工程
+        - generic: 方向
+    - generic [ref=e69]:
+      - generic:
+        - generic: 游戏开发
+        - generic: 方向
+    - generic [ref=e70]:
+      - generic:
+        - generic: 前端开发
+        - generic: 方向
+    - generic [ref=e71]:
+      - generic:
+        - generic: 计算机研究生
+        - generic: 目标
+    - generic [ref=e72]: 数据结构
+    - generic [ref=e73]: 计算机组成原理
+    - generic [ref=e74]: 操作系统
+    - generic [ref=e75]: 计算机网络
+    - generic [ref=e76]: 408综合分析
+  - dialog [ref=e263]:
+    - generic [ref=e264]:
+      - generic "iTeach 知识地图" [ref=e265]: iTeach
+      - generic [ref=e271]: 画像仅保存在当前设备
+    - generic [ref=e272]:
+      - generic [ref=e273]:
+        - paragraph [ref=e274]: 目标驱动的三维知识地图
+        - heading "你的目标， 会改变知识的形状。" [level=1] [ref=e275]: 你的目标，会改变知识的形状。
+        - paragraph [ref=e276]: 从课程清单走进可探索的知识关系。系统会突出与你有关的内容，并给出抵达目标的路径。
+        - generic "知识地图的五个层级" [ref=e277]:
+          - strong [ref=e279]: 目标
+          - strong [ref=e281]: 方向
+          - strong [ref=e283]: 课程与技能
+          - strong [ref=e285]: 知识点
+          - strong [ref=e287]: 练习
+      - generic [ref=e288]:
+        - generic [ref=e289]:
+          - heading "先确定你的坐标" [level=2] [ref=e290]
+          - paragraph [ref=e291]: 用三项信息建立本次探索的起点。
+        - generic [ref=e292]:
+          - generic [ref=e293]:
+            - generic [ref=e294]: 专业
+            - textbox "专业" [ref=e295]:
+              - /placeholder: 例如：软件工程
+              - text: 软件工程
+          - generic [ref=e296]:
+            - generic [ref=e297]: 当前身份
+            - textbox "当前身份" [ref=e298]:
+              - /placeholder: 例如：本科生
+              - text: 本科生
+          - generic [ref=e299]:
+            - generic [ref=e300]: 学习目标
+            - textbox "学习目标" [ref=e301]:
+              - /placeholder: 例如：计算机考研408
+              - text: 计算机考研408
+          - generic "快捷目标" [ref=e302]:
+            - button "考研408" [ref=e303] [cursor=pointer]
+            - button "AI工程" [ref=e304] [cursor=pointer]
+            - button "游戏开发" [ref=e305] [cursor=pointer]
+            - button "前端开发" [ref=e306] [cursor=pointer]
+          - button "进入知识地图" [ref=e307] [cursor=pointer]
