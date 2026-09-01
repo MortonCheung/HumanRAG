@@ -5,6 +5,7 @@ import { contentRepository } from '../../services/content/ContentRepository';
 import { LEARNER_PROFILES } from '../../data/v6/catalogs/learnerProfileCatalog';
 import { MISCONCEPTIONS } from '../../data/v6/catalogs/misconceptionCatalog';
 import { useProgressStore } from '../../store/progressStore';
+import { TREE_ID_TO_BRANCH } from '../../domain/knowledge/catalog';
 
 /**
  * 刷题规划器（蓝图 §18）：把刷题入口（今日练习 / 按目标 / 按知识点 / 模拟试卷 / 错题复习）
@@ -14,6 +15,8 @@ import { useProgressStore } from '../../store/progressStore';
  *   daily           今日练习（按薄弱节点 + 目标分支）
  *   node:<nodeId>   按知识点练习
  *   goal:<nodeId>   按目标练习（目标节点全部下游）
+ *   tree:<treeId>   一棵知识树的综合练习
+ *   library:<id>    当前知识库的综合练习
  *   paper:<paperId> 模拟试卷
  *   mistake         错题复习
  */
@@ -137,6 +140,39 @@ function buildGoalPlan(nodeId: string): PracticePlan | null {
   };
 }
 
+function buildTreePlan(treeId: string): PracticePlan | null {
+  const branchId = TREE_ID_TO_BRANCH[treeId];
+  if (!branchId) return null;
+  const branchNodes = knowledgeGraph.nodes.filter((node) => node.branchId === branchId);
+  const questionIds = dedupe(branchNodes.flatMap((node) => contentRepository.getQuestionsForNode(node.id).map((question) => question.id))).slice(0, 28);
+  if (questionIds.length === 0) return null;
+  const treeName = { '408': '考研408', ai: 'AI工程', game: '游戏开发', frontend: '前端开发' }[branchId];
+  return {
+    id: `tree:${treeId}`,
+    mode: 'goal',
+    title: `${treeName}综合练习`,
+    description: `覆盖这棵知识树的主要知识点，共 ${questionIds.length} 题。`,
+    sourceLabel: `知识树 · ${treeName}`,
+    questionIds,
+    estimatedMinutes: Math.round(questionIds.length * MINUTES_PER_QUESTION),
+  };
+}
+
+function buildLibraryPlan(libraryId: string): PracticePlan | null {
+  if (libraryId !== 'computer') return null;
+  const questionIds = dedupe(knowledgeGraph.nodes.flatMap((node) => contentRepository.getQuestionsForNode(node.id).map((question) => question.id))).slice(0, 36);
+  if (questionIds.length === 0) return null;
+  return {
+    id: `library:${libraryId}`,
+    mode: 'goal',
+    title: '计算机科学综合题库',
+    description: `跨四个知识树抽取 ${questionIds.length} 道题，适合完整体验。`,
+    sourceLabel: '知识库 · 计算机科学',
+    questionIds,
+    estimatedMinutes: Math.round(questionIds.length * MINUTES_PER_QUESTION),
+  };
+}
+
 function buildPaperPlan(paperId: string): PracticePlan | null {
   const paper = MOCK_PAPERS.find((entry) => entry.id === paperId);
   if (!paper) return null;
@@ -172,6 +208,8 @@ export function planForSession(sessionId: string, learnerId: string): PracticePl
   if (sessionId === 'mistake') return buildMistakePlan(learnerId);
   if (sessionId.startsWith('node:')) return buildNodePlan(sessionId.slice(5));
   if (sessionId.startsWith('goal:')) return buildGoalPlan(sessionId.slice(5));
+  if (sessionId.startsWith('tree:')) return buildTreePlan(sessionId.slice(5));
+  if (sessionId.startsWith('library:')) return buildLibraryPlan(sessionId.slice(8));
   if (sessionId.startsWith('paper:')) return buildPaperPlan(sessionId.slice(6));
   return null;
 }

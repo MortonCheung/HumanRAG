@@ -16,3 +16,9 @@ playwright-report
 .cache
 .temp
 .tmp
+
+# Local design/reference repositories and browser inspection artifacts are not product source.
+iTeach-design-references/
+乡村小栈
+.playwright-cli/
+output/playwright/

@@ -13,6 +13,7 @@ interface CustomTreeCanvasProps {
   previewNode?: CustomNode | null;
   previewEdges?: CustomEdge[];
   interactive?: boolean;
+  autoRotate?: boolean;
   onSelect?: (id: string) => void;
   onConnectTarget?: (id: string) => void;
   onMove?: (id: string, position: [number, number, number]) => void;
@@ -26,6 +27,7 @@ export function CustomTreeCanvas({
   previewNode = null,
   previewEdges = [],
   interactive = true,
+  autoRotate = false,
   onSelect,
   onConnectTarget,
   onMove,
@@ -44,6 +46,7 @@ export function CustomTreeCanvas({
           selectedId={selectedId}
           connectSource={connectSource}
           interactive={interactive}
+          autoRotate={autoRotate}
           onSelect={onSelect}
           onConnectTarget={onConnectTarget}
           onMove={onMove}
@@ -54,8 +57,9 @@ export function CustomTreeCanvas({
   );
 }
 
-function TreeScene({ nodes, edges, selectedId, connectSource, interactive, onSelect, onConnectTarget, onMove }: Required<Pick<CustomTreeCanvasProps, 'nodes' | 'edges' | 'selectedId' | 'connectSource' | 'interactive'>> & Pick<CustomTreeCanvasProps, 'onSelect' | 'onConnectTarget' | 'onMove'>) {
+function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoRotate, onSelect, onConnectTarget, onMove }: Required<Pick<CustomTreeCanvasProps, 'nodes' | 'edges' | 'selectedId' | 'connectSource' | 'interactive' | 'autoRotate'>> & Pick<CustomTreeCanvasProps, 'onSelect' | 'onConnectTarget' | 'onMove'>) {
   const controls = useRef<CameraControlsImpl>(null);
+  const treeGroup = useRef<THREE.Group>(null);
   const basePositions = useMemo(() => layoutCustomTree(nodes, edges), [edges, nodes]);
   const [positions, setPositions] = useState<TreePositionMap>(basePositions);
   const [dragging, setDragging] = useState(false);
@@ -67,6 +71,11 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, onSel
   } | null>(null);
 
   useEffect(() => setPositions(basePositions), [basePositions]);
+
+  useFrame((_, delta) => {
+    if (!autoRotate || dragging || !treeGroup.current) return;
+    treeGroup.current.rotation.y += delta * 0.075;
+  });
 
   const curves = useMemo(() => edges.map((edge) => {
     const start = positions.get(edge.source);
@@ -127,7 +136,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, onSel
 
   return (
     <>
-      <group>
+      <group ref={treeGroup}>
         {curves.map(({ edge, start, end, mid }) => (
           <QuadraticBezierLine
             key={edge.id}

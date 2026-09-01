@@ -49,6 +49,7 @@ interface KnowledgeStore {
   setQualityPreference: (preference: QualityPreference) => void;
   setResolvedQualityTier: (tier: ResolvedQualityTier) => void;
   resetKnowledge: () => void;
+  prepareUniverseEntry: () => void;
 }
 
 function readPersisted(): PersistedState {
@@ -127,8 +128,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   selectNode: (nodeId) => {
-    if (!nodesById.has(nodeId)) return;
+    const node = nodesById.get(nodeId);
+    if (!node) return;
+    const branchFocusId = node.type === 'direction' || node.type === 'goal' ? nodeId : get().selectedGoalId;
+    if (branchFocusId !== get().selectedGoalId) {
+      persist(get().profile, branchFocusId, get().qualityPreference);
+    }
     set({
+      selectedGoalId: branchFocusId,
       selectedNodeId: nodeId,
       activePanel: null,
       phase: 'nodeFocused',
@@ -143,14 +150,18 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     relationMode: 'primary',
     cameraIntent: { id: `return:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined },
   })),
-  returnOverview: () => set((state) => ({
-    selectedNodeId: null,
-    activePanel: null,
-    relationMode: 'primary',
-    isPathRibbonOpen: false,
-    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
-    cameraIntent: { id: `overview:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined },
-  })),
+  returnOverview: () => set((state) => {
+    persist(state.profile, null, state.qualityPreference);
+    return {
+      selectedGoalId: null,
+      selectedNodeId: null,
+      activePanel: null,
+      relationMode: 'primary',
+      isPathRibbonOpen: false,
+      phase: 'overview',
+      cameraIntent: { id: `overview:${Date.now()}`, mode: 'overview' },
+    };
+  }),
   openPanel: (panel) => set((state) => ({ activePanel: state.activePanel === panel ? null : panel })),
   closePanel: () => set({ activePanel: null }),
   setRelationMode: (relationMode) => set({ relationMode }),
@@ -201,4 +212,20 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       resolvedQualityTier: 'balanced',
     });
   },
+  prepareUniverseEntry: () => set((state) => {
+    persist(state.profile, null, state.qualityPreference);
+    return {
+      phase: 'overview',
+      selectedGoalId: null,
+      selectedNodeId: null,
+      hoveredNodeId: null,
+      activePanel: null,
+      relationMode: 'primary',
+      isPathRibbonOpen: false,
+      learningPath: [],
+      unmatchedGoal: false,
+      selectionEpoch: state.selectionEpoch + 1,
+      cameraIntent: { id: `entry:${Date.now()}`, mode: 'overview' },
+    };
+  }),
 }));

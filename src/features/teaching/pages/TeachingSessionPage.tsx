@@ -9,6 +9,7 @@ import { ContentBlockView } from '../components/ContentBlockView';
 import { QuestionCard } from '../components/QuestionCard';
 import { TeachingCompletionEvidence } from '../components/TeachingCompletionEvidence';
 import { DemoDataBadge } from '../../../components/feedback/DemoDataBadge';
+import { ROUTES } from '../../../app/routes';
 import '../teaching.css';
 
 const STEP_KIND_LABELS: Record<string, string> = {
@@ -39,8 +40,11 @@ function contextOf(answers: SessionAnswer[], attempt: number): TeachingContext {
 }
 
 export function TeachingSessionPage() {
-  const { unitId: routeUnitId } = useParams<{ unitId: string }>();
+  const { unitId: legacyUnitId, pointId, libraryId, treeId } = useParams<{ unitId: string; pointId: string; libraryId: string; treeId: string }>();
   const navigate = useNavigate();
+  const pointUnit = pointId ? contentRepository.getTeachingUnitForNode(pointId) : undefined;
+  const routeUnitId = legacyUnitId ?? pointUnit?.id;
+  const returnTo = libraryId && treeId ? ROUTES.treeLearn(libraryId, treeId) : ROUTES.library;
 
   const unitId = useTeachingStore((state) => state.unitId);
   const currentStepId = useTeachingStore((state) => state.currentStepId);
@@ -112,8 +116,8 @@ export function TeachingSessionPage() {
         <div className="page__inner">
           <h1 className="page-title">未找到教学单元</h1>
           <p className="page-lead">这个教学单元不存在或已被移除。</p>
-          <Link className="nav-tool" to="/teach">
-            <ArrowLeft size={14} /> 返回教学首页
+          <Link className="nav-tool" to={returnTo}>
+            <ArrowLeft size={14} /> 返回知识树
           </Link>
         </div>
       </div>
@@ -136,7 +140,7 @@ export function TeachingSessionPage() {
 
   const handleFinish = () => {
     resetSession();
-    navigate('/teach');
+    navigate(returnTo);
   };
 
   const handleRestart = () => {

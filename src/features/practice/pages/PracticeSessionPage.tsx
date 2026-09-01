@@ -8,6 +8,7 @@ import { contentRepository } from '../../../services/content/ContentRepository';
 import { DemoDataBadge } from '../../../components/feedback/DemoDataBadge';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { PracticeSessionSummary } from '../components/PracticeSessionSummary';
+import { ROUTES } from '../../../app/routes';
 import '../practice.css';
 
 function nodeNameOf(nodeId: string): string {
@@ -15,8 +16,12 @@ function nodeNameOf(nodeId: string): string {
 }
 
 export function PracticeSessionPage() {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const { sessionId: legacySessionId, pointId, treeId, libraryId } = useParams<{ sessionId: string; pointId: string; treeId: string; libraryId: string }>();
   const learnerId = useUserStore((state) => state.activeProfileId);
+  const sessionId = legacySessionId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
+  const returnTo = libraryId && treeId
+    ? ROUTES.treePractice(libraryId, treeId)
+    : ROUTES.library;
 
   const storeSessionId = usePracticeStore((state) => state.sessionId);
   const questionIds = usePracticeStore((state) => state.questionIds);
@@ -56,8 +61,8 @@ export function PracticeSessionPage() {
         <div className="page__inner">
           <h1 className="page-title">未找到练习会话</h1>
           <p className="page-lead">这个练习会话不存在或题目已变更。</p>
-          <Link className="text-button" to="/practice">
-            <ArrowLeft size={14} /> 返回刷题首页
+          <Link className="text-button" to={returnTo}>
+            <ArrowLeft size={14} /> 返回知识树
           </Link>
         </div>
       </div>
@@ -144,7 +149,7 @@ export function PracticeSessionPage() {
               );
             })}
           </div>
-          <Link className="text-button text-button--ghost" to="/practice">
+          <Link className="text-button text-button--ghost" to={returnTo}>
             <CaretLeft size={14} /> 退出
           </Link>
         </nav>

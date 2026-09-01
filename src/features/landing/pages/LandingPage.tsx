@@ -1,8 +1,6 @@
-import { ArrowRight, Books, NotePencil } from '@phosphor-icons/react';
+import { ArrowRight } from '@phosphor-icons/react';
 import { motion, useReducedMotion } from 'motion/react';
-import { Link } from 'react-router-dom';
 import { knowledgeGraph } from '../../../data/knowledgeGraph';
-import { ROUTES } from '../../../app/routes';
 import { useSpatialExperience } from '../../spatial/SpatialExperienceContext';
 import '../../../design/landing.css';
 
@@ -32,24 +30,12 @@ export function LandingPage() {
           transition={{ duration: isEntering ? 0.34 : 0.72, delay: isEntering ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] }}
         >
           <h1 id="landing-title">把计算机知识变成可学习的路径。</h1>
-          <p>
-            探索知识关系，跟随分步教学完成讲解、练习与掌握验证。你也可以创建自己的知识库。
-          </p>
+          <p>从一张完整的计算机知识地图出发，选择知识点，开始讲解或练习。</p>
           <div className="it-landing__actions">
             <button className="it-landing__primary" type="button" onClick={beginUniverseEntry} disabled={isEntering}>
               <span>{isEntering ? '正在进入' : '进入知识空间'}</span>
               <ArrowRight size={18} weight="regular" aria-hidden="true" />
             </button>
-            <nav className="it-landing__secondary" aria-label="产品入口">
-              <Link to={ROUTES.library}>
-                <Books size={17} weight="regular" aria-hidden="true" />
-                <span>我的知识库</span>
-              </Link>
-              <Link to={ROUTES.practice}>
-                <NotePencil size={17} weight="regular" aria-hidden="true" />
-                <span>刷题</span>
-              </Link>
-            </nav>
           </div>
         </motion.section>
 
@@ -68,13 +54,8 @@ export function LandingPage() {
           <figcaption>俯视观察同一棵三维知识树，进入后可直接旋转、平移与缩放。</figcaption>
         </motion.figure>
 
-        <motion.p
-          className="it-landing__status"
-          initial={reducedMotion ? false : { opacity: 0 }}
-          animate={{ opacity: isEntering ? 0 : 1 }}
-          transition={{ duration: 0.5, delay: isEntering ? 0 : 0.28 }}
-        >
-          当前内容：{knowledgeGraph.nodes.length} 个知识节点，4 个计算机学习方向
+        <motion.p className="it-landing__status" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: isEntering ? 0 : 1 }} transition={{ duration: 0.5, delay: isEntering ? 0 : 0.28 }}>
+          {knowledgeGraph.nodes.length} 个知识节点 · 4 个学习方向
         </motion.p>
       </div>
     </main>

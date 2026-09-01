@@ -34,8 +34,8 @@ test.describe('三维知识空间交互', () => {
 
     const detail = page.locator('.node-inspector.is-expanded');
     await expect(detail).toBeVisible();
-    await expect(detail.getByRole('button', { name: '开始学习' })).toBeVisible();
     expect(await detail.evaluate((element) => (window as typeof window & { __iteachPanel?: Element }).__iteachPanel === element)).toBe(true);
+    await expect(detail.getByRole('heading', { level: 2 })).toBeVisible();
 
     const canvas = page.locator('canvas[aria-label*="336 个知识节点"]');
     const box = await canvas.boundingBox();

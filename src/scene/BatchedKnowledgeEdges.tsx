@@ -1,7 +1,5 @@
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
 import * as THREE from 'three';
 import { buildEdgeCurve } from '../graph/curves';
 import type { SceneEdge, SceneModel } from '../graph/types';
@@ -94,33 +92,16 @@ const activeFragment = `
 `;
 
 export function BatchedKnowledgeEdges({ model }: { model: SceneModel }) {
-  const { invalidate } = useThree();
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const segmentBudget = QUALITY_CONFIG[quality].curveSegments;
   const activeMaterial = useRef<THREE.ShaderMaterial>(null);
   const background = useMemo(() => buildGeometry(model.edges, model, false, segmentBudget), [model, segmentBudget]);
   const active = useMemo(() => buildGeometry(model.edges, model, true, segmentBudget), [model, segmentBudget]);
-  const selectionKey = model.nodes.find((node) => node.visualState === 'selected')?.id
-    ?? model.nodes.find((node) => node.visualState === 'lensActive')?.id
-    ?? 'overview';
 
   useEffect(() => () => {
     background.dispose();
     active.dispose();
   }, [active, background]);
-
-  useGSAP(() => {
-    const material = activeMaterial.current;
-    if (!material || active.getAttribute('position').count === 0) return undefined;
-    material.uniforms.uReveal.value = 0;
-    const tween = gsap.to(material.uniforms.uReveal, {
-      value: 1.25,
-      duration: 1.08,
-      ease: 'power3.out',
-      onUpdate: invalidate,
-    });
-    return () => tween.kill();
-  }, { dependencies: [selectionKey, active, invalidate], revertOnUpdate: true });
 
   useFrame(({ clock }) => {
     if (activeMaterial.current) activeMaterial.current.uniforms.uTime.value = clock.elapsedTime;

@@ -137,7 +137,7 @@ function getFocusPosition(node: KnowledgeNode, relevance: number, goalId: string
   const awayX = nodeAnchor[0] - activeAnchor[0];
   const awayZ = nodeAnchor[1] - activeAnchor[1];
   const length = Math.hypot(awayX, awayZ) || 1;
-  const push = relevance >= 0.24 ? 2.2 : 5.5;
+  const push = relevance >= 0.24 ? 36 : 58;
   return [base[0] + (awayX / length) * push, base[1], base[2] + (awayZ / length) * push];
 }
 

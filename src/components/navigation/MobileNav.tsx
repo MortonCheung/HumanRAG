@@ -1,14 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowCounterClockwise, Books, House, NotePencil, Notebook, Path, SquaresFour, X } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Books, House, Notebook, Path, X } from '@phosphor-icons/react';
 import { ROUTES } from '../../app/routes';
 import { useUiStore } from '../../store/uiStore';
 import { resetDemoData } from '../../services/resetDemoData';
 
 const ITEMS = [
   { to: ROUTES.universe, label: '知识空间', icon: <Path size={19} weight="regular" /> },
-  { to: ROUTES.teach, label: '教学', icon: <SquaresFour size={19} weight="regular" /> },
-  { to: ROUTES.practice, label: '刷题', icon: <NotePencil size={19} weight="regular" /> },
   { to: ROUTES.library, label: '知识库', icon: <Books size={19} weight="regular" /> },
   { to: ROUTES.progress, label: '学习记录', icon: <Notebook size={19} weight="regular" /> },
 ] as const;

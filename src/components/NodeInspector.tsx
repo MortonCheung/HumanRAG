@@ -4,11 +4,12 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { buildCausalCorridor } from '../graph/causalCorridor';
 import { nodesById } from '../data/knowledgeGraph';
-import { contentRepository } from '../services/content/ContentRepository';
 import { getPathToNode } from '../graph/relevance';
 import type { KnowledgeNode } from '../graph/types';
 import { colorForBranch } from '../design/domainPalette';
 import { useKnowledgeStore } from '../store/knowledgeStore';
+import { ROUTES } from '../app/routes';
+import { BRANCH_TO_TREE_ID } from '../domain/knowledge/catalog';
 
 const PANEL_EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -39,6 +40,8 @@ export function NodeInspector() {
   const expanded = Boolean(selectedNodeId && node);
   const explanation = node ? explanationByNode[node.id] : undefined;
   const aiStatus = node ? (aiStatusByNode[node.id] ?? 'idle') : 'idle';
+  const treeId = node ? BRANCH_TO_TREE_ID[node.branchId] : undefined;
+  const actionable = node?.type === 'knowledge' || node?.type === 'practice';
 
   const relations = useMemo(() => {
     if (!node || !expanded) return null;
@@ -96,21 +99,18 @@ export function NodeInspector() {
                     </span>
                   ))}
                 </nav>
-                <div className="node-inspector__actions">
+                {actionable && treeId && <div className="node-inspector__actions">
                   <button
                     className="inspector-primary-action"
                     type="button"
-                    onClick={() => {
-                      const unit = contentRepository.getTeachingUnitForNode(node.id);
-                      navigate(unit ? `/teach/${unit.id}` : '/teach');
-                    }}
+                    onClick={() => navigate(ROUTES.pointLearn('computer', treeId, node.id))}
                   >
                     <BookOpenText size={15} weight="regular" /> 开始学习
                   </button>
-                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(`/practice/session/node:${node.id}`)}>
+                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(ROUTES.pointPractice('computer', treeId, node.id))}>
                     <NotePencil size={15} weight="regular" /> 练习这个知识点
                   </button>
-                </div>
+                </div>}
                 <div className="node-inspector__scroll">
                   <section className="inspector-section"><h3>概念</h3><p>{node.description}</p></section>
                   <RelationSection title={`前置知识 ${relations.upstream.length}`} nodes={relations.upstream.slice(0, 6)} onSelect={selectNode} empty="这是当前路径的起点。" />

@@ -6,8 +6,6 @@ import { useUiStore } from '../../store/uiStore';
 
 const NAV_ITEMS = [
   { to: ROUTES.universe, label: '知识空间' },
-  { to: ROUTES.teach, label: '教学' },
-  { to: ROUTES.practice, label: '刷题' },
   { to: ROUTES.library, label: '知识库' },
 ] as const;
 

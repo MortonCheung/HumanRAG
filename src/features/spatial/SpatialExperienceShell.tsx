@@ -39,6 +39,7 @@ export function SpatialExperienceShell() {
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
+  const prepareUniverseEntry = useKnowledgeStore((state) => state.prepareUniverseEntry);
   const openSearch = useUiStore((state) => state.openSearch);
 
   const model = useMemo(
@@ -61,6 +62,7 @@ export function SpatialExperienceShell() {
   const beginUniverseEntry = useCallback(() => {
     if (phase !== 'landing') return;
     clearTimers();
+    prepareUniverseEntry();
     if (reducedMotion) {
       setPhase('universe');
       navigate(ROUTES.universe);
@@ -69,7 +71,7 @@ export function SpatialExperienceShell() {
     setPhase('entering');
     timers.current.push(window.setTimeout(() => navigate(ROUTES.universe), ROUTE_SWITCH_MS));
     timers.current.push(window.setTimeout(() => setPhase('universe'), ENTRY_COMPLETE_MS));
-  }, [clearTimers, navigate, phase, reducedMotion]);
+  }, [clearTimers, navigate, phase, prepareUniverseEntry, reducedMotion]);
 
   useEffect(() => clearTimers, [clearTimers]);
 
