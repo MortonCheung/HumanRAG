@@ -1,0 +1,48 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e5]:
+    - generic [ref=f1e8]: 计算机研究生
+    - generic [ref=f1e9]: 考研408
+    - generic [ref=f1e10]: 数据结构
+    - generic [ref=f1e11]: 计算机组成原理
+    - generic [ref=f1e12]: 操作系统
+    - generic [ref=f1e13]: 计算机网络
+    - generic [ref=f1e14]: 408综合分析
+  - generic:
+    - generic:
+      - generic "iTeach 知识地图" [ref=f1e15]: iTeach
+      - navigation "知识空间操作" [ref=f1e21]:
+        - button "搜索知识节点" [ref=f1e22] [cursor=pointer]
+        - button "目标透镜" [active] [ref=f1e25] [cursor=pointer]
+    - complementary:
+      - generic: COMPUTER SCIENCE
+      - strong: "Lens: 考研408"
+    - complementary "目标透镜" [ref=f1e28]:
+      - generic [ref=f1e29]:
+        - generic [ref=f1e30]: 目标透镜
+        - button "关闭目标透镜" [ref=f1e31] [cursor=pointer]
+      - paragraph [ref=f1e34]: 透镜只改变关注度，不会删除宇宙中的其他知识。
+      - generic [ref=f1e35]:
+        - button "计算机科学全景" [ref=f1e36] [cursor=pointer]
+        - button "计算机考研 408 数据结构、组成原理、操作系统与网络" [ref=f1e38] [cursor=pointer]:
+          - generic [ref=f1e39]:
+            - strong [ref=f1e40]: 计算机考研 408
+            - generic [ref=f1e41]: 数据结构、组成原理、操作系统与网络
+        - button "AI 工程 机器学习、深度学习、数据工程与 LLM" [ref=f1e44] [cursor=pointer]:
+          - generic [ref=f1e45]:
+            - strong [ref=f1e46]: AI 工程
+            - generic [ref=f1e47]: 机器学习、深度学习、数据工程与 LLM
+        - button "游戏开发 数学、引擎、图形与性能" [ref=f1e48] [cursor=pointer]:
+          - generic [ref=f1e49]:
+            - strong [ref=f1e50]: 游戏开发
+            - generic [ref=f1e51]: 数学、引擎、图形与性能
+        - button "前端工程 浏览器、React、性能与可访问性" [ref=f1e52] [cursor=pointer]:
+          - generic [ref=f1e53]:
+            - strong [ref=f1e54]: 前端工程
+            - generic [ref=f1e55]: 浏览器、React、性能与可访问性
+      - generic [ref=f1e56]:
+        - generic [ref=f1e57]: 用一句话描述你的目标
+        - generic [ref=f1e58]:
+          - textbox "用一句话描述你的目标" [ref=f1e59]:
+            - /placeholder: 例如：我要成为游戏开发工程师
+          - button "解析目标" [ref=f1e60] [cursor=pointer]
+        - generic [ref=f1e63]: 当前透镜：考研408

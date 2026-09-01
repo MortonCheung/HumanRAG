@@ -253,11 +253,59 @@ function createNodes(): KnowledgeNode[] {
   return result;
 }
 
+const EXPANSION_TOPICS: Record<BranchId, string[]> = {
+  '408': ['复杂度与摊还', '哈希与冲突处理', '并查集', '递归与分治', '流水线冒险', '虚拟内存', '中断与异常', '死锁与同步', '文件系统', '拥塞控制', '路由协议', '网络安全基础'],
+  ai: ['线性代数直觉', '概率分布', '损失函数', '梯度下降', '正则化', '交叉验证', '卷积网络', '注意力机制', '嵌入表示', '数据治理', '特征存储', '模型监控'],
+  game: ['向量运算', '四元数旋转', '空间分区', '物理步进', '行为树', '导航网格', 'ECS架构', 'GPU实例化', '光照模型', '动画混合', '资源热更新', '帧时间分析'],
+  frontend: ['DOM事件模型', 'CSS层叠', '布局计算', '模块系统', '异步请求', '状态归一化', '服务端渲染', '组件测试', '构建优化', '可访问性树', '缓存策略', '性能指标'],
+};
+
+function slugifyTopic(value: string) {
+  let hash = 2166136261;
+  for (const char of value) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function createExtendedNodes(seed: KnowledgeNode[]) {
+  const courses = seed.filter((node) => node.type === 'course' || node.type === 'skill');
+  const extensions: KnowledgeNode[] = [];
+  courses.forEach((course, courseIndex) => {
+    const topicCount = courseIndex < 4 ? 11 : 12;
+    const topics = EXPANSION_TOPICS[course.branchId];
+    for (let index = 0; index < topicCount; index += 1) {
+      const topic = topics[index];
+      const angle = index * 2.399963 + courseIndex * 0.43;
+      const radius = 11.8 + (index % 3) * 1.25;
+      const id = `knowledge-extension-${course.id}-${slugifyTopic(topic)}`;
+      extensions.push({
+        id,
+        name: `${course.name} · ${topic}`,
+        type: 'knowledge',
+        layer: -10,
+        branchId: course.branchId,
+        parentId: course.id,
+        description: `“${topic}”是${course.name}中的关键连接点。理解它可以把基础概念、实现约束和实际练习连成可验证的学习路径。`,
+        keywords: [topic, course.name, course.branchId],
+        recommendedContent: [`${topic}概念图`, `${topic}推导与实现`, `${topic}小练习`],
+        basePosition: [
+          course.basePosition[0] + Math.cos(angle) * radius,
+          -10,
+          course.basePosition[2] + Math.sin(angle) * radius,
+        ],
+      });
+    }
+  });
+  return extensions;
+}
+
 const edge = (source: string, target: string, relationType: KnowledgeEdge['relationType']): KnowledgeEdge => ({
   id: `${relationType}:${source}:${target}`, source, target, relationType,
 });
 
-function createEdges(): KnowledgeEdge[] {
+function createEdges(extensions: KnowledgeNode[]): KnowledgeEdge[] {
   const edges: KnowledgeEdge[] = [];
   for (const branch of BRANCHES) {
     edges.push(edge(branch.goal[0], branch.direction[0], 'hierarchy'));
@@ -267,10 +315,25 @@ function createEdges(): KnowledgeEdge[] {
   for (const [practice, sources] of Object.entries(PRACTICE_SOURCES)) for (const source of sources) edges.push(edge(source, practice, 'practice_for'));
   for (const [source, target] of PREREQUISITES) edges.push(edge(source, target, 'prerequisite'));
   for (const [source, target] of RELATED) { edges.push(edge(source, target, 'related')); edges.push(edge(target, source, 'related')); }
+  const extensionsByParent = new Map<string, KnowledgeNode[]>();
+  for (const node of extensions) {
+    const list = extensionsByParent.get(node.parentId ?? '') ?? [];
+    list.push(node);
+    extensionsByParent.set(node.parentId ?? '', list);
+    if (node.parentId) edges.push(edge(node.parentId, node.id, 'hierarchy'));
+  }
+  for (const siblings of extensionsByParent.values()) {
+    siblings.forEach((node, index) => {
+      if (index > 0) edges.push(edge(siblings[index - 1].id, node.id, 'prerequisite'));
+      if (index > 2 && index % 3 === 0) edges.push(edge(siblings[index - 3].id, node.id, 'related'));
+    });
+  }
   return edges;
 }
 
-export const knowledgeGraph: KnowledgeGraphData = { nodes: createNodes(), edges: createEdges() };
+const seedNodes = createNodes();
+const extendedNodes = createExtendedNodes(seedNodes);
+export const knowledgeGraph: KnowledgeGraphData = { nodes: [...seedNodes, ...extendedNodes], edges: createEdges(extendedNodes) };
 export const nodesById = new Map(knowledgeGraph.nodes.map((node) => [node.id, node]));
 export const edgesById = new Map(knowledgeGraph.edges.map((item) => [item.id, item]));
 

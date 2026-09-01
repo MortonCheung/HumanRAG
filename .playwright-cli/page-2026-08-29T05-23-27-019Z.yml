@@ -1,0 +1,67 @@
+- main [ref=f2e3]:
+  - generic [ref=f2e5]:
+    - generic [ref=f2e66]: 计算机研究生
+    - generic [ref=f2e67]: 考研408
+    - generic [ref=f2e68]: 数据结构
+    - generic [ref=f2e69]: 计算机组成原理
+    - generic [ref=f2e70]: 操作系统
+    - generic [ref=f2e71]: 计算机网络
+    - generic [ref=f2e72]: 408综合分析
+  - generic:
+    - generic:
+      - generic "iTeach 知识地图" [ref=f2e8]:
+        - generic [ref=f2e13]: iTeach
+        - generic [ref=f2e14]: 知识地图
+      - navigation "知识空间操作" [ref=f2e15]:
+        - button "搜索知识节点" [ref=f2e16] [cursor=pointer]
+        - button "目标透镜" [ref=f2e19] [cursor=pointer]
+        - button "知识地图" [ref=f2e22] [cursor=pointer]
+        - button "空间设置" [ref=f2e25] [cursor=pointer]
+        - button "返回当前全景" [ref=f2e28] [cursor=pointer]: 返回全景
+    - complementary:
+      - generic: COMPUTER SCIENCE
+      - strong: "Lens: 考研408"
+      - generic: 336 knowledge nodes / 4 active domains
+    - dialog "搜索知识节点" [ref=f2e164]:
+      - generic [ref=f2e165]:
+        - textbox "搜索输入" [active] [ref=f2e168]:
+          - /placeholder: 搜索知识、技能或练习
+        - button "关闭搜索" [ref=f2e169] [cursor=pointer]
+      - generic [ref=f2e172]:
+        - generic [ref=f2e173]: 建议探索
+        - button "数据结构 课程" [ref=f2e174] [cursor=pointer]:
+          - generic [ref=f2e176]:
+            - strong [ref=f2e177]: 数据结构
+            - generic [ref=f2e178]: 课程
+        - button "计算机组成原理 课程" [ref=f2e179] [cursor=pointer]:
+          - generic [ref=f2e181]:
+            - strong [ref=f2e182]: 计算机组成原理
+            - generic [ref=f2e183]: 课程
+        - button "操作系统 课程" [ref=f2e184] [cursor=pointer]:
+          - generic [ref=f2e186]:
+            - strong [ref=f2e187]: 操作系统
+            - generic [ref=f2e188]: 课程
+        - button "计算机网络 课程" [ref=f2e189] [cursor=pointer]:
+          - generic [ref=f2e191]:
+            - strong [ref=f2e192]: 计算机网络
+            - generic [ref=f2e193]: 课程
+        - button "408综合分析 技能" [ref=f2e194] [cursor=pointer]:
+          - generic [ref=f2e196]:
+            - strong [ref=f2e197]: 408综合分析
+            - generic [ref=f2e198]: 技能
+        - button "线性表 概念" [ref=f2e199] [cursor=pointer]:
+          - generic [ref=f2e201]:
+            - strong [ref=f2e202]: 线性表
+            - generic [ref=f2e203]: 概念
+        - button "树与二叉树 概念" [ref=f2e204] [cursor=pointer]:
+          - generic [ref=f2e206]:
+            - strong [ref=f2e207]: 树与二叉树
+            - generic [ref=f2e208]: 概念
+        - button "图 概念" [ref=f2e209] [cursor=pointer]:
+          - generic [ref=f2e211]:
+            - strong [ref=f2e212]: 图
+            - generic [ref=f2e213]: 概念
+        - button "查找 概念" [ref=f2e214] [cursor=pointer]:
+          - generic [ref=f2e216]:
+            - strong [ref=f2e217]: 查找
+            - generic [ref=f2e218]: 概念

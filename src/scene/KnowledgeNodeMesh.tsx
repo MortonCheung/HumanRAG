@@ -3,23 +3,31 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { SceneNode, VisualState } from '../graph/types';
+import { HOT_CORE } from '../design/domainPalette';
 
-const STATE_SCALE: Record<VisualState, number> = { inactive: 0.58, contextual: 0.82, active: 1, selected: 1.2 };
-const STATE_OPACITY: Record<VisualState, number> = { inactive: 0.055, contextual: 0.34, active: 0.86, selected: 1 };
-const COLORS: Record<VisualState, string> = {
-  inactive: '#202731',
-  contextual: '#4d5c6c',
-  active: '#aabbcb',
-  selected: '#dcebff',
+const STATE_SCALE: Record<VisualState, number> = {
+  dormant: 0.62,
+  contextual: 0.72,
+  lensActive: 0.98,
+  upstream: 1.02,
+  downstream: 1.02,
+  lateral: 0.88,
+  selected: 1.16,
+  recommendedPath: 1.02,
+  searchMatch: 1.12,
 };
 
-function NodeGeometry({ type }: { type: SceneNode['type'] }) {
-  if (type === 'knowledge') return <octahedronGeometry args={[0.68, 0]} />;
-  if (type === 'practice') return <torusGeometry args={[0.46, 0.13, 10, 24]} />;
-  if (type === 'goal') return <capsuleGeometry args={[0.72, 2.9, 6, 14]} />;
-  if (type === 'direction') return <capsuleGeometry args={[0.54, 1.95, 6, 14]} />;
-  return <capsuleGeometry args={[0.4, 1.18, 5, 12]} />;
-}
+const STATE_OPACITY: Record<VisualState, number> = {
+  dormant: 0.13,
+  contextual: 0.37,
+  lensActive: 0.78,
+  upstream: 0.92,
+  downstream: 0.92,
+  lateral: 0.6,
+  selected: 1,
+  recommendedPath: 0.9,
+  searchMatch: 1,
+};
 
 export function KnowledgeNodeMesh({
   node,
@@ -33,29 +41,37 @@ export function KnowledgeNodeMesh({
   onSelect: (id: string) => void;
 }) {
   const group = useRef<THREE.Group>(null);
-  const material = useRef<THREE.MeshStandardMaterial>(null);
+  const core = useRef<THREE.MeshBasicMaterial>(null);
+  const membrane = useRef<THREE.MeshBasicMaterial>(null);
+  const halo = useRef<THREE.MeshBasicMaterial>(null);
   const target = useMemo(() => new THREE.Vector3(...node.displayPosition), [node.displayPosition]);
-  const targetColor = useMemo(() => new THREE.Color(COLORS[node.visualState]), [node.visualState]);
+  const domain = useMemo(() => new THREE.Color(node.domainColor), [node.domainColor]);
+  const hot = useMemo(() => new THREE.Color(HOT_CORE), []);
 
-  useFrame((_, delta) => {
-    if (!group.current || !material.current) return;
-    const amount = 1 - Math.pow(0.001, delta / 0.62);
-    group.current.position.lerp(target, amount);
-    const scale = THREE.MathUtils.damp(group.current.scale.x, STATE_SCALE[node.visualState], 8, delta);
+  useFrame(({ clock }, delta) => {
+    if (!group.current || !core.current || !membrane.current || !halo.current) return;
+    const settle = 1 - Math.pow(0.001, delta / 0.58);
+    group.current.position.lerp(target, settle);
+    const beat = node.visualState === 'selected'
+      ? 1 + Math.sin(clock.elapsedTime * 6.2) * 0.09
+      : node.visualState === 'upstream' || node.visualState === 'downstream'
+        ? 1 + Math.sin(clock.elapsedTime * 4.4 - node.propagationDelay * 8) * 0.045
+        : 1 + Math.sin(clock.elapsedTime * 1.35 + node.propagationDelay * 2) * 0.014;
+    const scale = THREE.MathUtils.damp(group.current.scale.x, STATE_SCALE[node.visualState] * beat, 8, delta);
     group.current.scale.setScalar(scale);
-    material.current.opacity = THREE.MathUtils.damp(material.current.opacity, STATE_OPACITY[node.visualState], 8, delta);
-    material.current.color.lerp(targetColor, amount);
+    const active = ['selected', 'upstream', 'downstream', 'recommendedPath', 'searchMatch'].includes(node.visualState);
+    core.current.color.copy(active ? hot : domain);
+    membrane.current.color.copy(domain);
+    halo.current.color.copy(active ? hot : domain);
+    core.current.opacity = THREE.MathUtils.damp(core.current.opacity, STATE_OPACITY[node.visualState], 10, delta);
+    membrane.current.opacity = THREE.MathUtils.damp(membrane.current.opacity, STATE_OPACITY[node.visualState] * 0.42, 10, delta);
+    halo.current.opacity = THREE.MathUtils.damp(halo.current.opacity, Math.min(0.16, node.luminance * 0.13), 10, delta);
     positions.current.set(node.id, group.current.position);
   });
 
-  const rotation: [number, number, number] = ['goal', 'direction', 'course', 'skill'].includes(node.type)
-    ? [0, 0, Math.PI / 2]
-    : [0, 0, 0];
-
   return (
-    <group ref={group} position={node.displayPosition} scale={STATE_SCALE[node.visualState]}>
+    <group ref={group} position={node.displayPosition}>
       <mesh
-        rotation={rotation}
         onPointerOver={(event) => {
           event.stopPropagation();
           document.body.style.cursor = 'pointer';
@@ -71,30 +87,27 @@ export function KnowledgeNodeMesh({
           onSelect(node.id);
         }}
       >
-        <NodeGeometry type={node.type} />
-        <meshStandardMaterial
-          ref={material}
-          color={COLORS[node.visualState]}
-          roughness={0.68}
-          metalness={0.08}
-          transparent
-          opacity={STATE_OPACITY[node.visualState]}
-          depthWrite={node.visualState !== 'inactive'}
-        />
+        <sphereGeometry args={[node.coreRadius, 18, 18]} />
+        <meshBasicMaterial ref={core} color={node.domainColor} transparent opacity={STATE_OPACITY[node.visualState]} depthWrite={false} toneMapped={false} />
       </mesh>
-
+      <mesh scale={1.52} raycast={() => null}>
+        <sphereGeometry args={[node.coreRadius, 16, 16]} />
+        <meshBasicMaterial ref={membrane} color={node.domainColor} transparent opacity={0.25} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh scale={node.haloRadius / Math.max(node.coreRadius, 0.01)} raycast={() => null}>
+        <sphereGeometry args={[node.coreRadius, 14, 14]} />
+        <meshBasicMaterial ref={halo} color={node.domainColor} transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
       {node.visualState === 'selected' && (
-        <mesh rotation-x={Math.PI / 2}>
-          <ringGeometry args={[0.72, 0.75, 48]} />
-          <meshBasicMaterial color="#9fc7ff" transparent opacity={0.72} depthWrite={false} />
+        <mesh rotation-x={Math.PI / 2} raycast={() => null}>
+          <ringGeometry args={[node.coreRadius * 1.9, node.coreRadius * 2.02, 48]} />
+          <meshBasicMaterial color={HOT_CORE} transparent opacity={0.8} depthWrite={false} toneMapped={false} />
         </mesh>
       )}
-
       {node.labelVisible && (
-        <Html center position={[0, node.type === 'goal' ? 1.7 : 1.05, 0]} distanceFactor={17} zIndexRange={[5, 0]}>
-          <div className={`node-label node-label--${node.type} node-label--${node.visualState}`}>
+        <Html center position={[0, node.coreRadius * 3.4, 0]} distanceFactor={18} zIndexRange={[5, 0]}>
+          <div className={`node-label node-label--${node.visualState}`}>
             <span>{node.name}</span>
-            {(node.type === 'goal' || node.type === 'direction') && <small>{node.type === 'goal' ? '目标' : '方向'}</small>}
           </div>
         </Html>
       )}

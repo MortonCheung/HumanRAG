@@ -1,0 +1,22 @@
+- generic [ref=e2]:
+  - main:
+    - generic:
+      - generic:
+        - generic: iTeach
+        - generic: AI 教学系统
+      - region "把计算机知识变成可学习的路径。":
+        - heading "把计算机知识变成可学习的路径。" [level=1]
+        - paragraph: 探索知识关系，跟随分步教学完成讲解、练习与掌握验证。你也可以创建自己的知识库。
+        - generic:
+          - button "正在进入" [disabled]
+          - navigation "产品入口":
+            - link "我的知识库":
+              - /url: /library
+            - link "刷题":
+              - /url: /practice
+      - figure:
+        - generic:
+          - generic: 计算机知识图谱
+          - generic: 336 个节点
+        - img "计算机知识关系俯视图，包含 336 个知识节点和 646 条关系"
+      - paragraph: 当前内容：336 个知识节点，4 个计算机学习方向

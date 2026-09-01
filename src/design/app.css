@@ -1,0 +1,225 @@
+/* iTeach V6 应用外壳：全局导航 / 页面容器 / 移动端菜单 / 全局搜索 / 演示标记 */
+
+/* ---------- 全局导航 ---------- */
+.global-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--it-nav-height);
+  padding: 0 clamp(16px, 2.4vw, 36px);
+  border-bottom: 1px solid var(--it-rule);
+  background: rgb(5 6 6 / 0.86);
+  backdrop-filter: blur(14px) saturate(1.1);
+}
+
+.global-nav__brand { display: flex; align-items: center; gap: 10px; width: 220px; min-width: max-content; text-decoration: none; color: var(--it-text); }
+.global-nav__brand .brand-mark__descriptor { display: none; }
+@media (min-width: 1280px) { .global-nav__brand .brand-mark__descriptor { display: block; } }
+
+.global-nav__links { display: flex; align-items: stretch; gap: clamp(14px, 2vw, 30px); height: 100%; }
+.global-nav__links a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  color: var(--it-text-faint);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: color 180ms var(--it-ease);
+}
+.global-nav__links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: transparent;
+  transition: background 180ms var(--it-ease);
+}
+.global-nav__links a:hover { color: var(--it-text-soft); }
+.global-nav__links a.is-active { color: var(--it-text); }
+.global-nav__links a.is-active::after { background: var(--it-accent); }
+
+.global-nav__tools { display: flex; align-items: center; gap: 10px; min-width: 260px; justify-content: flex-end; }
+.nav-tool {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--it-rule);
+  border-radius: var(--it-radius-button);
+  background: transparent;
+  color: var(--it-text-soft);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 160ms var(--it-ease), border-color 160ms var(--it-ease), background 160ms var(--it-ease);
+}
+.nav-tool:hover { border-color: var(--it-rule-strong); background: var(--it-surface-raised); color: var(--it-text); }
+.nav-tool--icon { width: 36px; padding: 0; justify-content: center; }
+.nav-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--it-rule-strong);
+  background: var(--it-surface-raised);
+  color: var(--it-text-soft);
+  font-size: 12px;
+  font-weight: 560;
+}
+.global-nav__links, .global-nav__tools .nav-tool--label { display: none; }
+@media (min-width: 768px) {
+  .global-nav__links { display: flex; }
+  .global-nav__tools .nav-tool--label { display: flex; }
+  .global-nav__burger { display: none; }
+}
+
+/* ---------- 页面容器 ---------- */
+.page {
+  padding-top: var(--it-nav-height);
+  min-height: 100dvh;
+  background: var(--it-bg-deep);
+}
+.page__inner {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vh, 48px) clamp(20px, 3vw, 48px) 96px;
+}
+.page--wide { /* /universe 等全屏页面 */
+  padding-top: 0;
+}
+.page-title { margin: 0 0 10px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.page-lead { margin: 0 0 32px; max-width: 640px; color: var(--it-text-soft); font-size: 15px; line-height: 1.6; }
+
+/* ---------- 移动端菜单 ---------- */
+.mobile-nav-overlay { position: fixed; inset: 0; z-index: 210; background: rgb(2 3 3 / 0.55); }
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 211;
+  width: min(320px, 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  border-left: 1px solid var(--it-rule-strong);
+  background: var(--it-bg);
+}
+.mobile-nav__title { margin: 6px 4px 14px; color: var(--it-text-faint); font-size: 11px; font-family: var(--it-mono); letter-spacing: 0.14em; }
+.mobile-nav a, .mobile-nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: var(--it-radius-button);
+  color: var(--it-text-soft);
+  font-size: 15px;
+  text-decoration: none;
+  text-align: left;
+  transition: background 160ms var(--it-ease), color 160ms var(--it-ease);
+}
+.mobile-nav a:hover, .mobile-nav a.is-active, .mobile-nav button:hover { background: var(--it-surface-raised); color: var(--it-text); }
+.mobile-nav__footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--it-rule); color: var(--it-text-faint); font-size: 11px; font-family: var(--it-mono); }
+
+/* ---------- 全局搜索 ---------- */
+.global-search {
+  position: fixed;
+  z-index: 220;
+  top: 12dvh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--it-rule-strong);
+  border-radius: var(--it-radius-panel);
+  background: rgb(12 14 14 / 0.97);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 0.5);
+}
+.global-search__input { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: center; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--it-rule); color: var(--it-text-faint); }
+.global-search__input input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--it-text); font-size: 15px; }
+.global-search__input input::placeholder { color: var(--it-text-faint); }
+.global-search__results { max-height: 46dvh; overflow-y: auto; padding: 8px; }
+.global-search__result {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--it-radius-button);
+  background: transparent;
+  color: var(--it-text-soft);
+  text-align: left;
+  transition: background 140ms var(--it-ease);
+}
+.global-search__result:hover { background: var(--it-surface-raised); color: var(--it-text); }
+.global-search__result small { color: var(--it-text-faint); font-size: 11px; font-family: var(--it-mono); }
+.global-search__empty { padding: 18px 16px; color: var(--it-text-faint); font-size: 13px; }
+
+/* ---------- 演示数据标记 ---------- */
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--it-rule);
+  border-radius: 4px;
+  color: var(--it-text-faint);
+  font-size: 10px;
+  font-family: var(--it-mono);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+/* ---------- 通用排版与按钮（特性页面共用） ---------- */
+.panel {
+  border: 1px solid var(--it-rule);
+  border-radius: var(--it-radius-panel);
+  background: var(--it-surface);
+}
+.panel__header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 0; }
+.panel__body { padding: 16px 20px 20px; }
+.panel-title { margin: 0; font-size: 19px; font-weight: 560; letter-spacing: -0.01em; }
+.panel-kicker { margin: 0 0 4px; color: var(--it-text-faint); font-size: 11px; font-family: var(--it-mono); letter-spacing: 0.12em; }
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--it-rule-strong);
+  border-radius: var(--it-radius-button);
+  background: transparent;
+  color: var(--it-text-soft);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 160ms var(--it-ease), border-color 160ms var(--it-ease), background 160ms var(--it-ease);
+}
+.text-button:hover { border-color: var(--it-accent); color: var(--it-text); background: var(--it-surface-raised); }
+.text-button--primary { border-color: transparent; background: var(--it-accent); color: #161207; font-weight: 560; }
+.text-button--primary:hover { filter: brightness(1.05); background: var(--it-accent); color: #161207; }
+.text-button--ghost { border-color: transparent; }
+.builder-field__hint, .builder-field__error { display: block; margin-top: 6px; font-size: 12px; line-height: 1.5; }
+.builder-field__hint { color: var(--it-text-faint); }
+.builder-field__error { color: var(--it-danger); }
+.grid-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+@media (max-width: 1023px) { .grid-12 { grid-template-columns: 1fr; } }
+
+/* ---------- 知识空间页面适配（旧 TopBar 下移） ---------- */
+.universe-page { position: relative; min-height: 100dvh; width: 100%; overflow: hidden; isolation: isolate; background: var(--it-bg-deep); }
+.universe-page .top-bar { top: calc(var(--it-nav-height) + 14px); }
+.universe-page .field-light, .universe-page .canvas-layer { top: var(--it-nav-height); }
+.universe-page .canvas-fallback { top: var(--it-nav-height); }

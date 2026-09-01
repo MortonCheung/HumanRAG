@@ -7,6 +7,8 @@ import type {
   SceneNode,
   VisualState,
 } from './types';
+import { buildCausalCorridor } from './causalCorridor';
+import { colorForBranch } from '../design/domainPalette';
 
 const BRANCH_ANCHORS: Record<string, [number, number]> = {
   '408': [-16, -8],
@@ -21,6 +23,7 @@ export interface SceneModelInput {
   hoveredNodeId: string | null;
   learningPath: string[];
   focused: boolean;
+  relationMode?: 'primary' | 'all' | 'upstream' | 'downstream';
 }
 
 function descendants(seedId: string) {
@@ -95,11 +98,23 @@ function relevanceFor(
   return adjacentToActive ? 0.28 : 0.055;
 }
 
-function visualState(relevance: number, selected: boolean): VisualState {
-  if (selected) return 'selected';
-  if (relevance >= 0.64) return 'active';
+function visualState(
+  relevance: number,
+  id: string,
+  selectedId: string | null,
+  upstream: Set<string>,
+  downstream: Set<string>,
+  lateral: Set<string>,
+  learningPathIds: Set<string>,
+): VisualState {
+  if (id === selectedId) return 'selected';
+  if (learningPathIds.has(id)) return 'recommendedPath';
+  if (upstream.has(id)) return 'upstream';
+  if (downstream.has(id)) return 'downstream';
+  if (lateral.has(id)) return 'lateral';
+  if (relevance >= 0.64) return 'lensActive';
   if (relevance >= 0.24) return 'contextual';
-  return 'inactive';
+  return 'dormant';
 }
 
 function getFocusPosition(node: KnowledgeNode, relevance: number, goalId: string | null): [number, number, number] {
@@ -142,11 +157,21 @@ function realPathEdgeIds(path: string[]) {
 }
 
 export function buildSceneModel(input: SceneModelInput): SceneModel {
-  const { goalId, selectedNodeId, hoveredNodeId, learningPath, focused } = input;
+  const { goalId, selectedNodeId, hoveredNodeId, learningPath, focused, relationMode = 'primary' } = input;
   const activeDepth = goalId ? descendants(goalId) : new Map<string, number>();
+  const corridor = selectedNodeId ? buildCausalCorridor(selectedNodeId) : null;
+  const allUpstreamNodeIds = new Set(corridor?.upstreamNodeDepth.keys() ?? []);
+  const allDownstreamNodeIds = new Set(corridor?.downstreamNodeDepth.keys() ?? []);
+  const allLateralNodeIds = new Set(corridor?.lateralNodeDistance.keys() ?? []);
+  const upstreamNodeIds = relationMode === 'downstream' ? new Set<string>() : allUpstreamNodeIds;
+  const downstreamNodeIds = relationMode === 'upstream' ? new Set<string>() : allDownstreamNodeIds;
+  const lateralNodeIds = relationMode === 'all' ? allLateralNodeIds : new Set<string>();
   const selectedAncestors = ancestors(selectedNodeId);
   const localNodeIds = oneHop(selectedNodeId);
   selectedAncestors.forEach((id) => localNodeIds.add(id));
+  upstreamNodeIds.forEach((id) => localNodeIds.add(id));
+  downstreamNodeIds.forEach((id) => localNodeIds.add(id));
+  lateralNodeIds.forEach((id) => localNodeIds.add(id));
   const learningPathIds = new Set(learningPath);
   const learningPathEdgeIds = realPathEdgeIds(learningPath);
 
@@ -160,43 +185,65 @@ export function buildSceneModel(input: SceneModelInput): SceneModel {
       localNodeIds,
       learningPathIds,
     );
-    const state = visualState(relevance, selectedNodeId === node.id);
+    const state = visualState(relevance, node.id, selectedNodeId, upstreamNodeIds, downstreamNodeIds, lateralNodeIds, learningPathIds);
     const displayPosition = focused
       ? getFocusPosition(node, relevance, goalId)
       : ([...node.basePosition] as [number, number, number]);
     const labelVisible =
       node.id === selectedNodeId ||
       node.id === hoveredNodeId ||
-      (state === 'active' && ['goal', 'direction', 'course', 'skill'].includes(node.type)) ||
+      (state === 'lensActive' && ['goal', 'direction', 'course', 'skill'].includes(node.type)) ||
       (localNodeIds.has(node.id) && node.type === 'knowledge');
-    return { ...node, relevance, visualState: state, displayPosition, labelVisible };
+    const depth = corridor?.upstreamNodeDepth.get(node.id) ?? corridor?.downstreamNodeDepth.get(node.id) ?? 0;
+    const direction = upstreamNodeIds.has(node.id) ? 'upstream' : downstreamNodeIds.has(node.id) ? 'downstream' : 'none';
+    const propagationDelay = direction === 'upstream'
+      ? Math.max(0, (corridor?.maxUpstreamDepth ?? 0) - depth) * 0.055
+      : direction === 'downstream' ? depth * 0.065 : 0;
+    const luminance = state === 'selected' ? 1 : state === 'upstream' || state === 'downstream' ? 0.86 : state === 'lensActive' ? 0.7 : state === 'contextual' ? 0.34 : 0.18;
+    const coreRadius = state === 'selected' ? 0.34 : state === 'upstream' || state === 'downstream' ? 0.25 : state === 'lensActive' ? 0.21 : state === 'contextual' ? 0.17 : 0.125;
+    return {
+      ...node,
+      relevance,
+      visualState: state,
+      displayPosition,
+      labelVisible,
+      domainColor: colorForBranch(node.branchId),
+      luminance,
+      coreRadius,
+      haloRadius: Math.min(0.66, 0.2 + luminance * 0.4),
+      propagationDelay,
+    };
   });
 
-  const activeIds = new Set(nodes.filter((node) => node.visualState === 'active' || node.visualState === 'selected').map((node) => node.id));
-  const selectedPathEdgeIds = new Set<string>();
-  if (selectedNodeId) {
-    let current = nodesById.get(selectedNodeId);
-    while (current?.parentId) {
-      const edge = knowledgeGraph.edges.find(
-        (candidate) =>
-          candidate.relationType === 'hierarchy' &&
-          candidate.source === current?.parentId &&
-          candidate.target === current.id,
-      );
-      if (edge) selectedPathEdgeIds.add(edge.id);
-      current = nodesById.get(current.parentId);
-    }
-  }
+  const activeIds = new Set(nodes.filter((node) => ['lensActive', 'upstream', 'downstream', 'selected'].includes(node.visualState)).map((node) => node.id));
+  const selectedPathEdgeIds = corridor?.primaryEdgeIds ?? new Set<string>();
 
   const edges = knowledgeGraph.edges.map((edge) => {
     let edgeState: EdgeVisualState = 'background';
-    if (learningPathEdgeIds.has(edge.id) || selectedPathEdgeIds.has(edge.id)) edgeState = 'path';
-    else if (activeIds.has(edge.source) && activeIds.has(edge.target)) edgeState = 'active';
+    let direction: 'none' | 'in' | 'out' = 'none';
+    let propagationDelay = 0;
+    if (learningPathEdgeIds.has(edge.id)) edgeState = 'path';
+    else if (selectedPathEdgeIds.has(edge.id)) {
+      const isUpstream = allUpstreamNodeIds.has(edge.source) || allUpstreamNodeIds.has(edge.target);
+      const isVisibleInMode = isUpstream
+        ? relationMode !== 'downstream'
+        : relationMode !== 'upstream';
+      if (!isVisibleInMode) return { ...edge, visualState: 'contextual' as const, propagationDelay: 0, direction: 'none' as const };
+      edgeState = isUpstream ? 'upstream' : 'downstream';
+      direction = isUpstream ? 'in' : 'out';
+      const sourceDepth = corridor?.upstreamNodeDepth.get(edge.source) ?? corridor?.downstreamNodeDepth.get(edge.source) ?? 0;
+      const targetDepth = corridor?.upstreamNodeDepth.get(edge.target) ?? corridor?.downstreamNodeDepth.get(edge.target) ?? 0;
+      const depth = Math.max(sourceDepth, targetDepth);
+      propagationDelay = direction === 'in'
+        ? Math.max(0, (corridor?.maxUpstreamDepth ?? 0) - depth) * 0.055
+        : depth * 0.065;
+    } else if (relationMode === 'all' && corridor?.secondaryEdgeIds.has(edge.id)) edgeState = 'lateral';
+    else if (activeIds.has(edge.source) && activeIds.has(edge.target)) edgeState = 'lensActive';
     else if (localNodeIds.has(edge.source) || localNodeIds.has(edge.target)) edgeState = 'contextual';
-    return { ...edge, visualState: edgeState };
+    return { ...edge, visualState: edgeState, propagationDelay, direction };
   });
 
-  return { nodes, edges, selectedPathEdgeIds, learningPathEdgeIds, localNodeIds };
+  return { nodes, edges, selectedPathEdgeIds, learningPathEdgeIds, localNodeIds, upstreamNodeIds, downstreamNodeIds, lateralNodeIds };
 }
 
 export function getPathToNode(nodeId: string) {

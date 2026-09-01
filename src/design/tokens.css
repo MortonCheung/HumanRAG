@@ -1,0 +1,26 @@
+/* iTeach V7 全局设计 token（施工指南 §4.2 建议固定值）。
+   与知识空间旧 --ku-* 变量保持同一套中性黑基础，仅新增语义命名。 */
+:root {
+  --it-bg-deep: #050707;
+  --it-bg: #080a0a;
+  --it-surface: #0d0f0f;
+  --it-surface-raised: #131616;
+  --it-surface-hover: #181c1b;
+  --it-text: #efefe9;
+  --it-text-soft: #a7aaa3;
+  --it-text-faint: #696f6a;
+  --it-rule: rgb(239 239 233 / 0.10);
+  --it-rule-strong: rgb(239 239 233 / 0.18);
+  --it-accent: #d8c58f;
+  --it-selected: #fff8dc;
+  --it-focus: var(--it-selected);
+  --it-success: #91b596;
+  --it-danger: #d8897c;
+
+  --it-radius-button: 7px;
+  --it-radius-input: 7px;
+  --it-radius-panel: 10px;
+  --it-nav-height: 64px;
+  --it-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --it-mono: "SFMono-Regular", Consolas, "Geist Mono", monospace;
+}

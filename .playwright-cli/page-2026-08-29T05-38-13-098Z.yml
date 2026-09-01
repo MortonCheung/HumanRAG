@@ -1,0 +1,78 @@
+- main [ref=f1e3]:
+  - generic [ref=f1e5]:
+    - generic [ref=f1e11]: 计算机组成原理
+    - generic [ref=f1e12]: 操作系统
+    - generic [ref=f1e13]: 计算机网络
+    - generic [ref=f1e14]: 408综合分析
+    - generic [ref=f1e119]: 线性表
+    - generic [ref=f1e120]: 树与二叉树
+    - generic [ref=f1e121]: 图
+  - generic:
+    - generic:
+      - generic "iTeach 知识地图" [ref=f1e15]: iTeach
+      - navigation "知识空间操作" [ref=f1e21]:
+        - button "搜索知识节点" [ref=f1e22] [cursor=pointer]
+        - button "目标透镜" [ref=f1e25] [cursor=pointer]
+    - complementary:
+      - generic: COMPUTER SCIENCE
+      - strong: "Lens: 考研408"
+    - complementary "线性表节点详情" [ref=f1e122]:
+      - generic [ref=f1e123]:
+        - generic [ref=f1e124]:
+          - generic [ref=f1e125]: 知识节点
+          - heading "线性表" [level=2] [ref=f1e126]
+        - button "关闭节点详情" [ref=f1e127] [cursor=pointer]
+      - navigation "所属路径" [ref=f1e130]:
+        - generic [ref=f1e131]:
+          - button "计算机研究生" [ref=f1e132] [cursor=pointer]
+          - generic [ref=f1e133]: /
+        - generic [ref=f1e134]:
+          - button "考研408" [ref=f1e135] [cursor=pointer]
+          - generic [ref=f1e136]: /
+        - generic [ref=f1e137]:
+          - button "数据结构" [ref=f1e138] [cursor=pointer]
+          - generic [ref=f1e139]: /
+        - button "线性表" [ref=f1e141] [cursor=pointer]
+      - generic [ref=f1e142]:
+        - generic [ref=f1e143]:
+          - heading "概念" [level=3] [ref=f1e144]
+          - paragraph [ref=f1e145]: 线性表是元素按一对一前后关系组织的逻辑结构，可用顺序存储或链式存储实现，是树、图和更复杂数据组织方式的基础。
+        - generic [ref=f1e146]:
+          - heading "上游前置 3" [level=3] [ref=f1e147]
+          - generic [ref=f1e148]:
+            - button "数据结构" [ref=f1e149] [cursor=pointer]
+            - button "考研408" [ref=f1e153] [cursor=pointer]
+            - button "计算机研究生" [ref=f1e157] [cursor=pointer]
+        - generic [ref=f1e161]:
+          - heading "下游解锁 5" [level=3] [ref=f1e162]
+          - generic [ref=f1e163]:
+            - button "链表操作题" [ref=f1e164] [cursor=pointer]
+            - button "树与二叉树" [ref=f1e168] [cursor=pointer]
+            - button "二叉树遍历题" [ref=f1e172] [cursor=pointer]
+            - button "图" [ref=f1e176] [cursor=pointer]
+            - button "图算法综合题" [ref=f1e180] [cursor=pointer]
+        - generic [ref=f1e184]:
+          - heading "横向关联" [level=3] [ref=f1e185]
+          - paragraph [ref=f1e186]: 暂无一跳横向关联。
+        - generic [ref=f1e187]:
+          - heading "推荐学习内容" [level=3] [ref=f1e188]
+          - list [ref=f1e189]:
+            - listitem [ref=f1e190]:
+              - generic [ref=f1e191]: "1"
+              - text: 顺序表与链表对比
+            - listitem [ref=f1e192]:
+              - generic [ref=f1e193]: "2"
+              - text: 插入删除边界条件
+            - listitem [ref=f1e194]:
+              - generic [ref=f1e195]: "3"
+              - text: 链表操作题
+        - generic [ref=f1e196]:
+          - generic [ref=f1e197]:
+            - heading "AI 学习解释" [level=3] [ref=f1e198]
+            - button "生成解释" [ref=f1e199] [cursor=pointer]
+          - paragraph [ref=f1e202]: 根据当前知识关系，解释这个概念在你的学习目标中承担什么作用。
+    - navigation "因果走廊控制台" [ref=f1e203]:
+      - button [ref=f1e204] [cursor=pointer]
+      - generic [ref=f1e207]: 线性表
+      - button [ref=f1e208] [cursor=pointer]
+      - button "仅看主路径" [ref=f1e212] [cursor=pointer]
