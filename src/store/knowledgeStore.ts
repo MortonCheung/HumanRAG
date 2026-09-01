@@ -2,8 +2,19 @@ import { create } from 'zustand';
 import { explainNode, generatePath } from '../ai/localKnowledgeAI';
 import { matchGoal, nodesById } from '../data/knowledgeGraph';
 import type { CameraIntent, UserProfile } from '../graph/types';
+import type { QualityPreference, ResolvedQualityTier } from '../performance/types';
+import { DOMAIN_KEYS, loadDomain, removeDomain, saveDomain } from '../services/persistence/demoPersistence';
 
-type AppPhase = 'onboarding' | 'enteringUniverse' | 'overview' | 'goalFocused' | 'nodeFocused';
+type AppPhase = 'overview' | 'goalFocused' | 'nodeFocused';
+type Panel = 'search' | 'lens' | 'atlas' | 'settings' | null;
+type RelationMode = 'primary' | 'all' | 'upstream' | 'downstream';
+type AsyncStatus = 'idle' | 'loading' | 'success' | 'fallback' | 'error';
+
+interface PersistedState {
+  profile: UserProfile | null;
+  selectedGoalId: string | null;
+  qualityPreference: QualityPreference;
+}
 
 interface KnowledgeStore {
   phase: AppPhase;
@@ -12,90 +23,182 @@ interface KnowledgeStore {
   selectedNodeId: string | null;
   hoveredNodeId: string | null;
   cameraIntent: CameraIntent;
+  activePanel: Panel;
+  relationMode: RelationMode;
+  selectionEpoch: number;
   isPathRibbonOpen: boolean;
-  aiStatus: 'idle' | 'loading' | 'success' | 'fallback';
+  aiStatusByNode: Record<string, AsyncStatus>;
   explanationByNode: Record<string, string>;
   learningPath: string[];
+  learningPathStatus: AsyncStatus;
   unmatchedGoal: boolean;
+  qualityPreference: QualityPreference;
+  resolvedQualityTier: ResolvedQualityTier;
   submitProfile: (profile: UserProfile) => Promise<void>;
-  selectGoal: (goalId: string) => void;
+  selectGoal: (goalId: string | null) => void;
   selectNode: (nodeId: string) => void;
   hoverNode: (nodeId: string | null) => void;
   closeNodeDetail: () => void;
   returnOverview: () => void;
-  openOnboarding: () => void;
+  openPanel: (panel: Exclude<Panel, null>) => void;
+  closePanel: () => void;
+  setRelationMode: (mode: RelationMode) => void;
   requestExplanation: (nodeId: string) => Promise<void>;
   generateLearningPath: () => Promise<void>;
   closeLearningPath: () => void;
+  setQualityPreference: (preference: QualityPreference) => void;
+  setResolvedQualityTier: (tier: ResolvedQualityTier) => void;
+  resetKnowledge: () => void;
 }
 
-const readPersisted = (): { profile: UserProfile; selectedGoalId: string | null } | null => {
-  try {
-    const raw = localStorage.getItem('knowledge-universe:profile:v1');
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { version?: number; profile?: UserProfile; selectedGoalId?: string | null };
-    if (parsed.version !== 1 || !parsed.profile || !parsed.profile.major || !parsed.profile.identity || !parsed.profile.goal) return null;
-    if (parsed.selectedGoalId && !nodesById.has(parsed.selectedGoalId)) return null;
-    return { profile: parsed.profile, selectedGoalId: parsed.selectedGoalId ?? null };
-  } catch {
-    return null;
+function readPersisted(): PersistedState {
+  const fallback: PersistedState = { profile: null, selectedGoalId: null, qualityPreference: 'auto' };
+  if (typeof window === 'undefined') return fallback;
+  const v7 = loadDomain<Partial<PersistedState>>(DOMAIN_KEYS.knowledge);
+  if (v7) {
+    const qualityPreference = ['auto', 'quality', 'balanced', 'performance'].includes(v7.qualityPreference ?? '')
+      ? v7.qualityPreference as QualityPreference
+      : 'auto';
+    return {
+      profile: v7.profile?.major && v7.profile.identity && v7.profile.goal ? v7.profile : null,
+      selectedGoalId: v7.selectedGoalId && nodesById.has(v7.selectedGoalId) ? v7.selectedGoalId : null,
+      qualityPreference,
+    };
   }
-};
+  try {
+    const raw = localStorage.getItem('knowledge-universe:v4') ?? localStorage.getItem('knowledge-universe:profile:v1');
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<PersistedState>;
+    const selectedGoalId = parsed.selectedGoalId && nodesById.has(parsed.selectedGoalId) ? parsed.selectedGoalId : null;
+    const profile = parsed.profile?.major && parsed.profile.identity && parsed.profile.goal ? parsed.profile : null;
+    const migrated = { profile, selectedGoalId, qualityPreference: 'auto' as const };
+    saveDomain(DOMAIN_KEYS.knowledge, migrated);
+    localStorage.removeItem('knowledge-universe:v4');
+    localStorage.removeItem('knowledge-universe:profile:v1');
+    return migrated;
+  } catch {
+    return fallback;
+  }
+}
 
-const persisted = typeof window !== 'undefined' ? readPersisted() : null;
+function persist(profile: UserProfile | null, selectedGoalId: string | null, qualityPreference: QualityPreference) {
+  saveDomain(DOMAIN_KEYS.knowledge, { profile, selectedGoalId, qualityPreference });
+}
+
+const restored = readPersisted();
 
 export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
-  phase: persisted?.profile ? 'overview' : 'onboarding',
-  profile: persisted?.profile ?? null,
-  selectedGoalId: persisted?.selectedGoalId ?? null,
+  phase: restored.selectedGoalId ? 'goalFocused' : 'overview',
+  profile: restored.profile,
+  selectedGoalId: restored.selectedGoalId,
   selectedNodeId: null,
   hoveredNodeId: null,
   cameraIntent: { id: 'overview:initial', mode: 'overview' },
+  activePanel: null,
+  relationMode: 'primary',
+  selectionEpoch: 0,
   isPathRibbonOpen: false,
-  aiStatus: 'idle',
+  aiStatusByNode: {},
   explanationByNode: {},
   learningPath: [],
+  learningPathStatus: 'idle',
   unmatchedGoal: false,
+  qualityPreference: restored.qualityPreference,
+  resolvedQualityTier: restored.qualityPreference === 'auto' ? 'balanced' : restored.qualityPreference,
   submitProfile: async (profile) => {
     const matched = matchGoal(profile.goal);
-    try {
-      localStorage.setItem('knowledge-universe:profile:v1', JSON.stringify({ version: 1, profile, selectedGoalId: matched.nodeId }));
-    } catch {
-      // local state remains usable when storage is unavailable.
-    }
-    if (matched.nodeId) {
-      set({ profile, selectedGoalId: matched.nodeId, unmatchedGoal: false, selectedNodeId: null, phase: 'enteringUniverse', cameraIntent: { id: `goal:${matched.nodeId}:${Date.now()}`, mode: 'goal', nodeId: matched.nodeId } });
-      window.setTimeout(() => set((state) => state.phase === 'enteringUniverse' ? { phase: 'goalFocused' } : state), 850);
-    } else {
-      set({ profile, selectedGoalId: null, unmatchedGoal: true, selectedNodeId: null, phase: 'overview', cameraIntent: { id: `overview:${Date.now()}`, mode: 'overview' } });
-    }
+    set({ profile, unmatchedGoal: !matched.nodeId });
+    get().selectGoal(matched.nodeId);
   },
   selectGoal: (goalId) => {
-    if (!nodesById.has(goalId)) return;
+    if (goalId && !nodesById.has(goalId)) return;
     const profile = get().profile;
-    if (profile) {
-      try { localStorage.setItem('knowledge-universe:profile:v1', JSON.stringify({ version: 1, profile, selectedGoalId: goalId })); } catch { /* no-op */ }
-    }
-    set({ selectedGoalId: goalId, selectedNodeId: null, isPathRibbonOpen: false, unmatchedGoal: false, phase: 'goalFocused', cameraIntent: { id: `goal:${goalId}:${Date.now()}`, mode: 'goal', nodeId: goalId } });
+    persist(profile, goalId, get().qualityPreference);
+    set({
+      selectedGoalId: goalId,
+      selectedNodeId: null,
+      activePanel: null,
+      isPathRibbonOpen: false,
+      unmatchedGoal: false,
+      phase: goalId ? 'goalFocused' : 'overview',
+      relationMode: 'primary',
+      selectionEpoch: get().selectionEpoch + 1,
+      cameraIntent: { id: goalId ? `goal:${goalId}:${Date.now()}` : `overview:${Date.now()}`, mode: goalId ? 'goal' : 'overview', nodeId: goalId ?? undefined },
+    });
   },
   selectNode: (nodeId) => {
     if (!nodesById.has(nodeId)) return;
-    set({ selectedNodeId: nodeId, phase: 'nodeFocused', cameraIntent: { id: `node:${nodeId}:${Date.now()}`, mode: 'node', nodeId } });
+    set({
+      selectedNodeId: nodeId,
+      activePanel: null,
+      phase: 'nodeFocused',
+      selectionEpoch: get().selectionEpoch + 1,
+      cameraIntent: { id: `node:${nodeId}:${Date.now()}`, mode: 'node', nodeId },
+    });
   },
-  hoverNode: (nodeId) => set({ hoveredNodeId: nodeId }),
-  closeNodeDetail: () => set((state) => ({ selectedNodeId: null, phase: state.selectedGoalId ? 'goalFocused' : 'overview', cameraIntent: { id: `return:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined } })),
-  returnOverview: () => set({ selectedNodeId: null, selectedGoalId: null, isPathRibbonOpen: false, unmatchedGoal: false, phase: 'overview', cameraIntent: { id: `overview:${Date.now()}`, mode: 'overview' } }),
-  openOnboarding: () => set({ phase: 'onboarding' }),
+  hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
+  closeNodeDetail: () => set((state) => ({
+    selectedNodeId: null,
+    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
+    relationMode: 'primary',
+    cameraIntent: { id: `return:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined },
+  })),
+  returnOverview: () => set((state) => ({
+    selectedNodeId: null,
+    activePanel: null,
+    relationMode: 'primary',
+    isPathRibbonOpen: false,
+    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
+    cameraIntent: { id: `overview:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined },
+  })),
+  openPanel: (panel) => set((state) => ({ activePanel: state.activePanel === panel ? null : panel })),
+  closePanel: () => set({ activePanel: null }),
+  setRelationMode: (relationMode) => set({ relationMode }),
   requestExplanation: async (nodeId) => {
-    set({ aiStatus: 'loading' });
-    await new Promise((resolve) => window.setTimeout(resolve, 420));
-    const result = explainNode(nodeId, get().profile);
-    set((state) => ({ aiStatus: 'fallback', explanationByNode: { ...state.explanationByNode, [nodeId]: result } }));
+    set((state) => ({ aiStatusByNode: { ...state.aiStatusByNode, [nodeId]: 'loading' } }));
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 260));
+      const result = explainNode(nodeId, get().profile);
+      set((state) => ({
+        aiStatusByNode: { ...state.aiStatusByNode, [nodeId]: 'fallback' },
+        explanationByNode: { ...state.explanationByNode, [nodeId]: result },
+      }));
+    } catch {
+      set((state) => ({ aiStatusByNode: { ...state.aiStatusByNode, [nodeId]: 'error' } }));
+    }
   },
   generateLearningPath: async () => {
-    set({ aiStatus: 'loading' });
-    await new Promise((resolve) => window.setTimeout(resolve, 350));
-    set({ learningPath: generatePath(get().selectedGoalId), isPathRibbonOpen: true, aiStatus: 'fallback' });
+    set({ learningPathStatus: 'loading' });
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
+    set({ learningPath: generatePath(get().selectedGoalId), isPathRibbonOpen: true, learningPathStatus: 'fallback' });
   },
   closeLearningPath: () => set({ isPathRibbonOpen: false }),
+  setQualityPreference: (qualityPreference) => set((state) => {
+    persist(state.profile, state.selectedGoalId, qualityPreference);
+    return {
+      qualityPreference,
+      resolvedQualityTier: qualityPreference === 'auto' ? state.resolvedQualityTier : qualityPreference,
+    };
+  }),
+  setResolvedQualityTier: (resolvedQualityTier) => set((state) => state.qualityPreference === 'auto' ? { resolvedQualityTier } : state),
+  resetKnowledge: () => {
+    removeDomain(DOMAIN_KEYS.knowledge);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('knowledge-universe:v4');
+      localStorage.removeItem('knowledge-universe:profile:v1');
+    }
+    set({
+      phase: 'overview',
+      profile: null,
+      selectedGoalId: null,
+      selectedNodeId: null,
+      hoveredNodeId: null,
+      cameraIntent: { id: `overview:reset:${Date.now()}`, mode: 'overview' },
+      activePanel: null,
+      relationMode: 'primary',
+      isPathRibbonOpen: false,
+      qualityPreference: 'auto',
+      resolvedQualityTier: 'balanced',
+    });
+  },
 }));

@@ -1,0 +1,68 @@
+/* iTeach V6 学习记录模块（蓝图 §13）：证据流、掌握度、误区分布与下一轮教学安排 */
+
+/* ---------- 顶部总结 ---------- */
+.progress-summary { display: grid; grid-template-columns: 1fr auto; gap: 16px 32px; align-items: end; }
+.progress-summary__lead { margin: 0; color: var(--it-text-soft); font-size: 15px; line-height: 1.7; max-width: 820px; }
+.progress-summary__lead strong { color: var(--it-text); font-weight: 560; }
+.progress-summary__metrics { display: flex; gap: 28px; }
+.progress-summary__metric { display: flex; flex-direction: column; gap: 3px; }
+.progress-summary__value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; color: var(--it-text); }
+.progress-summary__label { font-size: 11px; color: var(--it-text-faint); font-family: var(--it-mono); }
+@media (max-width: 720px) {
+  .progress-summary { grid-template-columns: 1fr; align-items: start; }
+  .progress-summary__metrics { justify-content: space-between; }
+}
+
+/* ---------- 证据流 ---------- */
+.evidence-timeline { display: flex; flex-direction: column; }
+.evidence-item { display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--it-rule); }
+.evidence-item:last-child { border-bottom: 0; }
+.evidence-item__dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; }
+.evidence-item__dot.is-correct { background: var(--it-success); }
+.evidence-item__dot.is-partial { background: var(--it-accent); }
+.evidence-item__dot.is-incorrect { background: var(--it-danger); }
+.evidence-item__body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.evidence-item__node { font-size: 14px; color: var(--it-text); }
+.evidence-item__meta { font-size: 12px; color: var(--it-text-faint); line-height: 1.5; }
+.evidence-item__misconception { font-size: 12px; color: var(--it-danger); }
+.evidence-item__time { font-size: 11px; color: var(--it-text-faint); font-family: var(--it-mono); white-space: nowrap; }
+
+/* ---------- 掌握度概览 ---------- */
+.mastery-dist { display: flex; gap: 8px; padding: 6px 0 14px; }
+.mastery-dist__cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 1px solid var(--it-rule); border-radius: var(--it-radius-button); }
+.mastery-dist__count { font-size: 18px; font-weight: 600; color: var(--it-text); }
+.mastery-dist__label { font-size: 10px; color: var(--it-text-faint); font-family: var(--it-mono); }
+.mastery-list { display: flex; flex-direction: column; }
+.mastery-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--it-rule); }
+.mastery-item:last-child { border-bottom: 0; }
+.mastery-item__name { font-size: 13.5px; color: var(--it-text); }
+.mastery-item__conf { font-size: 11px; color: var(--it-text-faint); font-family: var(--it-mono); margin-top: 2px; display: block; }
+.mastery-item__ticks { display: flex; align-items: center; gap: 3px; }
+.mastery-item__tick { width: 5px; height: 14px; border-radius: 1px; background: var(--it-rule); }
+.mastery-item__tick.is-on { background: var(--it-accent); }
+
+/* ---------- 误区分布 ---------- */
+.misconception-list { display: flex; flex-direction: column; }
+.misconception-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--it-rule); }
+.misconception-item:last-child { border-bottom: 0; }
+.misconception-item__name { font-size: 14px; color: var(--it-text); }
+.misconception-item__node { display: block; margin-top: 3px; font-size: 12px; color: var(--it-text-faint); }
+.misconception-item__meta { text-align: right; }
+.misconception-item__count { display: block; font-size: 12px; font-family: var(--it-mono); color: var(--it-text-faint); }
+.misconception-item__status { display: block; margin-top: 3px; font-size: 11px; font-family: var(--it-mono); }
+.misconception-item__status.is-open { color: var(--it-danger); }
+.misconception-item__status.is-remediated { color: var(--it-success); }
+.misconception-item__status.is-suppressed { color: var(--it-text-faint); }
+
+/* ---------- 下一轮教学安排 ---------- */
+.next-teaching { display: flex; flex-direction: column; gap: 14px; }
+.next-teaching__hero { padding: 16px 18px; border: 1px solid var(--it-rule-strong); border-radius: var(--it-radius-panel); background: var(--it-surface-raised); }
+.next-teaching__name { margin: 0 0 6px; font-size: 18px; font-weight: 560; letter-spacing: -0.01em; }
+.next-teaching__why { margin: 0 0 14px; color: var(--it-text-soft); font-size: 13px; line-height: 1.65; }
+.next-teaching__queue { display: flex; flex-direction: column; }
+.next-teaching__item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--it-rule); }
+.next-teaching__item:last-child { border-bottom: 0; }
+.next-teaching__item-name { font-size: 13.5px; color: var(--it-text); }
+.next-teaching__item-why { display: block; font-size: 11.5px; color: var(--it-text-faint); line-height: 1.5; margin-top: 2px; }
+
+.progress-empty { color: var(--it-text-faint); font-size: 13px; padding: 10px 0; }

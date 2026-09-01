@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { buildEdgeCurve } from '../graph/curves';
 import { buildSceneModel } from '../graph/relevance';
+import { buildCausalCorridor } from '../graph/causalCorridor';
 import { validateKnowledgeGraph } from '../graph/validation';
 import { DEFAULT_408_PATH, knowledgeGraph, matchGoal, nodesById } from './knowledgeGraph';
 
 describe('knowledge universe graph', () => {
-  it('contains exactly 100 nodes with 25 nodes per branch', () => {
-    expect(knowledgeGraph.nodes).toHaveLength(100);
+  it('contains the V4 computer science knowledge slice', () => {
+    expect(knowledgeGraph.nodes).toHaveLength(336);
     for (const branchId of ['408', 'ai', 'game', 'frontend']) {
-      expect(knowledgeGraph.nodes.filter((node) => node.branchId === branchId)).toHaveLength(25);
+      expect(knowledgeGraph.nodes.filter((node) => node.branchId === branchId).length).toBeGreaterThan(70);
     }
   });
 
@@ -45,8 +46,15 @@ describe('knowledge universe graph', () => {
     });
     expect(knowledgeGraph.nodes.map((node) => node.basePosition)).toEqual(original);
     expect(model.nodes.find((node) => node.id === 'knowledge-linear-list')?.visualState).toBe('selected');
-    expect(model.nodes.find((node) => node.id === 'direction-ai-engineering')?.visualState).toBe('inactive');
+    expect(model.nodes.find((node) => node.id === 'direction-ai-engineering')?.visualState).toBe('dormant');
     for (const edgeId of model.learningPathEdgeIds) expect(knowledgeGraph.edges.some((edge) => edge.id === edgeId)).toBe(true);
+  });
+
+  it('traces prerequisite ancestors and unlocked practice descendants', () => {
+    const corridor = buildCausalCorridor('knowledge-linear-list');
+    expect(corridor.upstreamNodeDepth.has('course-data-structures')).toBe(true);
+    expect(corridor.downstreamNodeDepth.has('practice-linked-list')).toBe(true);
+    expect(corridor.primaryEdgeIds.size).toBeGreaterThan(1);
   });
 
   it('builds deterministic curves with exact endpoints', () => {

@@ -9,6 +9,7 @@ This directory contains shallow clones used for design and implementation resear
 - `ui-ux-pro-max-skill`: searchable UI/UX knowledge reference.
 - `awesome-design-md`: design-system analyses and composition references.
 - `gsap-skills`: GSAP usage and cleanup guidance.
+- `ponytail`: project-agent minimalism rules and review skills. It is development guidance, not a browser runtime dependency; the iTeach-specific subset is enforced by the root `AGENTS.md`.
 
 ## Runtime implementation references
 

@@ -48,18 +48,25 @@ export interface CameraIntent {
   nodeId?: string;
 }
 
-export type VisualState = 'inactive' | 'contextual' | 'active' | 'selected';
-export type EdgeVisualState = 'background' | 'contextual' | 'active' | 'path';
+export type VisualState = 'dormant' | 'contextual' | 'lensActive' | 'upstream' | 'downstream' | 'lateral' | 'selected' | 'recommendedPath' | 'searchMatch';
+export type EdgeVisualState = 'background' | 'contextual' | 'lensActive' | 'upstream' | 'downstream' | 'lateral' | 'path';
 
 export interface SceneNode extends KnowledgeNode {
   displayPosition: [number, number, number];
   relevance: number;
   visualState: VisualState;
   labelVisible: boolean;
+  domainColor: string;
+  luminance: number;
+  coreRadius: number;
+  haloRadius: number;
+  propagationDelay: number;
 }
 
 export interface SceneEdge extends KnowledgeEdge {
   visualState: EdgeVisualState;
+  propagationDelay: number;
+  direction: 'none' | 'in' | 'out';
 }
 
 export interface SceneModel {
@@ -68,4 +75,7 @@ export interface SceneModel {
   selectedPathEdgeIds: Set<string>;
   learningPathEdgeIds: Set<string>;
   localNodeIds: Set<string>;
+  upstreamNodeIds: Set<string>;
+  downstreamNodeIds: Set<string>;
+  lateralNodeIds: Set<string>;
 }

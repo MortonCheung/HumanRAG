@@ -1,0 +1,222 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - link "MORTON 乡野小栈 首页" [ref=f2e5] [cursor=pointer]:
+      - /url: /
+      - strong [ref=f2e6]: MORTON
+      - generic [ref=f2e7]: 乡野小栈
+    - navigation "主导航" [ref=f2e8]:
+      - link "首页" [ref=f2e9] [cursor=pointer]:
+        - /url: /
+      - link "全部商品" [ref=f2e10] [cursor=pointer]:
+        - /url: /products
+      - link "订单查询" [ref=f2e11] [cursor=pointer]:
+        - /url: /orders
+      - link "AI 攻略" [ref=f2e12] [cursor=pointer]:
+        - /url: /ai-guides
+      - link "联系我们" [ref=f2e13] [cursor=pointer]:
+        - /url: /contact
+    - button "打开导航菜单" [ref=f2e14] [cursor=pointer]
+  - generic:
+    - generic:
+      - generic [ref=f2e18] [cursor=pointer]:
+        - img [ref=f2e20]:
+          - generic [ref=f2e23]: 礼
+          - generic [ref=f2e24]: "01"
+        - generic [ref=f2e25]:
+          - generic [ref=f2e26]:
+            - generic [ref=f2e27]: 礼
+            - strong [ref=f2e28]: 数字礼品
+          - generic [ref=f2e114]:
+            - generic [ref=f2e145]:
+              - generic [ref=f2e146]: PLATFORM
+              - generic [ref=f2e147]: Apple Gift Card
+            - generic [ref=f2e148]:
+              - generic [ref=f2e149]: REGION
+              - generic [ref=f2e150]: 美国区
+            - generic [ref=f2e151]:
+              - generic [ref=f2e152]: SPEC
+              - generic [ref=f2e153]: 当前可售规格
+            - generic [ref=f2e154]:
+              - generic [ref=f2e155]: VALUE
+              - generic [ref=f2e156]: ¥89
+          - generic [ref=f2e41]:
+            - generic [ref=f2e42]: MORTON
+            - strong [ref=f2e43]: ORDER MANIFEST
+          - generic [ref=f2e44]:
+            - generic [ref=f2e45]: CONTACT
+            - generic [ref=f2e46]: 待填写
+          - generic [ref=f2e47]:
+            - generic [ref=f2e48]: USAGE
+            - generic [ref=f2e49]: 待填写
+          - generic [ref=f2e50]:
+            - generic [ref=f2e51]: NOTE
+            - generic [ref=f2e52]: —
+          - generic [ref=f2e53]:
+            - generic [ref=f2e54]: STATUS
+            - generic [ref=f2e55]: 待确认
+          - generic [ref=f2e56]:
+            - generic [ref=f2e57]: ORDER
+            - generic [ref=f2e58]: —
+          - generic [ref=f2e59]: Digital Gift按配置计算
+      - generic [ref=f2e62] [cursor=pointer]:
+        - img [ref=f2e64]:
+          - generic [ref=f2e67]: AI
+          - generic [ref=f2e68]: "01"
+        - generic [ref=f2e69]:
+          - generic [ref=f2e70]:
+            - generic [ref=f2e71]: AI
+            - strong [ref=f2e72]: AI 订阅
+          - generic [ref=f2e75]:
+            - generic [ref=f2e76]: PLATFORM
+            - generic [ref=f2e77]: —
+          - generic [ref=f2e78]:
+            - generic [ref=f2e79]: REGION
+            - generic [ref=f2e80]: —
+          - generic [ref=f2e81]:
+            - generic [ref=f2e82]: SPEC
+            - generic [ref=f2e83]: —
+          - generic [ref=f2e84]:
+            - generic [ref=f2e85]: VALUE
+            - generic [ref=f2e86]: —
+          - generic [ref=f2e89]:
+            - generic [ref=f2e90]: MORTON
+            - strong [ref=f2e91]: ORDER MANIFEST
+          - generic [ref=f2e92]:
+            - generic [ref=f2e93]: CONTACT
+            - generic [ref=f2e94]: 待填写
+          - generic [ref=f2e95]:
+            - generic [ref=f2e96]: USAGE
+            - generic [ref=f2e97]: 待填写
+          - generic [ref=f2e98]:
+            - generic [ref=f2e99]: NOTE
+            - generic [ref=f2e100]: —
+          - generic [ref=f2e101]:
+            - generic [ref=f2e102]: STATUS
+            - generic [ref=f2e103]: 待确认
+          - generic [ref=f2e104]:
+            - generic [ref=f2e105]: ORDER
+            - generic [ref=f2e106]: —
+          - generic [ref=f2e107]: AI Subscription配置能力逐步开放
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img:
+                - generic: 邮
+                - generic: "01"
+            - generic:
+              - generic:
+                - generic: 邮
+                - strong: 邮箱账号
+              - generic:
+                - generic: PLATFORM
+                - generic: —
+              - generic:
+                - generic: REGION
+                - generic: —
+              - generic:
+                - generic: SPEC
+                - generic: —
+              - generic:
+                - generic: VALUE
+                - generic: —
+              - generic:
+                - generic: MORTON
+                - strong: ORDER MANIFEST
+              - generic:
+                - generic: CONTACT
+                - generic: 待填写
+              - generic:
+                - generic: USAGE
+                - generic: 待填写
+              - generic:
+                - generic: NOTE
+                - generic: —
+              - generic:
+                - generic: STATUS
+                - generic: 待确认
+              - generic:
+                - generic: ORDER
+                - generic: —
+              - generic: Email Account配置能力逐步开放
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - img:
+                - generic: 定
+                - generic: "01"
+            - generic:
+              - generic:
+                - generic: 定
+                - strong: 其余订阅服务
+              - generic:
+                - generic: PLATFORM
+                - generic: —
+              - generic:
+                - generic: REGION
+                - generic: —
+              - generic:
+                - generic: SPEC
+                - generic: —
+              - generic:
+                - generic: VALUE
+                - generic: —
+              - generic:
+                - generic: MORTON
+                - strong: ORDER MANIFEST
+              - generic:
+                - generic: CONTACT
+                - generic: 待填写
+              - generic:
+                - generic: USAGE
+                - generic: 待填写
+              - generic:
+                - generic: NOTE
+                - generic: —
+              - generic:
+                - generic: STATUS
+                - generic: 待确认
+              - generic:
+                - generic: ORDER
+                - generic: —
+              - generic: Custom Service配置能力逐步开放
+  - generic:
+    - generic:
+      - main:
+        - generic "全部商品":
+          - generic:
+            - paragraph:
+              - generic: "01"
+              - generic: /
+              - generic: PRODUCTS
+            - heading "全部商品" [level=1]
+            - paragraph: 选择需要配置的数字服务。
+          - generic:
+            - button "返回全部商品" [ref=f2e115] [cursor=pointer]
+            - generic [ref=f2e117]:
+              - generic [ref=f2e118]:
+                - paragraph [ref=f2e119]: Digital Gift
+                - heading "定制你的数字礼品" [level=1] [ref=f2e120]
+                - paragraph [ref=f2e121]: 当前价格仍来自原有商品数据。本轮不虚构尚未录入的面额和汇率。
+              - group "01 · 选择平台" [ref=f2e122]:
+                - button "Apple Gift Card 数字礼品服务" [pressed] [ref=f2e125]:
+                  - strong [ref=f2e126]: Apple Gift Card
+                  - generic [ref=f2e127]: 数字礼品服务
+              - group "02 · 选择地区" [ref=f2e128]:
+                - generic [ref=f2e130]:
+                  - button "美国区 US" [active] [pressed] [ref=f2e131]:
+                    - strong [ref=f2e132]: 美国区
+                    - generic [ref=f2e133]: US
+                  - button "日本区 JP" [ref=f2e134]:
+                    - strong [ref=f2e135]: 日本区
+                    - generic [ref=f2e136]: JP
+              - group "03 · 选择当前可售规格" [ref=f2e137]:
+                - button "当前可售规格 ¥89" [pressed] [ref=f2e158]:
+                  - strong [ref=f2e159]: 当前可售规格
+                  - generic [ref=f2e160]: ¥89
+              - generic [ref=f2e140]:
+                - generic [ref=f2e141]:
+                  - generic [ref=f2e142]: 当前价格
+                  - strong [ref=f2e143]: ¥89
+                - button "进入确认订单" [ref=f2e144] [cursor=pointer]

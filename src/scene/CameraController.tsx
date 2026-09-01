@@ -1,76 +1,88 @@
-import { OrbitControls } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
+import { CameraControls, CameraControlsImpl } from '@react-three/drei';
 import { useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { CameraIntent, SceneModel } from '../graph/types';
+import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 
-function boundsForActive(model: SceneModel) {
-  const points = model.nodes
-    .filter((node) => node.visualState === 'active' || node.visualState === 'selected')
-    .map((node) => new THREE.Vector3(...node.displayPosition));
-  const box = new THREE.Box3().setFromPoints(points.length > 0 ? points : [new THREE.Vector3()]);
-  return { center: box.getCenter(new THREE.Vector3()), size: box.getSize(new THREE.Vector3()) };
+function boundsForIntent(model: SceneModel, intent: CameraIntent) {
+  const ids = intent.mode === 'node'
+    ? new Set(model.nodes.filter((node) => ['selected', 'upstream', 'downstream', 'lateral'].includes(node.visualState)).map((node) => node.id))
+    : intent.mode === 'goal'
+      ? new Set(model.nodes.filter((node) => ['lensActive', 'contextual'].includes(node.visualState)).map((node) => node.id))
+      : new Set(model.nodes.map((node) => node.id));
+  const points = model.nodes.filter((node) => ids.has(node.id)).map((node) => new THREE.Vector3(...node.displayPosition));
+  return new THREE.Box3().setFromPoints(points.length ? points : [new THREE.Vector3()]);
 }
 
-export function CameraController({ intent, model }: { intent: CameraIntent; model: SceneModel }) {
-  const controls = useRef<OrbitControlsImpl>(null);
-  const { camera, size } = useThree();
-  const desiredPosition = useRef(new THREE.Vector3(45, 33, 56));
-  const desiredTarget = useRef(new THREE.Vector3());
-  const animating = useRef(true);
+export function CameraController({
+  intent,
+  model,
+  experiencePhase,
+}: {
+  intent: CameraIntent;
+  model: SceneModel;
+  experiencePhase: SpatialExperiencePhase;
+}) {
+  const controls = useRef<CameraControlsImpl>(null);
+  const previousPhase = useRef<SpatialExperiencePhase | null>(null);
+  const { size } = useThree();
 
   useEffect(() => {
-    const narrow = size.width / Math.max(size.height, 1) < 1.05;
-    if (intent.mode === 'overview') {
-      desiredPosition.current.set(narrow ? 58 : 45, narrow ? 42 : 33, narrow ? 72 : 56);
-      desiredTarget.current.set(0, 0, 0);
-    } else if (intent.mode === 'goal') {
-      const { center, size: activeSize } = boundsForActive(model);
-      const radius = Math.max(activeSize.x, activeSize.y * 0.72, activeSize.z, 12);
-      desiredTarget.current.copy(center);
-      desiredPosition.current.set(
-        center.x + radius * (narrow ? 0.82 : 0.82),
-        center.y + radius * (narrow ? 0.62 : 0.74),
-        center.z + radius * (narrow ? 1.1 : 1.15),
+    const instance = controls.current;
+    if (!instance) return;
+    const box = boundsForIntent(model, intent);
+    const sphere = box.getBoundingSphere(new THREE.Sphere());
+    const center = sphere.center;
+    const distance = THREE.MathUtils.clamp(sphere.radius * 2.34, 46, 162);
+    const wasEntering = previousPhase.current === 'entering';
+    previousPhase.current = experiencePhase;
+
+    if (experiencePhase === 'landing') {
+      const landingOffset = size.width >= 820 ? sphere.radius * 0.42 : 0;
+      const targetX = center.x - landingOffset;
+      void instance.setLookAt(
+        targetX,
+        center.y + distance,
+        center.z + 0.001,
+        targetX,
+        center.y,
+        center.z,
+        false,
       );
-    } else {
-      const node = model.nodes.find((item) => item.id === intent.nodeId);
-      if (node) {
-        const target = new THREE.Vector3(...node.displayPosition);
-        const distance = node.type === 'goal' ? 18 : node.type === 'direction' ? 15 : node.type === 'practice' ? 7.5 : 10.5;
-        desiredTarget.current.copy(target);
-        desiredPosition.current.set(target.x + distance * 0.76, target.y + distance * 0.54, target.z + distance * (narrow ? 1.36 : 1.02));
-      }
+      return;
     }
-    animating.current = true;
-  }, [intent.id, size.height, size.width]);
 
-  useFrame((_, delta) => {
-    if (!animating.current) return;
-    const amount = 1 - Math.pow(0.001, delta / 0.72);
-    camera.position.lerp(desiredPosition.current, amount);
-    controls.current?.target.lerp(desiredTarget.current, amount);
-    controls.current?.update();
-    if (camera.position.distanceTo(desiredPosition.current) < 0.05 && (controls.current?.target.distanceTo(desiredTarget.current) ?? 0) < 0.05) {
-      animating.current = false;
+    if (experiencePhase === 'entering') {
+      void instance.setLookAt(
+        center.x + distance * 0.58,
+        center.y + distance * 0.34,
+        center.z + distance * 0.62,
+        center.x,
+        center.y,
+        center.z,
+        true,
+      );
+      return;
     }
-  });
 
-  return (
-    <OrbitControls
-      ref={controls}
-      makeDefault
-      enableDamping
-      dampingFactor={0.07}
-      minDistance={5}
-      maxDistance={132}
-      minPolarAngle={0.24}
-      maxPolarAngle={1.5}
-      enablePan={false}
-      rotateSpeed={0.46}
-      zoomSpeed={0.7}
-      onStart={() => { animating.current = false; }}
-    />
-  );
+    // 入场完成时保留刚到达的斜视构图，不再用一次 fitToBox 打断连续轨迹。
+    if (wasEntering) return;
+
+    const compact = size.width < 768;
+    const rightRatio = compact || intent.mode !== 'node' ? 0 : Math.min(0.46, 420 / Math.max(1, size.width));
+    const boxSize = box.getSize(new THREE.Vector3());
+    const padding = Math.max(2.4, Math.max(boxSize.x, boxSize.y, boxSize.z) * 0.16);
+    void instance.fitToBox(box, true, {
+      paddingTop: padding,
+      paddingLeft: padding,
+      paddingRight: compact ? padding : padding + boxSize.x * rightRatio * 0.9,
+      paddingBottom: compact ? padding + boxSize.y * 0.3 : padding,
+    });
+    return undefined;
+    // SceneModel 会因 Hover 更新；只有镜头意图变化时才允许自动适配，避免抢夺用户控制。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [experiencePhase, intent.id, model, size.width]);
+
+  return <CameraControls ref={controls} enabled={experiencePhase === 'universe'} makeDefault minDistance={4} maxDistance={190} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={0.62} draggingSmoothTime={0.1} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
 }
