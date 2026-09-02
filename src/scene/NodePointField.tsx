@@ -17,6 +17,8 @@ export function NodePointField({
   lifeActive: boolean;
 }) {
   const points = useRef<THREE.Points>(null);
+  const positionTargets = useRef<Float32Array>(new Float32Array(model.nodes.length * 3));
+  const moving = useRef(false);
   const hoveredNodeId = useKnowledgeStore((state) => state.hoveredNodeId);
   const { invalidate } = useThree();
   const geometry = useMemo(() => {
@@ -37,8 +39,11 @@ export function NodePointField({
     next.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     next.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
     next.setAttribute('aOpacity', new THREE.BufferAttribute(opacity, 1));
+    positionTargets.current = positions.slice();
     return next;
-  }, [model]);
+    // 节点顺序和数量是图谱拓扑；选择节点时不应重建 GPU 几何体。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model.nodes.length]);
   const material = useMemo(() => new THREE.ShaderMaterial({
     vertexShader: vertex,
     fragmentShader: fragment,
@@ -60,6 +65,7 @@ export function NodePointField({
   }, [invalidate, lifeActive, material]);
 
   useEffect(() => {
+    const positionAttribute = geometry.getAttribute('position') as THREE.BufferAttribute;
     const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
     const sizeAttribute = geometry.getAttribute('aSize') as THREE.BufferAttribute;
     const opacityAttribute = geometry.getAttribute('aOpacity') as THREE.BufferAttribute;
@@ -67,6 +73,16 @@ export function NodePointField({
     const hoverColor = new THREE.Color('#fff8dc');
 
     model.nodes.forEach((node, index) => {
+      const offset = index * 3;
+      const [x, y, z] = node.displayPosition;
+      positionTargets.current[offset] = x;
+      positionTargets.current[offset + 1] = y;
+      positionTargets.current[offset + 2] = z;
+      if (
+        Math.abs(positionAttribute.getX(index) - x) > 0.001
+        || Math.abs(positionAttribute.getY(index) - y) > 0.001
+        || Math.abs(positionAttribute.getZ(index) - z) > 0.001
+      ) moving.current = true;
       const hovered = node.id === hoveredNodeId;
       baseColor.set(node.visualState === 'selected' ? '#fff7e6' : node.domainColor);
       if (hovered && node.visualState !== 'selected') baseColor.lerp(hoverColor, 0.28);
@@ -84,7 +100,26 @@ export function NodePointField({
     invalidate();
   }, [geometry, hoveredNodeId, invalidate, model.nodes]);
 
-  useFrame(({ clock }) => { material.uniforms.uTime.value = clock.elapsedTime; });
+  useFrame(({ clock }, delta) => {
+    material.uniforms.uTime.value = clock.elapsedTime;
+    if (!moving.current) return;
+    const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
+    const current = positions.array as Float32Array;
+    const targets = positionTargets.current;
+    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 5.4);
+    let maxDelta = 0;
+    for (let index = 0; index < current.length; index += 1) {
+      const difference = targets[index] - current[index];
+      maxDelta = Math.max(maxDelta, Math.abs(difference));
+      current[index] += difference * alpha;
+    }
+    positions.needsUpdate = true;
+    if (maxDelta < 0.012) {
+      current.set(targets);
+      positions.needsUpdate = true;
+      moving.current = false;
+    } else invalidate();
+  });
 
   return (
     <points

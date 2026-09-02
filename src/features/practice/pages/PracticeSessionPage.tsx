@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, CaretLeft, FlagCheckered, Flag, CheckCircle } from '@phosphor-icons/react';
 import { useUserStore } from '../../../store/userStore';
 import { usePracticeStore } from '../../../store/practiceStore';
@@ -9,6 +9,8 @@ import { DemoDataBadge } from '../../../components/feedback/DemoDataBadge';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { PracticeSessionSummary } from '../components/PracticeSessionSummary';
 import { ROUTES } from '../../../app/routes';
+import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
+import { useWorkspaceOrigin } from '../../workspace/useWorkspaceOrigin';
 import '../practice.css';
 
 function nodeNameOf(nodeId: string): string {
@@ -17,11 +19,15 @@ function nodeNameOf(nodeId: string): string {
 
 export function PracticeSessionPage() {
   const { sessionId: legacySessionId, pointId, treeId, libraryId } = useParams<{ sessionId: string; pointId: string; treeId: string; libraryId: string }>();
+  const navigate = useNavigate();
+  const origin = useWorkspaceOrigin();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const sessionId = legacySessionId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
-  const returnTo = libraryId && treeId
-    ? ROUTES.treePractice(libraryId, treeId)
-    : ROUTES.library;
+  const returnTo = origin?.kind === 'universe'
+    ? ROUTES.universe
+    : origin?.kind === 'tree'
+      ? ROUTES.treePractice(origin.libraryId, origin.treeId)
+      : libraryId && treeId ? ROUTES.treePractice(libraryId, treeId) : ROUTES.library;
 
   const storeSessionId = usePracticeStore((state) => state.sessionId);
   const questionIds = usePracticeStore((state) => state.questionIds);
@@ -109,6 +115,7 @@ export function PracticeSessionPage() {
   if (isFinished) {
     return (
       <div className="page">
+        <WorkspaceHeader breadcrumbs={['练习', plan.title]} onBack={() => navigate(returnTo)} />
         <div className="page__inner">
           <PracticeSessionSummary
             plan={plan}
@@ -127,6 +134,7 @@ export function PracticeSessionPage() {
 
   return (
     <div className="page">
+      <WorkspaceHeader breadcrumbs={['练习', plan.title]} onBack={() => navigate(returnTo)} />
       <div className="practice-session">
         <nav className="practice-nav" aria-label="题目导航">
           <p className="practice-nav__kicker">题目 {answeredCount}/{questionIds.length}</p>
@@ -232,7 +240,7 @@ export function PracticeSessionPage() {
               {!currentAnswer.correct && remediationUnitId && (
                 <div className="practice-feedback__section">
                   <p className="practice-feedback__kicker">补救</p>
-                  <Link className="practice-feedback__node" to={`/teach/${remediationUnitId}`}>
+                  <Link className="practice-feedback__node" to={`/teach/${remediationUnitId}`} state={origin ? { origin } : undefined}>
                     <span>重新讲解「{relatedNodeId ? nodeNameOf(relatedNodeId) : '知识点'}」</span>
                     <ArrowRight size={13} />
                   </Link>

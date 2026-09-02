@@ -18,7 +18,7 @@ export function TreeLearningPage() {
             <button
               onClick={() => {
                 if (libraryId && treeId) {
-                  navigate(ROUTES.pointLearn(libraryId, treeId, point.id));
+                  navigate(ROUTES.pointLearn(libraryId, treeId, point.id), { state: { origin: { kind: 'tree', libraryId, treeId } } });
                 }
               }}
               type="button"

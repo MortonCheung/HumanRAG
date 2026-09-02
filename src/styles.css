@@ -63,6 +63,8 @@ button:focus-visible, input:focus-visible { outline: 1px solid var(--ku-gold); o
 .hud-action:hover, .hud-action.is-active { border-color: var(--ku-rule); background: var(--ku-surface-raised); color: var(--ku-text); }
 .hud-action.is-active::before { content: ""; position: absolute; bottom: -3px; width: 14px; height: 1px; background: var(--ku-gold); }
 .hud-action:active { transform: scale(0.96); }
+.hud-action--labeled { width: auto; padding: 0 12px; display: inline-flex; gap: 7px; }
+.hud-action--labeled span { font-size: 11px; white-space: nowrap; }
 .hud-action::after, .corridor-icon::after { content: attr(data-tooltip); position: absolute; top: calc(100% + 8px); right: 0; padding: 5px 7px; border: 1px solid var(--ku-rule); border-radius: 4px; background: var(--ku-surface); color: var(--ku-text-soft); font-size: 10px; line-height: 1; white-space: nowrap; opacity: 0; transform: translateY(-3px); pointer-events: none; transition: 150ms var(--ku-ease); }
 .hud-action:hover::after, .corridor-icon:hover::after { opacity: 1; transform: translateY(0); }
 

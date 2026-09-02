@@ -59,7 +59,7 @@ function KnowledgeField({
       </group>
       {motionAllowed && <ScenePresenceController groupRef={graphGroup} activityKey={intent.id} onPresenceChange={handlePresence} />}
       <CameraController intent={intent} model={model} experiencePhase={experiencePhase} />
-      <QualityBloom />
+      <QualityBloom experiencePhase={experiencePhase} />
     </>
   );
 }
@@ -106,7 +106,9 @@ export function KnowledgeFieldCanvas({
       setResolvedQualityTier(resolveAutoQualityTier(runtimeSignals));
     }
   }, [qualityPreference, runtimeSignals, setResolvedQualityTier]);
-  const dpr = resolveDpr(viewport.width, viewport.height, window.devicePixelRatio || 1, QUALITY_CONFIG[quality]);
+  const resolvedDpr = resolveDpr(viewport.width, viewport.height, window.devicePixelRatio || 1, QUALITY_CONFIG[quality]);
+  // 开屏只承担预览和一次镜头运动，限制像素比并关闭后处理可显著降低 Windows 集显峰值。
+  const dpr = experiencePhase === 'universe' ? resolvedDpr : Math.min(1, resolvedDpr);
   return (
     <div className="canvas-layer spatial-canvas-layer">
       <Canvas
@@ -133,8 +135,8 @@ export function KnowledgeFieldCanvas({
   );
 }
 
-function QualityBloom() {
+function QualityBloom({ experiencePhase }: { experiencePhase: SpatialExperiencePhase }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
-  if (!QUALITY_CONFIG[quality].bloom) return null;
+  if (experiencePhase !== 'universe' || !QUALITY_CONFIG[quality].bloom) return null;
   return <EffectComposer multisampling={0} resolutionScale={0.5}><Bloom intensity={0.54} luminanceThreshold={0.84} luminanceSmoothing={0.25} mipmapBlur /></EffectComposer>;
 }

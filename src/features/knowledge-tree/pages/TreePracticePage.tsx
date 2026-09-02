@@ -15,7 +15,7 @@ export function TreePracticePage() {
       <button
         onClick={() => {
           if (libraryId && treeId) {
-            navigate(ROUTES.treePracticeSession(libraryId, treeId));
+            navigate(ROUTES.treePracticeSession(libraryId, treeId), { state: { origin: { kind: 'tree', libraryId, treeId } } });
           }
         }}
         type="button"
@@ -29,7 +29,7 @@ export function TreePracticePage() {
             <button
               onClick={() => {
                 if (libraryId && treeId) {
-                  navigate(ROUTES.pointPractice(libraryId, treeId, point.id));
+                  navigate(ROUTES.pointPractice(libraryId, treeId, point.id), { state: { origin: { kind: 'tree', libraryId, treeId } } });
                 }
               }}
               type="button"

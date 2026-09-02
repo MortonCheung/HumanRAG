@@ -1,6 +1,5 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'motion/react';
 import { GlobalNav } from '../components/navigation/GlobalNav';
 import { MobileNav } from '../components/navigation/MobileNav';
 import { RouteTransition } from './RouteTransition';
@@ -11,6 +10,9 @@ const GlobalSearch = lazy(() => import('../components/search/GlobalSearch').then
 export function AppShell() {
   const location = useLocation();
   const openSearch = useUiStore((state) => state.openSearch);
+  const routeDepth = location.pathname.split('/').filter(Boolean).length;
+  const previousDepth = useRef(routeDepth);
+  const direction = routeDepth > previousDepth.current ? 1 : routeDepth < previousDepth.current ? -1 : 0;
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -25,7 +27,10 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', handler);
   }, [openSearch]);
 
-  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
+  useEffect(() => {
+    previousDepth.current = routeDepth;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname, routeDepth]);
 
   return (
     <div className="app-root">
@@ -34,11 +39,9 @@ export function AppShell() {
         <GlobalSearch />
       </Suspense>
       <MobileNav />
-      <AnimatePresence mode="wait" initial={false}>
-        <RouteTransition key={location.pathname.split('/').slice(0, 2).join('/')} routeKey={location.pathname.split('/').slice(0, 2).join('/')}>
-          <Outlet />
-        </RouteTransition>
-      </AnimatePresence>
+      <RouteTransition key={location.pathname} routeKey={location.pathname} direction={direction}>
+        <Outlet />
+      </RouteTransition>
     </div>
   );
 }

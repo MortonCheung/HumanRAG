@@ -41,11 +41,9 @@ export function LandingPage() {
 
         <motion.figure
           className="it-landing-network"
-          initial={reducedMotion ? false : { opacity: 0, scale: 0.97, rotateX: 3 }}
-          animate={isEntering
-            ? { opacity: 0, scale: 2.08, rotateX: 18, rotateZ: -3, x: '-4%' }
-            : { opacity: 1, scale: 1, rotateX: 0, rotateZ: 0, x: 0 }}
-          transition={{ duration: isEntering ? 0.65 : 1, delay: isEntering ? 0 : 0.12, ease: [0.16, 1, 0.3, 1] }}
+          initial={reducedMotion ? false : { opacity: 0 }}
+          animate={{ opacity: isEntering ? 0 : 1 }}
+          transition={{ duration: isEntering ? 0.42 : 0.85, delay: isEntering ? 0 : 0.12, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="it-landing-network__heading" aria-hidden="true">
             <span>计算机知识图谱</span>

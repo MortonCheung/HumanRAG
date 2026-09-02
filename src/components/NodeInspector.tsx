@@ -103,11 +103,11 @@ export function NodeInspector() {
                   <button
                     className="inspector-primary-action"
                     type="button"
-                    onClick={() => navigate(ROUTES.pointLearn('computer', treeId, node.id))}
+                    onClick={() => navigate(ROUTES.pointLearn('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}
                   >
                     <BookOpenText size={15} weight="regular" /> 开始学习
                   </button>
-                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(ROUTES.pointPractice('computer', treeId, node.id))}>
+                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(ROUTES.pointPractice('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}>
                     <NotePencil size={15} weight="regular" /> 练习这个知识点
                   </button>
                 </div>}

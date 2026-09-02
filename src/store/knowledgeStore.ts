@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { explainNode, generatePath } from '../ai/localKnowledgeAI';
-import { matchGoal, nodesById } from '../data/knowledgeGraph';
+import { knowledgeGraph, matchGoal, nodesById } from '../data/knowledgeGraph';
 import type { CameraIntent, UserProfile } from '../graph/types';
 import type { QualityPreference, ResolvedQualityTier } from '../performance/types';
 import { DOMAIN_KEYS, loadDomain, removeDomain, saveDomain } from '../services/persistence/demoPersistence';
@@ -88,6 +88,12 @@ function persist(profile: UserProfile | null, selectedGoalId: string | null, qua
 
 const restored = readPersisted();
 
+function branchRootId(nodeId: string) {
+  const node = nodesById.get(nodeId);
+  if (!node) return null;
+  return knowledgeGraph.nodes.find((candidate) => candidate.type === 'goal' && candidate.branchId === node.branchId)?.id ?? null;
+}
+
 export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   phase: restored.selectedGoalId ? 'goalFocused' : 'overview',
   profile: restored.profile,
@@ -130,8 +136,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   selectNode: (nodeId) => {
     const node = nodesById.get(nodeId);
     if (!node) return;
-    const branchFocusId = node.type === 'direction' || node.type === 'goal' ? nodeId : get().selectedGoalId;
-    if (branchFocusId !== get().selectedGoalId) {
+    const currentGoalId = get().selectedGoalId;
+    const branchFocusId = branchRootId(nodeId);
+    const branchChanged = branchFocusId !== currentGoalId;
+    if (branchChanged) {
       persist(get().profile, branchFocusId, get().qualityPreference);
     }
     set({
@@ -140,7 +148,10 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       activePanel: null,
       phase: 'nodeFocused',
       selectionEpoch: get().selectionEpoch + 1,
-      cameraIntent: { id: `node:${nodeId}:${Date.now()}`, mode: 'node', nodeId },
+      // 同一棵树内切换知识点只更新关系与详情，不抢走用户已经调好的镜头。
+      cameraIntent: branchChanged
+        ? { id: `goal:${branchFocusId}:${Date.now()}`, mode: 'goal', nodeId: branchFocusId ?? undefined }
+        : get().cameraIntent,
     });
   },
   hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
@@ -148,7 +159,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     selectedNodeId: null,
     phase: state.selectedGoalId ? 'goalFocused' : 'overview',
     relationMode: 'primary',
-    cameraIntent: { id: `return:${Date.now()}`, mode: state.selectedGoalId ? 'goal' : 'overview', nodeId: state.selectedGoalId ?? undefined },
+    // 关闭信息面板不改变空间位置；“回到全景”由独立操作明确触发。
+    cameraIntent: state.cameraIntent,
   })),
   returnOverview: () => set((state) => {
     persist(state.profile, null, state.qualityPreference);

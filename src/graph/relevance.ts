@@ -16,6 +16,14 @@ const BRANCH_ANCHORS: Record<string, [number, number]> = {
   game: [-16, 12],
   frontend: [16, 12],
 };
+const descendantsCache = new Map<string, Map<string, number>>();
+const adjacencyByNode = new Map<string, Set<string>>();
+for (const edge of knowledgeGraph.edges) {
+  if (!adjacencyByNode.has(edge.source)) adjacencyByNode.set(edge.source, new Set());
+  if (!adjacencyByNode.has(edge.target)) adjacencyByNode.set(edge.target, new Set());
+  adjacencyByNode.get(edge.source)!.add(edge.target);
+  adjacencyByNode.get(edge.target)!.add(edge.source);
+}
 
 export interface SceneModelInput {
   goalId: string | null;
@@ -27,6 +35,8 @@ export interface SceneModelInput {
 }
 
 function descendants(seedId: string) {
+  const cached = descendantsCache.get(seedId);
+  if (cached) return cached;
   const depth = new Map<string, number>([[seedId, 0]]);
   const queue = [seedId];
   while (queue.length > 0) {
@@ -37,6 +47,7 @@ function descendants(seedId: string) {
       queue.push(edge.target);
     }
   }
+  descendantsCache.set(seedId, depth);
   return depth;
 }
 
@@ -54,10 +65,7 @@ function oneHop(seedId: string | null) {
   const ids = new Set<string>();
   if (!seedId) return ids;
   ids.add(seedId);
-  for (const edge of knowledgeGraph.edges) {
-    if (edge.source === seedId) ids.add(edge.target);
-    if (edge.target === seedId) ids.add(edge.source);
-  }
+  adjacencyByNode.get(seedId)?.forEach((id) => ids.add(id));
   return ids;
 }
 
@@ -90,11 +98,7 @@ function relevanceFor(
     return 0.9;
   }
 
-  const adjacentToActive = knowledgeGraph.edges.some(
-    (edge) =>
-      (edge.source === node.id && activeDepth.has(edge.target)) ||
-      (edge.target === node.id && activeDepth.has(edge.source)),
-  );
+  const adjacentToActive = [...(adjacencyByNode.get(node.id) ?? [])].some((id) => activeDepth.has(id));
   return adjacentToActive ? 0.28 : 0.055;
 }
 
@@ -137,7 +141,8 @@ function getFocusPosition(node: KnowledgeNode, relevance: number, goalId: string
   const awayX = nodeAnchor[0] - activeAnchor[0];
   const awayZ = nodeAnchor[1] - activeAnchor[1];
   const length = Math.hypot(awayX, awayZ) || 1;
-  const push = relevance >= 0.24 ? 36 : 58;
+  // 聚焦时让其他知识树真正退出视口，而不是在边缘继续制造视觉噪声；返回全景时再沿原路径聚回。
+  const push = relevance >= 0.24 ? 220 : 310;
   return [base[0] + (awayX / length) * push, base[1], base[2] + (awayZ / length) * push];
 }
 

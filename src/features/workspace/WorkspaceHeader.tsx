@@ -1,13 +1,9 @@
-import { useNavigate } from 'react-router-dom';
-
 export interface WorkspaceHeaderProps {
   breadcrumbs: string[];
   onBack: () => void;
 }
 
 export function WorkspaceHeader({ breadcrumbs, onBack }: WorkspaceHeaderProps) {
-  const navigate = useNavigate();
-
   return (
     <header className="workspace-header">
       <button

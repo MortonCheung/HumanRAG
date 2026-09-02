@@ -43,15 +43,18 @@ export function SpatialExperienceShell() {
   const openSearch = useUiStore((state) => state.openSearch);
 
   const model = useMemo(
-    () => buildSceneModel({
-      goalId: selectedGoalId,
-      selectedNodeId,
+    () => {
+      const prelude = phase === 'landing' || phase === 'entering';
+      return buildSceneModel({
+      goalId: prelude ? null : selectedGoalId,
+      selectedNodeId: prelude ? null : selectedNodeId,
       hoveredNodeId: null,
-      learningPath,
-      focused: graphPhase !== 'overview',
-      relationMode,
-    }),
-    [graphPhase, learningPath, relationMode, selectedGoalId, selectedNodeId],
+      learningPath: prelude ? [] : learningPath,
+      focused: !prelude && graphPhase !== 'overview',
+      relationMode: prelude ? 'primary' : relationMode,
+    });
+    },
+    [graphPhase, learningPath, phase, relationMode, selectedGoalId, selectedNodeId],
   );
 
   const clearTimers = useCallback(() => {

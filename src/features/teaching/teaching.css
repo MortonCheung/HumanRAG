@@ -67,7 +67,7 @@
 .teach-session {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr) 340px;
-  height: calc(100dvh - var(--it-nav-height));
+  height: calc(100dvh - var(--it-nav-height) - 54px);
   min-height: 560px;
   overflow: hidden;
   background: var(--it-bg-deep);

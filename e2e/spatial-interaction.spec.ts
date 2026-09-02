@@ -47,5 +47,11 @@ test.describe('三维知识空间交互', () => {
     await page.mouse.wheel(0, -360);
     await expect(canvas).toBeVisible();
     await expect(page).toHaveURL(/\/universe$/);
+
+    const overview = page.getByRole('button', { name: '回到知识全景' });
+    await expect(overview).toBeVisible();
+    await overview.click();
+    await expect(detail).toBeHidden();
+    await expect(overview).toBeHidden();
   });
 });

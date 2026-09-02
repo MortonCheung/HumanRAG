@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from '@phosphor-icons/react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '../../../app/routes';
 import { createPoint, migrateV9 } from '../../../domain/knowledge/migration';
@@ -12,7 +13,6 @@ export function PointPlacementPage() {
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
   const navigate = useNavigate();
   const { draft, setDraft } = usePointCreation();
-  const [error, setError] = useState<string | null>(null);
 
   const candidates = useMemo(() => {
     if (!treeId) return [];
@@ -52,19 +52,18 @@ export function PointPlacementPage() {
 
   const handleCommit = () => {
     if (!libraryId || !treeId) return;
-    if (!draft.name.trim()) {
-      setError('知识点名称不能为空。');
-      return;
-    }
-    createPoint(treeId, draft);
+    const baseName = `未命名知识点 ${candidates.length + 1}`;
+    const finalDraft = { ...draft, name: draft.name.trim() || baseName };
+    setDraft(finalDraft);
+    createPoint(treeId, finalDraft);
     navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'));
   };
 
   return (
     <div className="point-placement-page">
+      <button type="button" className="creation-back" onClick={() => libraryId && treeId && navigate(ROUTES.pointNewContent(libraryId, treeId), { state: { pointDraft: draft } })}><ArrowLeft size={14} /> 返回卡片内容</button>
       <h2>位置与关系</h2>
       <p className="point-placement-page__lead">卡片正在变成节点。先在知识树中放好它，再确定它与已有知识的关系。</p>
-      {error && <p className="point-placement-page__error">{error}</p>}
       <div className="point-placement-page__tree">
         <CustomTreeCanvas
           nodes={previewNodes}

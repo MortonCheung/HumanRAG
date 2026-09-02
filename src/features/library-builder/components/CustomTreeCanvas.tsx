@@ -37,9 +37,9 @@ export function CustomTreeCanvas({
   return (
     <div className="custom-tree-canvas" aria-label={`个人三维知识树，共 ${allNodes.length} 个节点`}>
       <Canvas frameloop="demand" dpr={[0.65, 1.25]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false }}>
-        <PerspectiveCamera makeDefault fov={46} near={0.1} far={220} position={[22, 18, 28]} />
+        <PerspectiveCamera makeDefault fov={46} near={0.1} far={420} position={[22, 18, 28]} />
         <color attach="background" args={['#040606']} />
-        <fog attach="fog" args={['#040606', 38, 100]} />
+        <fog attach="fog" args={['#040606', autoRotate ? 80 : 38, autoRotate ? 280 : 140]} />
         <TreeScene
           nodes={allNodes}
           edges={allEdges}
@@ -71,6 +71,21 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
   } | null>(null);
 
   useEffect(() => setPositions(basePositions), [basePositions]);
+
+  useEffect(() => {
+    if (!autoRotate || !treeGroup.current || !controls.current) return;
+    const points = [...positions.values()].map((position) => new THREE.Vector3(...position));
+    const sphere = new THREE.Box3().setFromPoints(points.length ? points : [new THREE.Vector3()]).getBoundingSphere(new THREE.Sphere());
+    const radius = Math.max(3.8, sphere.radius);
+    const previewScale = 0.72;
+    treeGroup.current.position.copy(sphere.center).multiplyScalar(-previewScale);
+    // 树冠通常比根部更密，向右做轻微光学补偿，使视觉重心落在展台中央。
+    treeGroup.current.position.x += radius * previewScale * 0.12;
+    treeGroup.current.position.y += radius * previewScale * 0.12;
+    treeGroup.current.rotation.set(0, 0, 0);
+    const distance = THREE.MathUtils.clamp(radius * 4.65, 20, 210);
+    void controls.current.setLookAt(distance * 0.54, distance * 0.34, distance * 0.74, 0, 0, 0, false);
+  }, [autoRotate, positions]);
 
   useFrame((_, delta) => {
     if (!autoRotate || dragging || !treeGroup.current) return;
@@ -136,7 +151,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
 
   return (
     <>
-      <group ref={treeGroup}>
+      <group ref={treeGroup} scale={autoRotate ? 0.72 : 1}>
         {curves.map(({ edge, start, end, mid }) => (
           <QuadraticBezierLine
             key={edge.id}
@@ -184,7 +199,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
         makeDefault
         enabled={interactive && !dragging}
         minDistance={7}
-        maxDistance={78}
+        maxDistance={autoRotate ? 220 : 78}
         smoothTime={0.5}
         draggingSmoothTime={0.08}
         mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }}

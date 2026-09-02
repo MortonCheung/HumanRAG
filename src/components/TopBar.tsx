@@ -5,6 +5,7 @@ export function TopBar() {
   const activePanel = useKnowledgeStore((state) => state.activePanel);
   const openPanel = useKnowledgeStore((state) => state.openPanel);
   const returnOverview = useKnowledgeStore((state) => state.returnOverview);
+  const selectedGoalId = useKnowledgeStore((state) => state.selectedGoalId);
   const action = (panel: 'search' | 'lens' | 'atlas' | 'settings', label: string, icon: React.ReactNode) => (
     <button className={`hud-action ${activePanel === panel ? 'is-active' : ''}`} onClick={() => openPanel(panel)} aria-label={label} data-tooltip={label}>{icon}</button>
   );
@@ -16,7 +17,7 @@ export function TopBar() {
         {action('lens', '选择目标', <Target size={18} weight="regular" />)}
         {action('atlas', '浏览知识', <TreeStructure size={18} weight="regular" />)}
         {action('settings', '性能设置', <SlidersHorizontal size={18} weight="regular" />)}
-        <button className="hud-action hud-action--overview" onClick={returnOverview} aria-label="适配全景" data-tooltip="适配全景"><CornersOut size={18} weight="regular" /></button>
+        {selectedGoalId && <button className="hud-action hud-action--overview hud-action--labeled" onClick={returnOverview} aria-label="回到知识全景" data-tooltip="回到知识全景"><CornersOut size={18} weight="regular" /><span>回到全景</span></button>}
       </nav>
     </header>
   );

@@ -34,11 +34,17 @@ const fragmentShader = `
 export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; motionAllowed: boolean }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
+  const selectedGoalId = useKnowledgeStore((state) => state.selectedGoalId);
   const { invalidate } = useThree();
-  const byId = useMemo(() => new Map(model.nodes.map((node) => [node.id, node])), [model.nodes]);
   const signalData = useMemo(() => {
-    const candidates = model.edges.filter((edge) => ['upstream', 'downstream', 'path', 'lensActive', 'contextual'].includes(edge.visualState));
-    const sourceEdges = candidates.length >= 6 ? candidates : model.edges;
+    const byId = new Map(model.nodes.map((node) => [node.id, node]));
+    const focused = selectedGoalId
+      ? model.edges.filter((edge) => {
+        const source = byId.get(edge.source);
+        return source && source.branchId === byId.get(selectedGoalId)?.branchId;
+      })
+      : model.edges;
+    const sourceEdges = focused.length >= 6 ? focused : model.edges;
     const qualityCount = quality === 'quality' ? 14 : quality === 'balanced' ? 10 : 7;
     const count = Math.min(qualityCount, sourceEdges.length);
     if (!count) return [];
@@ -54,7 +60,9 @@ export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; mot
         speed: 0.035 + (index % 4) * 0.006,
       };
     }).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
-  }, [byId, model.edges, quality]);
+    // 节点选择不会换掉正在传递的神经信号；只在树聚散或画质变化时重新分配。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quality, selectedGoalId]);
 
   const geometry = useMemo(() => {
     const next = new THREE.BufferGeometry();

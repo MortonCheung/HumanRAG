@@ -19,7 +19,7 @@ export function PointContentPage() {
   const handleSave = (updated: PointDraft) => {
     setDraft(updated);
     if (libraryId && treeId) {
-      navigate(ROUTES.pointNewPlace(libraryId, treeId));
+      navigate(ROUTES.pointNewPlace(libraryId, treeId), { state: { pointDraft: updated } });
     }
   };
 
@@ -28,7 +28,8 @@ export function PointContentPage() {
   return (
     <div className="point-content-page">
       <h2>编辑知识点</h2>
-      <PointIntrinsicForm draft={draft} onSave={handleSave} />
+      <p className="point-content-page__lead">先完成知识卡片本身；名称和正文都可留空，系统会创建一个可继续编辑的占位节点。</p>
+      <PointIntrinsicForm draft={draft} onChange={(field, value) => setDraft((current) => current ? { ...current, [field]: value } : current)} onSave={handleSave} onCancel={() => libraryId && treeId && navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'))} />
     </div>
   );
 }

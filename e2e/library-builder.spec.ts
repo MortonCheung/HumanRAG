@@ -54,7 +54,7 @@ test.describe('知识库、知识树与知识点创建', () => {
     await page.getByRole('button', { name: '加入知识树' }).click();
 
     await expect(page).toHaveURL(/\/edit\/structure$/);
-    await expect(page.getByText('光栅化管线', { exact: true })).toBeVisible();
+    await expect(page.getByText('光栅化管线', { exact: true }).first()).toBeVisible();
     await expect(page.locator('.tree-structure-editor-page__canvas canvas')).toBeVisible();
   });
 });

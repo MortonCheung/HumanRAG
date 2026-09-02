@@ -1,18 +1,15 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { PointDraft } from '../../../domain/knowledge/types';
 
 interface PointIntrinsicFormProps {
   draft: PointDraft;
+  onChange: (field: keyof PointDraft, value: unknown) => void;
   onSave: (draft: PointDraft) => void;
+  onCancel: () => void;
 }
 
-export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrinsicFormProps) {
-  const navigate = useNavigate();
-  const [draft, setDraft] = useState<PointDraft>(initialDraft);
-
+export function PointIntrinsicForm({ draft, onChange, onSave, onCancel }: PointIntrinsicFormProps) {
   const handleChange = (field: keyof PointDraft, value: unknown) => {
-    setDraft((prev) => ({ ...prev, [field]: value }));
+    onChange(field, value);
   };
 
   return (
@@ -20,13 +17,22 @@ export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrins
       className="point-intrinsic-form"
       onSubmit={(e) => {
         e.preventDefault();
-        onSave(draft);
+        const values = new FormData(e.currentTarget);
+        onSave({
+          ...draft,
+          name: String(values.get('point-name') ?? draft.name),
+          kind: String(values.get('point-kind') ?? draft.kind) as PointDraft['kind'],
+          description: String(values.get('point-description') ?? draft.description),
+          content: String(values.get('point-content') ?? draft.content),
+          color: String(values.get('point-color') ?? draft.color),
+        });
       }}
     >
       <div className="point-intrinsic-form__field">
         <label htmlFor="point-name">名称</label>
         <input
           id="point-name"
+          name="point-name"
           type="text"
           value={draft.name}
           onChange={(e) => handleChange('name', e.target.value)}
@@ -36,6 +42,7 @@ export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrins
         <label htmlFor="point-kind">类别</label>
         <select
           id="point-kind"
+          name="point-kind"
           value={draft.kind}
           onChange={(e) => handleChange('kind', e.target.value)}
         >
@@ -49,6 +56,7 @@ export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrins
         <label htmlFor="point-desc">说明</label>
         <textarea
           id="point-desc"
+          name="point-description"
           value={draft.description}
           onChange={(e) => handleChange('description', e.target.value)}
           rows={3}
@@ -58,6 +66,7 @@ export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrins
         <label htmlFor="point-content">教学正文</label>
         <textarea
           id="point-content"
+          name="point-content"
           value={draft.content}
           onChange={(e) => handleChange('content', e.target.value)}
           rows={6}
@@ -67,14 +76,15 @@ export function PointIntrinsicForm({ draft: initialDraft, onSave }: PointIntrins
         <label htmlFor="point-color">颜色</label>
         <input
           id="point-color"
+          name="point-color"
           type="color"
           value={draft.color || '#8b7355'}
           onChange={(e) => handleChange('color', e.target.value)}
         />
       </div>
       <div className="point-intrinsic-form__actions">
-        <button type="button" onClick={() => navigate(-1)}>
-          取消
+        <button type="button" onClick={onCancel}>
+          返回知识树
         </button>
         <button type="submit" className="point-intrinsic-form__primary">
           设置位置与关系

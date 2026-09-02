@@ -10,6 +10,8 @@ import { QuestionCard } from '../components/QuestionCard';
 import { TeachingCompletionEvidence } from '../components/TeachingCompletionEvidence';
 import { DemoDataBadge } from '../../../components/feedback/DemoDataBadge';
 import { ROUTES } from '../../../app/routes';
+import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
+import { useWorkspaceOrigin } from '../../workspace/useWorkspaceOrigin';
 import '../teaching.css';
 
 const STEP_KIND_LABELS: Record<string, string> = {
@@ -42,9 +44,14 @@ function contextOf(answers: SessionAnswer[], attempt: number): TeachingContext {
 export function TeachingSessionPage() {
   const { unitId: legacyUnitId, pointId, libraryId, treeId } = useParams<{ unitId: string; pointId: string; libraryId: string; treeId: string }>();
   const navigate = useNavigate();
+  const origin = useWorkspaceOrigin();
   const pointUnit = pointId ? contentRepository.getTeachingUnitForNode(pointId) : undefined;
   const routeUnitId = legacyUnitId ?? pointUnit?.id;
-  const returnTo = libraryId && treeId ? ROUTES.treeLearn(libraryId, treeId) : ROUTES.library;
+  const returnTo = origin?.kind === 'universe'
+    ? ROUTES.universe
+    : origin?.kind === 'tree'
+      ? ROUTES.treeLearn(origin.libraryId, origin.treeId)
+      : libraryId && treeId ? ROUTES.treeLearn(libraryId, treeId) : ROUTES.library;
 
   const unitId = useTeachingStore((state) => state.unitId);
   const currentStepId = useTeachingStore((state) => state.currentStepId);
@@ -149,6 +156,7 @@ export function TeachingSessionPage() {
 
   return (
     <div className="page">
+      <WorkspaceHeader breadcrumbs={['学习', unit?.title ?? routeUnit.title]} onBack={() => navigate(returnTo)} />
       <div className="teach-session">
         <TeachingStepRail />
 

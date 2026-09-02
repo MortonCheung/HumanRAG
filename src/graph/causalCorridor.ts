@@ -14,6 +14,7 @@ export interface CausalCorridor {
 
 const upstreamTypes = new Set<KnowledgeEdge['relationType']>(['prerequisite', 'hierarchy']);
 const downstreamTypes = new Set<KnowledgeEdge['relationType']>(['prerequisite', 'hierarchy', 'practice_for']);
+const corridorCache = new Map<string, CausalCorridor>();
 
 function walk(
   start: string,
@@ -47,6 +48,9 @@ function walk(
 }
 
 export function buildCausalCorridor(focusNodeId: string, maxDepth = 6): CausalCorridor {
+  const cacheKey = `${focusNodeId}:${maxDepth}`;
+  const cached = corridorCache.get(cacheKey);
+  if (cached) return cached;
   const upstream = walk(focusNodeId, 'incoming', upstreamTypes, maxDepth);
   const downstream = walk(focusNodeId, 'outgoing', downstreamTypes, maxDepth);
   const lateralNodeDistance = new Map<string, number>();
@@ -67,7 +71,7 @@ export function buildCausalCorridor(focusNodeId: string, maxDepth = 6): CausalCo
   const primaryEdgeIds = new Set([...upstream.edges, ...downstream.edges]);
   const maxUpstreamDepth = Math.max(0, ...upstream.depth.values());
   const maxDownstreamDepth = Math.max(0, ...downstream.depth.values());
-  return {
+  const corridor = {
     focusNodeId,
     upstreamNodeDepth: upstream.depth,
     downstreamNodeDepth: downstream.depth,
@@ -77,4 +81,6 @@ export function buildCausalCorridor(focusNodeId: string, maxDepth = 6): CausalCo
     maxUpstreamDepth,
     maxDownstreamDepth,
   };
+  corridorCache.set(cacheKey, corridor);
+  return corridor;
 }

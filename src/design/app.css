@@ -100,6 +100,12 @@
 }
 .page-title { margin: 0 0 10px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
 .page-lead { margin: 0 0 32px; max-width: 640px; color: var(--it-text-soft); font-size: 15px; line-height: 1.6; }
+.workspace-header { --workspace-header-height: 54px; height: var(--workspace-header-height); display: flex; align-items: center; gap: 22px; padding: 0 clamp(18px, 2.4vw, 34px); border-bottom: 1px solid var(--it-rule); background: rgb(5 7 7 / .9); }
+.workspace-header__back { display: inline-flex; align-items: center; padding: 8px 0; background: transparent; color: var(--it-text-soft); font-size: 12px; transition: color 180ms var(--it-ease), transform 180ms var(--it-ease); }
+.workspace-header__back:hover { color: var(--it-text); transform: translateX(-2px); }
+.workspace-header__breadcrumbs { min-width: 0; overflow: hidden; color: var(--it-text-faint); font: 9px/1 var(--it-mono); text-overflow: ellipsis; white-space: nowrap; }
+.workspace-header__sep { padding: 0 7px; opacity: .5; }
+.workspace-header__crumb:last-child { color: var(--it-text-soft); }
 
 /* ---------- 移动端菜单 ---------- */
 .mobile-nav-overlay { position: fixed; inset: 0; z-index: 210; background: rgb(2 3 3 / 0.55); }
@@ -221,5 +227,6 @@
 /* ---------- 知识空间页面适配（旧 TopBar 下移） ---------- */
 .universe-page { position: relative; min-height: 100dvh; width: 100%; overflow: hidden; isolation: isolate; background: var(--it-bg-deep); }
 .universe-page .top-bar { top: calc(var(--it-nav-height) + 14px); }
+.universe-page .node-inspector, .universe-page .side-drawer { top: calc(var(--it-nav-height) + 66px); }
 .universe-page .field-light, .universe-page .canvas-layer { top: var(--it-nav-height); }
 .universe-page .canvas-fallback { top: var(--it-nav-height); }
