@@ -27,9 +27,9 @@ export function PointContentPage() {
 
   return (
     <div className="point-content-page">
-      <h2>编辑知识点</h2>
-      <p className="point-content-page__lead">先完成知识卡片本身；名称和正文都可留空，系统会创建一个可继续编辑的占位节点。</p>
-      <PointIntrinsicForm draft={draft} onChange={(field, value) => setDraft((current) => current ? { ...current, [field]: value } : current)} onSave={handleSave} onCancel={() => libraryId && treeId && navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'))} />
+      <h2>新建知识点</h2>
+      <p className="point-content-page__lead">填写节点内容。所有信息都可以留空并在编辑器中补充。</p>
+      <PointIntrinsicForm draft={draft} onChange={(field, value) => setDraft((current) => current ? { ...current, [field]: value } : current)} onSave={handleSave} />
     </div>
   );
 }

@@ -27,12 +27,12 @@ export function KnowledgeTreeShell({ treeName, ownerType }: KnowledgeTreeShellPr
           >
             ← 返回知识库
           </button>
-          <TreeLocalNav />
+          <strong className="knowledge-tree-shell__bar-title">{treeName}</strong>
           {ownerType === 'user' ? (
             <button className="knowledge-tree-shell__edit" onClick={handleEdit} type="button">编辑</button>
           ) : <span className="knowledge-tree-shell__readonly">系统知识树</span>}
         </div>
-        <h1 className="knowledge-tree-shell__title">{treeName}</h1>
+        <TreeLocalNav />
       </header>
       <div className="knowledge-tree-shell__content">
         <Outlet />

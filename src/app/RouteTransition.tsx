@@ -11,8 +11,8 @@ export function RouteTransition({ routeKey, direction, children }: { routeKey: s
       initial="initial"
       animate="animate"
       variants={{
-        initial: { opacity: 0, x: direction * 18, y: 4, filter: 'blur(3px)' },
-        animate: { opacity: 1, x: 0, y: 0, filter: 'blur(0px)', transition: { duration: 0.36, ease: [0.16, 1, 0.3, 1] } },
+        initial: { opacity: 0.72, x: direction * 42 },
+        animate: { opacity: 1, x: 0, transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] } },
       }}
     >
       {children}

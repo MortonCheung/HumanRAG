@@ -10,12 +10,7 @@ import type {
 import { buildCausalCorridor } from './causalCorridor';
 import { colorForBranch } from '../design/domainPalette';
 
-const BRANCH_ANCHORS: Record<string, [number, number]> = {
-  '408': [-16, -8],
-  ai: [16, -8],
-  game: [-16, 12],
-  frontend: [16, 12],
-};
+const SPACE_SCALE: [number, number, number] = [1.22, 1.08, 1.22];
 const descendantsCache = new Map<string, Map<string, number>>();
 const adjacencyByNode = new Map<string, Set<string>>();
 for (const edge of knowledgeGraph.edges) {
@@ -121,29 +116,12 @@ function visualState(
   return 'dormant';
 }
 
-function getFocusPosition(node: KnowledgeNode, relevance: number, goalId: string | null): [number, number, number] {
-  const base = node.basePosition;
-  if (!goalId) return [...base] as [number, number, number];
-  const activeNode = nodesById.get(goalId);
-  const activeAnchor = activeNode ? BRANCH_ANCHORS[activeNode.branchId] : undefined;
-  const nodeAnchor = BRANCH_ANCHORS[node.branchId];
-  if (!activeAnchor || !nodeAnchor) return [...base] as [number, number, number];
-
-  if (node.branchId === activeNode?.branchId) {
-    const compression = relevance >= 0.64 ? 1.08 : 1.16;
-    return [
-      activeAnchor[0] + (base[0] - nodeAnchor[0]) * compression,
-      base[1],
-      activeAnchor[1] + (base[2] - nodeAnchor[1]) * compression,
-    ];
-  }
-
-  const awayX = nodeAnchor[0] - activeAnchor[0];
-  const awayZ = nodeAnchor[1] - activeAnchor[1];
-  const length = Math.hypot(awayX, awayZ) || 1;
-  // 聚焦时让其他知识树真正退出视口，而不是在边缘继续制造视觉噪声；返回全景时再沿原路径聚回。
-  const push = relevance >= 0.24 ? 220 : 310;
-  return [base[0] + (awayX / length) * push, base[1], base[2] + (awayZ / length) * push];
+function getStablePosition(node: KnowledgeNode): [number, number, number] {
+  return [
+    node.basePosition[0] * SPACE_SCALE[0],
+    node.basePosition[1] * SPACE_SCALE[1],
+    node.basePosition[2] * SPACE_SCALE[2],
+  ];
 }
 
 function realPathEdgeIds(path: string[]) {
@@ -191,9 +169,8 @@ export function buildSceneModel(input: SceneModelInput): SceneModel {
       learningPathIds,
     );
     const state = visualState(relevance, node.id, selectedNodeId, upstreamNodeIds, downstreamNodeIds, lateralNodeIds, learningPathIds);
-    const displayPosition = focused
-      ? getFocusPosition(node, relevance, goalId)
-      : ([...node.basePosition] as [number, number, number]);
+    // 选择只改变信息层级与明暗，绝不移动拓扑。这样边不会刷新，用户也不会失去空间记忆。
+    const displayPosition = getStablePosition(node);
     const labelVisible =
       node.id === selectedNodeId ||
       node.id === hoveredNodeId ||

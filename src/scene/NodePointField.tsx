@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { SceneModel, VisualState } from '../graph/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
+import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 
 const OPACITY: Record<VisualState, number> = { dormant: 0.16, contextual: 0.35, lensActive: 0.72, upstream: 0.95, downstream: 0.95, lateral: 0.6, selected: 1, recommendedPath: 0.92, searchMatch: 1 };
 
@@ -12,9 +13,11 @@ const fragment = `varying vec3 vColor; varying float vOpacity; void main(){ vec2
 export function NodePointField({
   model,
   lifeActive,
+  experiencePhase,
 }: {
   model: SceneModel;
   lifeActive: boolean;
+  experiencePhase: SpatialExperiencePhase;
 }) {
   const points = useRef<THREE.Points>(null);
   const positionTargets = useRef<Float32Array>(new Float32Array(model.nodes.length * 3));
@@ -90,15 +93,17 @@ export function NodePointField({
       const stateScale = node.visualState === 'selected'
         ? 1.7
         : node.visualState === 'upstream' || node.visualState === 'downstream' ? 1.35 : 1;
-      sizeAttribute.setX(index, stateScale * (node.coreRadius * 24 + 4) * (hovered ? 1.24 : 1));
-      opacityAttribute.setX(index, hovered ? Math.max(0.92, OPACITY[node.visualState]) : OPACITY[node.visualState]);
+      const landingScale = experiencePhase === 'landing' ? 1.18 : 1;
+      const landingOpacity = experiencePhase === 'landing' ? Math.max(0.34, OPACITY[node.visualState]) : OPACITY[node.visualState];
+      sizeAttribute.setX(index, stateScale * (node.coreRadius * 24 + 4) * (hovered ? 1.24 : 1) * landingScale);
+      opacityAttribute.setX(index, hovered ? Math.max(0.92, landingOpacity) : landingOpacity);
     });
 
     colorAttribute.needsUpdate = true;
     sizeAttribute.needsUpdate = true;
     opacityAttribute.needsUpdate = true;
     invalidate();
-  }, [geometry, hoveredNodeId, invalidate, model.nodes]);
+  }, [experiencePhase, geometry, hoveredNodeId, invalidate, model.nodes]);
 
   useFrame(({ clock }, delta) => {
     material.uniforms.uTime.value = clock.elapsedTime;

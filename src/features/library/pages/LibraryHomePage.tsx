@@ -40,7 +40,7 @@ export function LibraryHomePage() {
           <aside className="library-manager__catalog" aria-label="知识树管理">
             <div className="library-manager__catalog-heading">
               <span>全部知识树</span>
-              <small>选择只更新左侧预览</small>
+              <small>选择预览</small>
             </div>
             <div className="library-manager__tree-list" role="listbox" aria-label="知识树列表">
               {trees.map((tree) => (

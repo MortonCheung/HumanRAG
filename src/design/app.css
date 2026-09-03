@@ -1,4 +1,5 @@
 /* iTeach V6 应用外壳：全局导航 / 页面容器 / 移动端菜单 / 全局搜索 / 演示标记 */
+.app-root { min-height: 100dvh; overflow-x: clip; }
 
 /* ---------- 全局导航 ---------- */
 .global-nav {
@@ -100,12 +101,19 @@
 }
 .page-title { margin: 0 0 10px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
 .page-lead { margin: 0 0 32px; max-width: 640px; color: var(--it-text-soft); font-size: 15px; line-height: 1.6; }
-.workspace-header { --workspace-header-height: 54px; height: var(--workspace-header-height); display: flex; align-items: center; gap: 22px; padding: 0 clamp(18px, 2.4vw, 34px); border-bottom: 1px solid var(--it-rule); background: rgb(5 7 7 / .9); }
+.workspace-header { --workspace-header-height: 54px; position: relative; height: var(--workspace-header-height); display: grid; grid-template-columns: minmax(120px, 1fr) auto minmax(120px, 1fr); align-items: center; gap: 18px; padding: 0 clamp(18px, 2.4vw, 34px); border-bottom: 1px solid var(--it-rule); background: rgb(5 7 7 / .9); }
 .workspace-header__back { display: inline-flex; align-items: center; padding: 8px 0; background: transparent; color: var(--it-text-soft); font-size: 12px; transition: color 180ms var(--it-ease), transform 180ms var(--it-ease); }
 .workspace-header__back:hover { color: var(--it-text); transform: translateX(-2px); }
-.workspace-header__breadcrumbs { min-width: 0; overflow: hidden; color: var(--it-text-faint); font: 9px/1 var(--it-mono); text-overflow: ellipsis; white-space: nowrap; }
+.workspace-header__title { grid-column: 2; font-size: 13px; font-weight: 560; letter-spacing: -.02em; white-space: nowrap; }
+.workspace-header__breadcrumbs { position: absolute; left: clamp(86px, 11vw, 168px); max-width: min(25vw, 320px); overflow: hidden; color: var(--it-text-faint); font: 9px/1 var(--it-mono); text-overflow: ellipsis; white-space: nowrap; }
 .workspace-header__sep { padding: 0 7px; opacity: .5; }
 .workspace-header__crumb:last-child { color: var(--it-text-soft); }
+.workspace-header__actions { grid-column: 3; justify-self: end; }
+@media (max-width: 700px) {
+  .workspace-header { grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); gap: 8px; padding: 0 16px; }
+  .workspace-header__breadcrumbs { display: none; }
+  .workspace-header__title { max-width: 42vw; overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* ---------- 移动端菜单 ---------- */
 .mobile-nav-overlay { position: fixed; inset: 0; z-index: 210; background: rgb(2 3 3 / 0.55); }

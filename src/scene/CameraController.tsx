@@ -39,7 +39,7 @@ export function CameraController({
     const sphere = box.getBoundingSphere(new THREE.Sphere());
     const center = sphere.center;
     const overviewDistance = experiencePhase === 'landing' || experiencePhase === 'entering' || intent.mode === 'overview';
-    const distance = THREE.MathUtils.clamp(sphere.radius * (overviewDistance ? 2.34 : 2.85), overviewDistance ? 46 : 22, 162);
+    const distance = THREE.MathUtils.clamp(sphere.radius * (overviewDistance ? 2.08 : 2.85), overviewDistance ? 42 : 22, 162);
     const wasEntering = previousPhase.current === 'entering';
     previousPhase.current = experiencePhase;
 
@@ -101,16 +101,27 @@ export function CameraController({
       return;
     }
 
-    const compact = size.width < 768;
-    const rightRatio = compact || intent.mode !== 'node' ? 0 : Math.min(0.46, 420 / Math.max(1, size.width));
-    const boxSize = box.getSize(new THREE.Vector3());
-    const padding = Math.max(2.4, Math.max(boxSize.x, boxSize.y, boxSize.z) * 0.16);
-    void instance.fitToBox(box, true, {
-      paddingTop: padding,
-      paddingLeft: padding,
-      paddingRight: compact ? padding : padding + boxSize.x * rightRatio * 0.9,
-      paddingBottom: compact ? padding + boxSize.y * 0.3 : padding,
-    });
+    const selected = intent.nodeId
+      ? modelRef.current.nodes.find((node) => node.id === intent.nodeId)
+      : null;
+    if (!selected) return;
+
+    // 远距离切点只平移观察位置，保留用户当前的旋转与缩放；右侧检查器打开时做轻微光学偏移。
+    const cameraPosition = instance.getPosition(new THREE.Vector3());
+    const currentTarget = instance.getTarget(new THREE.Vector3());
+    const offset = cameraPosition.sub(currentTarget);
+    const nextTarget = new THREE.Vector3(...selected.displayPosition);
+    if (size.width >= 920) nextTarget.x += Math.max(1.4, offset.length() * 0.045);
+    const nextPosition = nextTarget.clone().add(offset);
+    void instance.setLookAt(
+      nextPosition.x,
+      nextPosition.y,
+      nextPosition.z,
+      nextTarget.x,
+      nextTarget.y,
+      nextTarget.z,
+      true,
+    );
     return undefined;
     // SceneModel 会因 Hover 更新；只有镜头意图变化时才允许自动适配，避免抢夺用户控制。
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -15,7 +15,8 @@ export function layoutCustomTree(nodes: CustomNode[], edges: CustomEdge[]): Tree
     if (node.position) result.set(node.id, [...node.position]);
   });
 
-  const hierarchy = edges.filter((edge) => edge.relationType === 'hierarchy');
+  // 领域模型以 prerequisite 表示父子方向；编辑器与旧草稿也可能使用 hierarchy。
+  const hierarchy = edges.filter((edge) => edge.relationType === 'hierarchy' || edge.relationType === 'prerequisite');
   const incoming = new Set(hierarchy.map((edge) => edge.target));
   const roots = nodes.filter((node) => !incoming.has(node.id));
   const depth = new Map<string, number>();

@@ -63,6 +63,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
   const basePositions = useMemo(() => layoutCustomTree(nodes, edges), [edges, nodes]);
   const [positions, setPositions] = useState<TreePositionMap>(basePositions);
   const [dragging, setDragging] = useState(false);
+  const { camera, invalidate, size } = useThree();
   const drag = useRef<{
     id: string;
     plane: THREE.Plane;
@@ -73,19 +74,37 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
   useEffect(() => setPositions(basePositions), [basePositions]);
 
   useEffect(() => {
-    if (!autoRotate || !treeGroup.current || !controls.current) return;
-    const points = [...positions.values()].map((position) => new THREE.Vector3(...position));
-    const sphere = new THREE.Box3().setFromPoints(points.length ? points : [new THREE.Vector3()]).getBoundingSphere(new THREE.Sphere());
-    const radius = Math.max(3.8, sphere.radius);
-    const previewScale = 0.72;
-    treeGroup.current.position.copy(sphere.center).multiplyScalar(-previewScale);
-    // 树冠通常比根部更密，向右做轻微光学补偿，使视觉重心落在展台中央。
-    treeGroup.current.position.x += radius * previewScale * 0.12;
-    treeGroup.current.position.y += radius * previewScale * 0.12;
-    treeGroup.current.rotation.set(0, 0, 0);
-    const distance = THREE.MathUtils.clamp(radius * 4.65, 20, 210);
-    void controls.current.setLookAt(distance * 0.54, distance * 0.34, distance * 0.74, 0, 0, 0, false);
-  }, [autoRotate, positions]);
+    let frame = 0;
+    const fit = () => {
+      if (!treeGroup.current || (!autoRotate && !controls.current)) {
+        frame = window.requestAnimationFrame(fit);
+        return;
+      }
+      const points = [...basePositions.values()].map((position) => new THREE.Vector3(...position));
+      const sphere = new THREE.Box3().setFromPoints(points.length ? points : [new THREE.Vector3()]).getBoundingSphere(new THREE.Sphere());
+      const radius = Math.max(2.8, sphere.radius);
+      const previewScale = autoRotate ? 0.7 : 1;
+      treeGroup.current.scale.setScalar(previewScale);
+      treeGroup.current.position.copy(sphere.center).multiplyScalar(-previewScale);
+      treeGroup.current.rotation.set(0, 0, 0);
+      const verticalFov = THREE.MathUtils.degToRad(46);
+      const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(0.4, size.width / Math.max(1, size.height)));
+      const limitingFov = Math.min(verticalFov, horizontalFov);
+      const distance = THREE.MathUtils.clamp((radius / Math.sin(limitingFov / 2)) * 1.68, 12, 320);
+      const targetY = -radius * 0.22;
+      const cameraPosition = new THREE.Vector3(distance * 0.5, targetY + distance * 0.22, distance * 0.82);
+      if (autoRotate) {
+        camera.position.copy(cameraPosition);
+        camera.lookAt(0, targetY, 0);
+        camera.updateProjectionMatrix();
+        invalidate();
+      } else {
+        void controls.current?.setLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z, 0, targetY, 0, false);
+      }
+    };
+    fit();
+    return () => window.cancelAnimationFrame(frame);
+  }, [autoRotate, basePositions, camera, invalidate, size.height, size.width]);
 
   useFrame((_, delta) => {
     if (!autoRotate || dragging || !treeGroup.current) return;
@@ -151,7 +170,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
 
   return (
     <>
-      <group ref={treeGroup} scale={autoRotate ? 0.72 : 1}>
+      <group ref={treeGroup}>
         {curves.map(({ edge, start, end, mid }) => (
           <QuadraticBezierLine
             key={edge.id}
@@ -199,7 +218,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
         makeDefault
         enabled={interactive && !dragging}
         minDistance={7}
-        maxDistance={autoRotate ? 220 : 78}
+        maxDistance={autoRotate ? 360 : 78}
         smoothTime={0.5}
         draggingSmoothTime={0.08}
         mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }}

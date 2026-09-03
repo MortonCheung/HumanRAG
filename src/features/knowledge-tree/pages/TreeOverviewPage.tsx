@@ -26,9 +26,9 @@ export function TreeOverviewPage() {
           <CustomTreeCanvas nodes={data.nodes} edges={data.edges} selectedId={null} interactive={false} autoRotate />
         </div>
         <div className="tree-overview-page__info">
-          <span className="page-kicker">使用模式</span>
-          <h2>从一个知识点开始</h2>
-          <p>{data.points.length} 个节点，其中 {learnableCount} 个可直接学习或练习。知识树在这里用于定位范围，不承担编辑操作。</p>
+          <span className="page-kicker">知识树</span>
+          <h2>选择知识点</h2>
+          <p>{data.points.length} 个节点，{learnableCount} 个可学习或练习。</p>
           <button type="button" className="text-button text-button--primary" onClick={() => libraryId && treeId && navigate(ROUTES.treeLearn(libraryId, treeId))}>
             查看知识点 <ArrowRight size={14} />
           </button>

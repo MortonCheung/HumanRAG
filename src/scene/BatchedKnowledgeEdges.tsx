@@ -5,6 +5,7 @@ import type { SceneEdge, SceneModel } from '../graph/types';
 import { CHAIN_GOLD, HOT_CORE } from '../design/domainPalette';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
+import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 
 const ACTIVE_STATES = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
 
@@ -81,8 +82,8 @@ function buildLayout(model: SceneModel, segmentCount: number): EdgeLayout {
   return { positions, progress };
 }
 
-function alphaFor(edge: SceneEdge) {
-  if (edge.visualState === 'background') return 0.075;
+function alphaFor(edge: SceneEdge, phase: SpatialExperiencePhase) {
+  if (edge.visualState === 'background') return phase === 'landing' ? 0.12 : 0.075;
   if (edge.visualState === 'contextual') return 0.13;
   if (edge.visualState === 'lensActive') return 0.3;
   if (edge.visualState === 'lateral') return 0.34;
@@ -103,9 +104,8 @@ const fragmentShader = `
 `;
 
 /** 固定拓扑的单批次连线：同树切点只更新属性，树聚散才计算曲线并连续插值。 */
-export function BatchedKnowledgeEdges({ model }: { model: SceneModel }) {
+export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: SceneModel; experiencePhase: SpatialExperiencePhase }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
-  const selectedGoalId = useKnowledgeStore((state) => state.selectedGoalId);
   const segmentCount = Math.max(4, QUALITY_CONFIG[quality].curveSegments);
   const material = useRef<THREE.ShaderMaterial>(null);
   const targetPositions = useRef<Float32Array | null>(null);
@@ -114,9 +114,8 @@ export function BatchedKnowledgeEdges({ model }: { model: SceneModel }) {
 
   const layout = useMemo(
     () => buildLayout(model, segmentCount),
-    // selectedGoalId 是唯一会改变节点空间布局的交互状态。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [model.edges.length, model.nodes.length, segmentCount, selectedGoalId],
+    [model.edges.length, model.nodes.length, segmentCount],
   );
   const geometry = useMemo(() => {
     const next = new THREE.BufferGeometry();
@@ -167,14 +166,14 @@ export function BatchedKnowledgeEdges({ model }: { model: SceneModel }) {
         colorAttribute.setXYZ(vertex, color.r, color.g, color.b);
         delayAttribute.setX(vertex, edge.propagationDelay);
         directionAttribute.setX(vertex, edge.direction === 'in' ? -1 : 1);
-        alphaAttribute.setX(vertex, alphaFor(edge));
+        alphaAttribute.setX(vertex, alphaFor(edge, experiencePhase));
         activeAttribute.setX(vertex, active ? 1 : 0);
         vertex += 1;
       }
     });
     [colorAttribute, delayAttribute, directionAttribute, alphaAttribute, activeAttribute].forEach((attribute) => { attribute.needsUpdate = true; });
     invalidate();
-  }, [geometry, invalidate, model.edges, model.nodes, segmentCount]);
+  }, [experiencePhase, geometry, invalidate, model.edges, model.nodes, segmentCount]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 

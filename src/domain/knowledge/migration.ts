@@ -248,12 +248,107 @@ export function createPoint(
 
 export function updatePoint(
   pointId: string,
-  patch: Partial<Pick<KnowledgePoint, 'name' | 'description' | 'content' | 'color' | 'difficulty' | 'estimatedMinutes' | 'position' | 'tags' | 'learningObjectives' | 'misconceptions' | 'recommendedContent'>>,
+  patch: Partial<Pick<KnowledgePoint, 'name' | 'kind' | 'description' | 'content' | 'color' | 'difficulty' | 'estimatedMinutes' | 'position' | 'tags' | 'learningObjectives' | 'misconceptions' | 'recommendedContent'>>,
 ) {
   const state = migrateV9();
   const points = state.points.map((p) => (p.id === pointId ? { ...p, ...patch } : p));
   saveV9State(state.library, state.trees, points, state.relations, state.memberships, state.userTrees);
   migrateV9();
+}
+
+export function hydratePointDraft(treeId: string, pointId: string): PointDraft | null {
+  const state = migrateV9();
+  const tree = [...state.trees, ...state.userTrees].find((candidate) => candidate.id === treeId);
+  const point = state.points.find((candidate) => candidate.id === pointId);
+  if (!tree || !point || !tree.pointIds.includes(pointId)) return null;
+  const treeIds = new Set(tree.pointIds);
+  const prerequisites = state.relations
+    .filter((relation) => relation.type === 'prerequisite' && relation.targetPointId === pointId && treeIds.has(relation.sourcePointId))
+    .map((relation) => relation.sourcePointId);
+  const relatedIds = state.relations
+    .filter((relation) => relation.type === 'related' && (relation.sourcePointId === pointId || relation.targetPointId === pointId))
+    .map((relation) => relation.sourcePointId === pointId ? relation.targetPointId : relation.sourcePointId)
+    .filter((id) => treeIds.has(id));
+  const childIds = state.relations
+    .filter((relation) => relation.type === 'prerequisite' && relation.sourcePointId === pointId && treeIds.has(relation.targetPointId))
+    .map((relation) => relation.targetPointId);
+  return {
+    ...point,
+    treeId,
+    parentId: prerequisites[0],
+    prerequisiteIds: prerequisites.slice(1),
+    relatedIds: [...new Set(relatedIds)],
+    childIds,
+    position: [...point.position],
+  };
+}
+
+function wouldCreateCycle(relations: KnowledgeRelation[], pointId: string, candidateParentIds: string[]) {
+  const childrenBySource = new Map<string, string[]>();
+  relations.filter((relation) => relation.type === 'prerequisite' && relation.targetPointId !== pointId).forEach((relation) => {
+    childrenBySource.set(relation.sourcePointId, [...(childrenBySource.get(relation.sourcePointId) ?? []), relation.targetPointId]);
+  });
+  const descendants = new Set<string>();
+  const queue = [...(childrenBySource.get(pointId) ?? [])];
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (descendants.has(current)) continue;
+    descendants.add(current);
+    queue.push(...(childrenBySource.get(current) ?? []));
+  }
+  return candidateParentIds.some((id) => id === pointId || descendants.has(id));
+}
+
+export function savePointDraft(treeId: string, pointId: string, draft: PointDraft): { ok: true } | { ok: false; error: string } {
+  const state = migrateV9();
+  const allTrees = [...state.trees, ...state.userTrees];
+  const tree = allTrees.find((candidate) => candidate.id === treeId);
+  if (!tree || !tree.pointIds.includes(pointId)) return { ok: false, error: '未找到该知识点。' };
+  const validIds = new Set(tree.pointIds.filter((id) => id !== pointId));
+  const parentIds = [...new Set([draft.parentId, ...draft.prerequisiteIds].filter((id): id is string => Boolean(id) && validIds.has(id!)))];
+  if (wouldCreateCycle(state.relations, pointId, parentIds)) return { ok: false, error: '该关系会形成循环，请重新选择上级。' };
+  const relatedIds = [...new Set(draft.relatedIds.filter((id) => validIds.has(id)))];
+  const point: KnowledgePoint = {
+    id: pointId,
+    name: draft.name.trim() || '未命名知识点',
+    kind: draft.kind,
+    description: draft.description,
+    content: draft.content,
+    color: draft.color,
+    position: draft.position ?? [0, 0, 0],
+    difficulty: draft.difficulty,
+    estimatedMinutes: draft.estimatedMinutes,
+    tags: draft.tags,
+    learningObjectives: draft.learningObjectives,
+    misconceptions: draft.misconceptions,
+    recommendedContent: draft.recommendedContent,
+  };
+  const points = state.points.map((candidate) => candidate.id === pointId ? point : candidate);
+  const preserved = state.relations.filter((relation) => {
+    if (relation.type === 'prerequisite' && relation.targetPointId === pointId) return false;
+    if (relation.type === 'related' && (relation.sourcePointId === pointId || relation.targetPointId === pointId)) return false;
+    return true;
+  });
+  const relations: KnowledgeRelation[] = [
+    ...preserved,
+    ...parentIds.map((sourcePointId, index) => ({
+      id: `rel-${pointId}-pre-${index}-${sourcePointId}`,
+      sourcePointId,
+      targetPointId: pointId,
+      type: 'prerequisite' as const,
+    })),
+    ...relatedIds.map((targetPointId, index) => ({
+      id: `rel-${pointId}-related-${index}-${targetPointId}`,
+      sourcePointId: pointId,
+      targetPointId,
+      type: 'related' as const,
+    })),
+  ];
+  const now = new Date().toISOString();
+  const touch = (list: KnowledgeTree[]) => list.map((candidate) => candidate.id === treeId ? { ...candidate, updatedAt: now } : candidate);
+  saveV9State(state.library, touch(state.trees), points, relations, state.memberships, touch(state.userTrees));
+  migrateV9();
+  return { ok: true };
 }
 
 export function deletePoint(treeId: string, pointId: string) {

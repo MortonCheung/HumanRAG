@@ -42,6 +42,7 @@
 .library-manager__actions .library-manager__create { margin-left: auto; }
 
 .library-showcase { position: relative; height: 100%; min-height: 340px; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 50% 40%, rgb(32 39 37 / .62), transparent 54%), #030505; }
+.library-showcase__layer { position: absolute; inset: 0; transform-origin: 50% 52%; }
 .library-showcase::after { content: ""; position: absolute; z-index: 2; inset: auto 12% 8% 12%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, rgb(203 187 137 / .1), transparent 68%); filter: blur(12px); pointer-events: none; }
 .library-showcase__meta { position: absolute; z-index: 4; top: 22px; left: 24px; display: grid; gap: 5px; pointer-events: none; }
 .library-showcase__meta span, .library-showcase__meta small { color: var(--it-text-faint); font: 9px/1.3 var(--it-mono); letter-spacing: .08em; }
@@ -51,13 +52,14 @@
 
 /* Tree use mode. */
 .knowledge-tree-shell { min-height: 100dvh; overflow-y: auto; }
-.knowledge-tree-shell__header { width: min(1480px, 100%); margin: 0 auto; padding: 32px clamp(20px, 4vw, 64px) 0; }
+.knowledge-tree-shell__header { width: min(1480px, 100%); margin: 0 auto; padding: 18px clamp(20px, 4vw, 64px) 0; }
 .knowledge-tree-shell__nav-row { min-height: 38px; display: grid; grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr); align-items: center; }
 .knowledge-tree-shell__back, .knowledge-tree-shell__edit { width: max-content; padding: 8px 0; background: transparent; color: var(--it-text-soft); font-size: 12px; }
 .knowledge-tree-shell__edit { justify-self: end; padding: 8px 14px; border: 1px solid var(--it-rule-strong); border-radius: 7px; color: var(--it-text); }
 .knowledge-tree-shell__readonly { justify-self: end; color: var(--it-text-faint); font: 9px/1 var(--it-mono); letter-spacing: .08em; }
-.knowledge-tree-shell__title { margin: clamp(30px, 5vh, 62px) 0 0; font-size: clamp(34px, 5vw, 72px); font-weight: 530; letter-spacing: -.07em; }
-.knowledge-tree-shell__content { width: min(1480px, 100%); margin: 0 auto; padding: 26px clamp(20px, 4vw, 64px) 72px; }
+.knowledge-tree-shell__bar-title { grid-column: 2; font-size: 13px; font-weight: 560; letter-spacing: -.02em; }
+.knowledge-tree-shell__header > .tree-local-nav { width: max-content; margin: 16px auto 0; }
+.knowledge-tree-shell__content { width: min(1480px, 100%); margin: 0 auto; padding: 20px clamp(20px, 4vw, 64px) 72px; }
 .tree-local-nav { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--it-rule); border-radius: 9px; background: rgb(255 255 255 / .015); }
 .tree-local-nav__link { padding: 7px 13px; border-radius: 6px; color: var(--it-text-faint); font-size: 11px; text-decoration: none; }
 .tree-local-nav__link:hover { color: var(--it-text-soft); }
@@ -86,7 +88,9 @@
 .tree-practice-start { min-height: 42px; display: inline-flex; align-items: center; gap: 8px; margin: 0 0 20px; padding: 0 15px; border-radius: 7px; background: var(--it-text); color: var(--it-bg-deep); font-size: 11px; font-weight: 600; }
 
 /* Creation: matter is revealed in the same stage instead of jumping between cards. */
-.tree-genesis-page, .point-creation-shell { min-height: calc(100dvh - var(--it-nav-height)); margin-top: var(--it-nav-height); display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(380px, .62fr); background: #020303; }
+.creation-screen { min-height: calc(100dvh - var(--it-nav-height)); margin-top: var(--it-nav-height); background: #020303; }
+.creation-screen > .workspace-header { position: sticky; top: var(--it-nav-height); z-index: 9; }
+.tree-genesis-page, .point-creation-shell { min-height: calc(100dvh - var(--it-nav-height) - 54px); display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(380px, .62fr); background: #020303; }
 .tree-genesis-page__stage, .point-creation-shell__stage { position: relative; min-height: 580px; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 48%, rgb(29 34 33 / .42), transparent 44%), #020303; }
 .tree-genesis-page__stage::before, .point-creation-shell__stage::before { content: ""; position: absolute; top: -8%; left: 50%; width: min(34vw, 430px); height: 72%; transform: translateX(-50%); background: linear-gradient(180deg, rgb(233 224 190 / .15), rgb(233 224 190 / .025) 58%, transparent); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); filter: blur(16px); opacity: .74; pointer-events: none; }
 .tree-genesis-page__void { --tree-color: #8b7355; position: relative; width: min(480px, 72%); aspect-ratio: 1; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--tree-color) 20%, transparent); border-radius: 50%; box-shadow: inset 0 0 120px color-mix(in srgb, var(--tree-color) 8%, transparent), 0 0 110px rgb(0 0 0 / .62); transition: border-color .45s var(--it-ease), box-shadow .45s var(--it-ease); }
@@ -140,7 +144,8 @@
 .tree-editor-shell { min-height: calc(100dvh - var(--it-nav-height)); margin-top: var(--it-nav-height); display: flex; flex-direction: column; background: var(--it-bg-deep); }
 .tree-editor-shell__header { position: sticky; top: var(--it-nav-height); z-index: 8; min-height: 62px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 10px clamp(20px, 4vw, 64px); border-bottom: 1px solid var(--it-rule); background: rgb(5 7 7 / .9); backdrop-filter: blur(16px); }
 .tree-editor-shell__back { justify-self: start; padding: 8px 0; background: transparent; color: var(--it-text-soft); font-size: 11px; }
-.tree-editor-shell__nav { display: flex; gap: 4px; }
+.tree-editor-shell__title { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 560; letter-spacing: -.02em; }
+.tree-editor-shell__nav { grid-column: 3; grid-row: 1; justify-self: end; display: flex; gap: 4px; }
 .tree-editor-shell__nav-link { padding: 8px 12px; border-radius: 6px; color: var(--it-text-faint); font-size: 11px; text-decoration: none; }
 .tree-editor-shell__nav-link--active { background: var(--it-surface-raised); color: var(--it-text); }
 .tree-editor-shell__content { flex: 1; width: min(1480px, 100%); margin: 0 auto; padding: 28px clamp(20px, 4vw, 64px) 64px; }
@@ -148,11 +153,40 @@
 .editor-toolbar h2 { margin: 0; font-size: 20px; font-weight: 530; letter-spacing: -.035em; }
 .editor-toolbar p { margin: 6px 0 0; color: var(--it-text-faint); font-size: 11px; }
 .editor-toolbar__primary { height: 38px; padding: 0 15px; border-radius: 7px; background: var(--it-text); color: var(--it-bg-deep); font-size: 11px; font-weight: 600; }
-.tree-structure-editor-page__workspace { height: min(680px, calc(100dvh - 246px)); min-height: 460px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 330px); overflow: hidden; border: 1px solid var(--it-rule); border-radius: 12px; background: #030505; }
+.tree-structure-editor-page__workspace { height: min(720px, calc(100dvh - 220px)); min-height: 500px; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(320px, .62fr); overflow: hidden; border: 1px solid var(--it-rule); border-radius: 12px; background: #030505; }
 .tree-structure-editor-page__canvas { position: relative; min-width: 0; min-height: 0; }
 .tree-structure-editor-page__canvas .custom-tree-canvas { width: 100%; height: 100%; }
 .tree-structure-editor-page__canvas > p { position: absolute; z-index: 3; left: 16px; bottom: 13px; margin: 0; color: var(--it-text-faint); font: 8px/1 var(--it-mono); pointer-events: none; }
-.tree-structure-editor-page__list { min-height: 0; overflow-y: auto; padding: 10px; border-left: 1px solid var(--it-rule); background: var(--it-bg); }
+.tree-editor-panel { min-height: 0; display: grid; grid-template-rows: auto minmax(120px, .7fr) minmax(150px, 1.3fr); border-left: 1px solid var(--it-rule); background: var(--it-bg); }
+.tree-editor-panel__header { min-height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--it-rule); }
+.tree-editor-panel__header span { font-size: 11px; font-weight: 560; }
+.tree-editor-panel__header button { min-height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px; border-radius: 6px; background: var(--it-surface-raised); color: var(--it-text-soft); font-size: 9px; }
+.tree-editor-panel__header button:disabled { opacity: .32; }
+.tree-structure-editor-page__list { min-height: 0; overflow-y: auto; padding: 8px; border-bottom: 1px solid var(--it-rule); background: var(--it-bg); }
+.tree-editor-panel__selection { min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 24px; }
+.tree-editor-panel__selection small, .point-inspector__title small { color: var(--it-text-faint); font: 8px/1 var(--it-mono); letter-spacing: .08em; }
+.tree-editor-panel__selection strong { margin-top: 8px; font-size: 15px; font-weight: 540; }
+.tree-editor-panel__selection p { margin: 9px 0 0; color: var(--it-text-faint); font-size: 10px; line-height: 1.55; }
+.point-inspector { min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; background: #080a0a; }
+.point-inspector__title { min-height: 52px; display: grid; grid-template-columns: 8px 1fr; align-items: center; gap: 12px; padding: 10px 14px; }
+.point-inspector__title > div { min-width: 0; display: grid; gap: 5px; }
+.point-inspector__title strong { overflow: hidden; font-size: 12px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.point-inspector__tabs { display: flex; gap: 3px; padding: 0 12px 8px; }
+.point-inspector__tabs button { padding: 6px 9px; border-radius: 5px; background: transparent; color: var(--it-text-faint); font-size: 9px; }
+.point-inspector__tabs button.is-active { background: var(--it-surface-raised); color: var(--it-text); }
+.point-inspector__body { min-height: 0; display: grid; align-content: start; gap: 15px; padding: 12px 14px 22px; overflow-y: auto; border-top: 1px solid var(--it-rule); }
+.point-inspector .editor-field input:not([type="checkbox"]):not([type="color"]), .point-inspector .editor-field textarea, .point-inspector .editor-field select { width: 100%; padding: 9px 0; border: 0; border-bottom: 1px solid var(--it-rule-strong); outline: 0; border-radius: 0; background: transparent; color: var(--it-text); font-size: 11px; resize: vertical; }
+.point-inspector__row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.point-inspector__color { width: 100% !important; height: 35px; padding: 3px !important; border: 1px solid var(--it-rule) !important; border-radius: 5px !important; }
+.point-inspector__checks { max-height: 150px; overflow-y: auto; }
+.point-inspector__position { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.point-inspector__position label { display: grid; grid-template-columns: 14px 1fr; align-items: center; gap: 4px; color: var(--it-text-faint); font-size: 8px; }
+.point-inspector__position input { min-width: 0; width: 100%; padding: 7px; border: 1px solid var(--it-rule); border-radius: 4px; background: var(--it-surface); color: var(--it-text); font-size: 10px; }
+.point-inspector__actions { min-height: 52px; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 7px; padding: 8px 12px; border-top: 1px solid var(--it-rule); }
+.point-inspector__actions button { min-height: 32px; padding: 0 10px; border-radius: 6px; background: var(--it-surface-raised); color: var(--it-text-soft); font-size: 9px; }
+.point-inspector__actions button.is-primary { background: var(--it-text); color: var(--it-bg-deep); font-weight: 600; }
+.point-inspector__actions .point-inspector__delete { background: transparent; color: var(--it-danger); }
+.point-inspector__error { margin: 0; color: var(--it-danger); font-size: 10px; }
 .point-list { margin: 0; list-style: none; }
 .point-list__item { min-height: 58px; display: flex; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; border-radius: 7px; transition: background 160ms var(--it-ease); }
 .point-list__item:hover, .point-list__item.is-selected { background: var(--it-surface-raised); }
@@ -215,7 +249,7 @@
   .tree-genesis-page__form, .point-creation-shell__form { border-top: 1px solid var(--it-rule); border-left: 0; }
   .tree-structure-editor-page__workspace { grid-template-columns: 1fr; height: auto; }
   .tree-structure-editor-page__canvas { min-height: 480px; }
-  .tree-structure-editor-page__list { max-height: 280px; border-top: 1px solid var(--it-rule); border-left: 0; }
+  .tree-editor-panel { min-height: 600px; border-top: 1px solid var(--it-rule); border-left: 0; }
 }
 
 @media (max-width: 680px) {
@@ -229,6 +263,7 @@
   .tree-scope-list { grid-template-columns: 1fr; }
   .tree-point-grid { grid-template-columns: 1fr; }
   .tree-editor-shell__header { top: var(--it-nav-height); grid-template-columns: 1fr; gap: 8px; }
+  .tree-editor-shell__title { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); }
   .tree-editor-shell__nav { grid-row: 2; overflow-x: auto; }
   .tree-editor-shell__nav-link { flex: 1; text-align: center; white-space: nowrap; }
   .content-editor { grid-template-columns: 1fr; }

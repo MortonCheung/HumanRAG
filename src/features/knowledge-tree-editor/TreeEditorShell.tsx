@@ -1,9 +1,9 @@
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '../../app/routes';
+import { migrateV9 } from '../../domain/knowledge/migration';
 
 const SECTIONS = [
-  { key: 'structure', label: '结构' },
-  { key: 'content', label: '内容' },
+  { key: 'structure', label: '节点' },
   { key: 'questions', label: '题目' },
   { key: 'settings', label: '设置' },
 ];
@@ -11,6 +11,8 @@ const SECTIONS = [
 export function TreeEditorShell() {
   const navigate = useNavigate();
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
+  const domain = migrateV9();
+  const tree = [...domain.trees, ...domain.userTrees].find((candidate) => candidate.id === treeId);
 
   return (
     <div className="tree-editor-shell">
@@ -20,8 +22,9 @@ export function TreeEditorShell() {
           onClick={() => navigate(ROUTES.tree(libraryId ?? '', treeId ?? ''))}
           type="button"
         >
-          完成编辑
+          ← 完成
         </button>
+        <strong className="tree-editor-shell__title">{tree?.name ?? '知识树'}</strong>
         <nav className="tree-editor-shell__nav">
           {SECTIONS.map((s) => (
             <NavLink

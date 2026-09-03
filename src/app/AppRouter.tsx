@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { ROUTES } from './routes';
 import { SpatialExperienceShell } from '../features/spatial/SpatialExperienceShell';
@@ -18,12 +18,17 @@ const TreePracticePage = lazy(() => import('../features/knowledge-tree/pages/Tre
 const TreeGenesisPage = lazy(() => import('../features/knowledge-tree-builder/pages/TreeGenesisPage').then((module) => ({ default: module.TreeGenesisPage })));
 const TreeEditorShell = lazy(() => import('../features/knowledge-tree-editor/TreeEditorShell').then((module) => ({ default: module.TreeEditorShell })));
 const TreeStructureEditorPage = lazy(() => import('../features/knowledge-tree-editor/pages/TreeStructureEditorPage').then((module) => ({ default: module.TreeStructureEditorPage })));
-const TreeContentEditorPage = lazy(() => import('../features/knowledge-tree-editor/pages/TreeContentEditorPage').then((module) => ({ default: module.TreeContentEditorPage })));
 const TreeQuestionEditorPage = lazy(() => import('../features/knowledge-tree-editor/pages/TreeQuestionEditorPage').then((module) => ({ default: module.TreeQuestionEditorPage })));
 const TreeSettingsPage = lazy(() => import('../features/knowledge-tree-editor/pages/TreeSettingsPage').then((module) => ({ default: module.TreeSettingsPage })));
 const PointCreationShell = lazy(() => import('../features/knowledge-point-builder/PointCreationShell').then((module) => ({ default: module.PointCreationShell })));
 const PointContentPage = lazy(() => import('../features/knowledge-point-builder/pages/PointContentPage').then((module) => ({ default: module.PointContentPage })));
 const PointPlacementPage = lazy(() => import('../features/knowledge-point-builder/pages/PointPlacementPage').then((module) => ({ default: module.PointPlacementPage })));
+
+function TreeContentRedirect() {
+  const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
+  if (!libraryId || !treeId) return <Navigate to={ROUTES.library} replace />;
+  return <Navigate to={ROUTES.treeEdit(libraryId, treeId, 'structure')} replace />;
+}
 
 export function AppRouter() {
   migrateV9();
@@ -49,7 +54,7 @@ export function AppRouter() {
           <Route path="/library/:libraryId/trees/new" element={<Suspense fallback={<div className="page" />}><TreeGenesisPage /></Suspense>} />
           <Route element={<Suspense fallback={<div className="page" />}><TreeEditorShell /></Suspense>}>
             <Route path="/library/:libraryId/tree/:treeId/edit/structure" element={<TreeStructureEditorPage />} />
-            <Route path="/library/:libraryId/tree/:treeId/edit/content" element={<TreeContentEditorPage />} />
+            <Route path="/library/:libraryId/tree/:treeId/edit/content" element={<TreeContentRedirect />} />
             <Route path="/library/:libraryId/tree/:treeId/edit/questions" element={<TreeQuestionEditorPage />} />
             <Route path="/library/:libraryId/tree/:treeId/edit/settings" element={<TreeSettingsPage />} />
           </Route>

@@ -1,4 +1,3 @@
-import { ArrowLeft } from '@phosphor-icons/react';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '../../../app/routes';
@@ -61,9 +60,8 @@ export function PointPlacementPage() {
 
   return (
     <div className="point-placement-page">
-      <button type="button" className="creation-back" onClick={() => libraryId && treeId && navigate(ROUTES.pointNewContent(libraryId, treeId), { state: { pointDraft: draft } })}><ArrowLeft size={14} /> 返回卡片内容</button>
       <h2>位置与关系</h2>
-      <p className="point-placement-page__lead">卡片正在变成节点。先在知识树中放好它，再确定它与已有知识的关系。</p>
+      <p className="point-placement-page__lead">设置节点位置及其与已有节点的关系。</p>
       <div className="point-placement-page__tree">
         <CustomTreeCanvas
           nodes={previewNodes}
@@ -75,7 +73,7 @@ export function PointPlacementPage() {
             if (id === 'point-preview') setDraft({ ...draft, position });
           }}
         />
-        <small>拖动发光节点决定初始位置</small>
+        <small>拖动节点设置位置</small>
       </div>
       <div className="point-placement-page__fields">
         <label className="editor-field">

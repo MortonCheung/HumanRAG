@@ -1,9 +1,14 @@
+import type { ReactNode } from 'react';
+
 export interface WorkspaceHeaderProps {
   breadcrumbs: string[];
   onBack: () => void;
+  title?: string;
+  backLabel?: string;
+  actions?: ReactNode;
 }
 
-export function WorkspaceHeader({ breadcrumbs, onBack }: WorkspaceHeaderProps) {
+export function WorkspaceHeader({ breadcrumbs, onBack, title, backLabel = '返回', actions }: WorkspaceHeaderProps) {
   return (
     <header className="workspace-header">
       <button
@@ -11,9 +16,10 @@ export function WorkspaceHeader({ breadcrumbs, onBack }: WorkspaceHeaderProps) {
         onClick={() => onBack()}
         type="button"
       >
-        ← 返回
+        ← {backLabel}
       </button>
-      <nav className="workspace-header__breadcrumbs" aria-label="面包屑">
+      <strong className="workspace-header__title">{title ?? breadcrumbs.at(-1)}</strong>
+      <nav className="workspace-header__breadcrumbs" aria-label="当前位置">
         {breadcrumbs.map((crumb, index) => (
           <span key={index}>
             {index > 0 && <span className="workspace-header__sep"> / </span>}
@@ -21,6 +27,7 @@ export function WorkspaceHeader({ breadcrumbs, onBack }: WorkspaceHeaderProps) {
           </span>
         ))}
       </nav>
+      <div className="workspace-header__actions">{actions}</div>
     </header>
   );
 }

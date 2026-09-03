@@ -6,7 +6,7 @@ describe('knowledgeStore spatial continuity', () => {
     useKnowledgeStore.getState().resetKnowledge();
   });
 
-  it('keeps the camera intent while switching nodes inside one tree', () => {
+  it('keeps the camera intent while switching between nearby nodes', () => {
     useKnowledgeStore.getState().selectNode('goal-cs-graduate');
     const firstIntent = useKnowledgeStore.getState().cameraIntent;
 
@@ -15,10 +15,19 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
   });
 
+  it('creates a node camera intent when the next node is far away', () => {
+    useKnowledgeStore.getState().selectNode('direction-408');
+    const firstIntent = useKnowledgeStore.getState().cameraIntent;
+    useKnowledgeStore.getState().selectNode('practice-linked-list');
+    expect(useKnowledgeStore.getState().cameraIntent).not.toBe(firstIntent);
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('node');
+    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBe('practice-linked-list');
+  });
+
   it('changes branch focus for any node and can explicitly gather the overview', () => {
     useKnowledgeStore.getState().selectNode('direction-ai-engineering');
     expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-ai-engineer');
-    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('goal');
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('node');
 
     useKnowledgeStore.getState().returnOverview();
     expect(useKnowledgeStore.getState().selectedGoalId).toBeNull();

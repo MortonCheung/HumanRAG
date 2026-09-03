@@ -1,126 +1,89 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { SceneModel } from '../graph/types';
 
 const DRAG_THRESHOLD = 7;
 
 /**
- * 所有节点的透明命中代理。视觉点精灵只负责发光，InstancedMesh 只负责拾取，
- * 因此暗节点、远景节点和不同显卡上的点精灵都拥有一致的可点击范围。
+ * 屏幕空间拾取：点击范围以 CSS 像素计算，不依赖发光点大小、设备像素比或显卡。
+ * 所有节点都进入同一最近点计算，拖动画布时不会误触选择。
  */
-export function NodeHitField({
-  model,
-  onHover,
-  onSelect,
-}: {
+export function NodeHitField({ model, onHover, onSelect }: {
   model: SceneModel;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
 }) {
-  const mesh = useRef<THREE.InstancedMesh>(null);
-  const targets = useRef(model.nodes.map((node) => new THREE.Vector3(...node.displayPosition)));
+  const anchor = useRef<THREE.Group>(null);
   const currentPositions = useRef(model.nodes.map((node) => new THREE.Vector3(...node.displayPosition)));
-  const moving = useRef(false);
-  const { camera, gl, invalidate } = useThree();
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 6), []);
-  const material = useMemo(() => new THREE.MeshBasicMaterial({
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    depthTest: false,
-    colorWrite: false,
-  }), []);
+  const modelRef = useRef(model);
+  modelRef.current = model;
+  const pointerDown = useRef<{ x: number; y: number } | null>(null);
+  const hoverFrame = useRef<number | null>(null);
+  const { camera, gl } = useThree();
 
   useEffect(() => {
-    targets.current = model.nodes.map((node, index) => {
-      const target = new THREE.Vector3(...node.displayPosition);
-      if (!currentPositions.current[index]) currentPositions.current[index] = target.clone();
-      if (currentPositions.current[index].distanceToSquared(target) > 0.0001) moving.current = true;
-      return target;
-    });
-    invalidate();
-  }, [invalidate, model.nodes]);
+    currentPositions.current = model.nodes.map((node) => new THREE.Vector3(...node.displayPosition));
+  }, [model.nodes.length]);
 
-  useEffect(() => () => {
-    geometry.dispose();
-    material.dispose();
-  }, [geometry, material]);
-
-  const nodeId = (event: ThreeEvent<PointerEvent | MouseEvent>) => {
-    const rect = gl.domElement.getBoundingClientRect();
-    const pointerX = event.clientX - rect.left;
-    const pointerY = event.clientY - rect.top;
+  useEffect(() => {
+    const canvas = gl.domElement;
     const projected = new THREE.Vector3();
-    let bestIndex = event.instanceId;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (const intersection of event.intersections) {
-      if (intersection.object !== mesh.current || intersection.instanceId === undefined) continue;
-      const position = currentPositions.current[intersection.instanceId];
-      if (!position) continue;
-      projected.copy(position).project(camera);
-      const screenX = (projected.x * 0.5 + 0.5) * rect.width;
-      const screenY = (-projected.y * 0.5 + 0.5) * rect.height;
-      const distance = Math.hypot(screenX - pointerX, screenY - pointerY);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = intersection.instanceId;
-      }
-    }
-    const index = bestIndex;
-    return index === undefined ? null : (model.nodes[index]?.id ?? null);
-  };
+    const world = new THREE.Vector3();
+    const findNearest = (clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      let bestId: string | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      let bestDepth = Number.POSITIVE_INFINITY;
+      anchor.current?.updateWorldMatrix(true, false);
+      modelRef.current.nodes.forEach((node, index) => {
+        const position = currentPositions.current[index];
+        if (!position) return;
+        world.copy(position);
+        if (anchor.current) world.applyMatrix4(anchor.current.matrixWorld);
+        projected.copy(world).project(camera);
+        if (projected.z < -1 || projected.z > 1) return;
+        const screenX = rect.left + (projected.x * 0.5 + 0.5) * rect.width;
+        const screenY = rect.top + (-projected.y * 0.5 + 0.5) * rect.height;
+        const distance = Math.hypot(screenX - clientX, screenY - clientY);
+        const radius = node.visualState === 'selected' ? 19 : node.visualState === 'dormant' ? 12 : 15;
+        if (distance > radius) return;
+        if (distance < bestDistance - 0.5 || (Math.abs(distance - bestDistance) <= 0.5 && projected.z < bestDepth)) {
+          bestId = node.id;
+          bestDistance = distance;
+          bestDepth = projected.z;
+        }
+      });
+      return bestId;
+    };
+    const down = (event: PointerEvent) => { pointerDown.current = { x: event.clientX, y: event.clientY }; };
+    const move = (event: PointerEvent) => {
+      if (hoverFrame.current !== null) cancelAnimationFrame(hoverFrame.current);
+      hoverFrame.current = requestAnimationFrame(() => {
+        onHover(findNearest(event.clientX, event.clientY));
+        hoverFrame.current = null;
+      });
+    };
+    const up = (event: PointerEvent) => {
+      const start = pointerDown.current;
+      pointerDown.current = null;
+      if (!start || Math.hypot(event.clientX - start.x, event.clientY - start.y) > DRAG_THRESHOLD) return;
+      const id = findNearest(event.clientX, event.clientY);
+      if (id) onSelect(id);
+    };
+    const leave = () => { pointerDown.current = null; onHover(null); };
+    canvas.addEventListener('pointerdown', down);
+    canvas.addEventListener('pointermove', move);
+    canvas.addEventListener('pointerup', up);
+    canvas.addEventListener('pointerleave', leave);
+    return () => {
+      if (hoverFrame.current !== null) cancelAnimationFrame(hoverFrame.current);
+      canvas.removeEventListener('pointerdown', down);
+      canvas.removeEventListener('pointermove', move);
+      canvas.removeEventListener('pointerup', up);
+      canvas.removeEventListener('pointerleave', leave);
+    };
+  }, [camera, gl, onHover, onSelect]);
 
-  useFrame((_, delta) => {
-    const current = mesh.current;
-    if (!current) return;
-    const matrix = new THREE.Matrix4();
-    const scale = new THREE.Vector3();
-    const quaternion = new THREE.Quaternion();
-    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 5.4);
-    let maxDelta = 0;
-    model.nodes.forEach((node, index) => {
-      const position = currentPositions.current[index];
-      const target = targets.current[index] ?? position;
-      if (moving.current) {
-        maxDelta = Math.max(maxDelta, position.distanceTo(target));
-        position.lerp(target, alpha);
-      }
-      // 命中体紧贴光点，避免密集区域中前方的大球抢走后方节点。
-      const radius = node.visualState === 'selected' ? 1.05 : node.visualState === 'dormant' ? 0.62 : 0.82;
-      scale.setScalar(radius);
-      matrix.compose(position, quaternion, scale);
-      current.setMatrixAt(index, matrix);
-    });
-    current.instanceMatrix.needsUpdate = true;
-    current.computeBoundingSphere();
-    if (moving.current) {
-      if (maxDelta < 0.012) moving.current = false;
-      else invalidate();
-    }
-  });
-
-  return (
-    <instancedMesh
-      ref={mesh}
-      args={[geometry, material, model.nodes.length]}
-      frustumCulled={false}
-      renderOrder={-1}
-      onPointerMove={(event) => {
-        event.stopPropagation();
-        onHover(nodeId(event));
-      }}
-      onPointerOver={(event) => {
-        event.stopPropagation();
-        onHover(nodeId(event));
-      }}
-      onPointerOut={() => onHover(null)}
-      onClick={(event) => {
-        event.stopPropagation();
-        if (event.delta > DRAG_THRESHOLD) return;
-        const id = nodeId(event);
-        if (id) onSelect(id);
-      }}
-    />
-  );
+  return <group ref={anchor} />;
 }

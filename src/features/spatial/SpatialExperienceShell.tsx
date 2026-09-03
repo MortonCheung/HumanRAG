@@ -5,15 +5,11 @@ import { GlobalNav } from '../../components/navigation/GlobalNav';
 import { MobileNav } from '../../components/navigation/MobileNav';
 import { buildSceneModel } from '../../graph/relevance';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
-import { useUiStore } from '../../store/uiStore';
 import { ROUTES } from '../../app/routes';
 import { SpatialExperienceContext, type SpatialExperiencePhase } from './SpatialExperienceContext';
 
 const KnowledgeFieldCanvas = lazy(() =>
   import('../../scene/UniverseCanvas').then((module) => ({ default: module.KnowledgeFieldCanvas })),
-);
-const GlobalSearch = lazy(() =>
-  import('../../components/search/GlobalSearch').then((module) => ({ default: module.GlobalSearch })),
 );
 
 const ROUTE_SWITCH_MS = 360;
@@ -40,7 +36,6 @@ export function SpatialExperienceShell() {
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
   const prepareUniverseEntry = useKnowledgeStore((state) => state.prepareUniverseEntry);
-  const openSearch = useUiStore((state) => state.openSearch);
 
   const model = useMemo(
     () => {
@@ -83,20 +78,6 @@ export function SpatialExperienceShell() {
     if (location.pathname === ROUTES.universe && phase === 'landing') setPhase('universe');
   }, [location.pathname, phase]);
 
-  useEffect(() => {
-    if (!directUniverse) return undefined;
-    const handler = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '');
-      if (!isTyping && ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k')) {
-        event.preventDefault();
-        openSearch();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [directUniverse, openSearch]);
-
   const context = useMemo(() => ({ phase, model, beginUniverseEntry }), [beginUniverseEntry, model, phase]);
 
   return (
@@ -115,7 +96,6 @@ export function SpatialExperienceShell() {
         {directUniverse && (
           <>
             <GlobalNav />
-            <Suspense fallback={null}><GlobalSearch /></Suspense>
             <MobileNav />
           </>
         )}

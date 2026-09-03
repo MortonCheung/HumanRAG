@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { BookOpenText, MagnifyingGlass, Notebook, SquaresFour } from '@phosphor-icons/react';
+import { BookOpenText, Notebook } from '@phosphor-icons/react';
 import { BrandMark } from '../BrandMark';
 import { ROUTES } from '../../app/routes';
 import { useUiStore } from '../../store/uiStore';
@@ -10,7 +10,6 @@ const NAV_ITEMS = [
 ] as const;
 
 export function GlobalNav() {
-  const openSearch = useUiStore((state) => state.openSearch);
   const setMobileMenuOpen = useUiStore((state) => state.setMobileMenuOpen);
   return (
     <header className="global-nav" role="banner">
@@ -25,16 +24,9 @@ export function GlobalNav() {
         ))}
       </nav>
       <div className="global-nav__tools">
-        <button className="nav-tool" onClick={openSearch} aria-label="搜索">
-          <MagnifyingGlass size={16} weight="regular" />
-          <span className="nav-tool--label">搜索</span>
-        </button>
         <NavLink to={ROUTES.progress} className="nav-tool nav-tool--label" aria-label="学习记录">
           <Notebook size={16} weight="regular" />
           <span>学习记录</span>
-        </NavLink>
-        <NavLink to={ROUTES.progress} className="nav-avatar" aria-label="学习者画像">
-          <SquaresFour size={15} weight="regular" />
         </NavLink>
         <button
           className="nav-tool nav-tool--icon global-nav__burger"

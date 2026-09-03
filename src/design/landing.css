@@ -78,7 +78,7 @@
 }
 
 .it-landing__copy h1 {
-  max-width: 10.5ch;
+  max-width: 12ch;
   margin: 0;
   color: #f1f2ee;
   font-size: clamp(52px, 4.55vw, 78px);
@@ -87,6 +87,7 @@
   letter-spacing: -0.062em;
   text-wrap: balance;
 }
+.it-landing__copy h1 span { display: block; white-space: nowrap; }
 
 .it-landing__copy p {
   max-width: 31rem;
@@ -245,7 +246,7 @@
   }
   .it-landing__brand { grid-column: 1; grid-row: 1; }
   .it-landing__copy { grid-column: 1; grid-row: 2; max-width: 42rem; padding: clamp(48px, 7vh, 76px) 0 24px; }
-  .it-landing__copy h1 { max-width: 11ch; font-size: clamp(54px, 8vw, 72px); }
+  .it-landing__copy h1 { max-width: 12ch; font-size: clamp(54px, 8vw, 72px); }
   .it-landing-network { grid-column: 1; grid-row: 3; min-height: 360px; }
   .it-landing__footer { grid-column: 1; grid-row: 4; }
 }
@@ -277,7 +278,7 @@
   }
 
   .it-landing__copy h1 {
-    max-width: 9.8ch;
+    max-width: 12ch;
     font-size: clamp(40px, 11vw, 52px);
     line-height: 1.05;
   }

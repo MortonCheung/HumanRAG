@@ -4,10 +4,9 @@ interface PointIntrinsicFormProps {
   draft: PointDraft;
   onChange: (field: keyof PointDraft, value: unknown) => void;
   onSave: (draft: PointDraft) => void;
-  onCancel: () => void;
 }
 
-export function PointIntrinsicForm({ draft, onChange, onSave, onCancel }: PointIntrinsicFormProps) {
+export function PointIntrinsicForm({ draft, onChange, onSave }: PointIntrinsicFormProps) {
   const handleChange = (field: keyof PointDraft, value: unknown) => {
     onChange(field, value);
   };
@@ -83,9 +82,6 @@ export function PointIntrinsicForm({ draft, onChange, onSave, onCancel }: PointI
         />
       </div>
       <div className="point-intrinsic-form__actions">
-        <button type="button" onClick={onCancel}>
-          返回知识树
-        </button>
         <button type="submit" className="point-intrinsic-form__primary">
           设置位置与关系
         </button>

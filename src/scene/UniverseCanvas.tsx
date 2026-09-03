@@ -52,8 +52,8 @@ function KnowledgeField({
       <color attach="background" args={['#020303']} />
       <fog attach="fog" args={['#070a0b', 58, 168]} />
       <group ref={graphGroup}>
-        <BatchedKnowledgeEdges model={model} />
-        <NodePointField model={model} lifeActive={lifeActive} />
+        <BatchedKnowledgeEdges model={model} experiencePhase={experiencePhase} />
+        <NodePointField model={model} lifeActive={lifeActive} experiencePhase={experiencePhase} />
         <NodeHitField model={model} onHover={onHover} onSelect={onSelect} />
         <NeuralSignals model={model} motionAllowed={motionAllowed} />
       </group>

@@ -139,6 +139,15 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     const currentGoalId = get().selectedGoalId;
     const branchFocusId = branchRootId(nodeId);
     const branchChanged = branchFocusId !== currentGoalId;
+    const previousNode = get().selectedNodeId ? nodesById.get(get().selectedNodeId!) : null;
+    const distance = previousNode
+      ? Math.hypot(
+        node.basePosition[0] - previousNode.basePosition[0],
+        node.basePosition[1] - previousNode.basePosition[1],
+        node.basePosition[2] - previousNode.basePosition[2],
+      )
+      : Number.POSITIVE_INFINITY;
+    const shouldMoveCamera = branchChanged || distance > 14;
     if (branchChanged) {
       persist(get().profile, branchFocusId, get().qualityPreference);
     }
@@ -148,9 +157,9 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       activePanel: null,
       phase: 'nodeFocused',
       selectionEpoch: get().selectionEpoch + 1,
-      // 同一棵树内切换知识点只更新关系与详情，不抢走用户已经调好的镜头。
-      cameraIntent: branchChanged
-        ? { id: `goal:${branchFocusId}:${Date.now()}`, mode: 'goal', nodeId: branchFocusId ?? undefined }
+      // 近距离切点保留视角；远距离切点平移镜头，保持用户已调好的方向与缩放。
+      cameraIntent: shouldMoveCamera
+        ? { id: `node:${nodeId}:${Date.now()}`, mode: 'node', nodeId }
         : get().cameraIntent,
     });
   },

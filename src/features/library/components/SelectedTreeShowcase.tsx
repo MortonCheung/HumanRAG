@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { KnowledgePoint, KnowledgeRelation, KnowledgeTree } from '../../../domain/knowledge/types';
 import { CustomTreeCanvas } from '../../library-builder/components/CustomTreeCanvas';
 import { toCustomEdges, toCustomNodes } from '../treeGraphAdapter';
@@ -17,14 +18,25 @@ export function SelectedTreeShowcase({ tree, points, relations }: {
 
   return (
     <section className="library-showcase" aria-label={`${tree.name}三维预览`}>
-      <div className="library-showcase__meta">
-        <span>{tree.ownerType === 'system' ? '系统知识树' : '我的知识树'}</span>
-        <strong>{tree.name}</strong>
-        <small>{points.length} 个节点 · 固定视角预览</small>
-      </div>
-      <div className="library-showcase__canvas">
-        <CustomTreeCanvas nodes={nodes} edges={edges} selectedId={null} interactive={false} autoRotate />
-      </div>
+      <AnimatePresence initial={false} mode="sync">
+        <motion.div
+          key={tree.id}
+          className="library-showcase__layer"
+          initial={{ opacity: 0, scale: 0.985 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.012 }}
+          transition={{ duration: 0.46, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="library-showcase__meta">
+            <span>{tree.ownerType === 'system' ? '系统' : '个人'}</span>
+            <strong>{tree.name}</strong>
+            <small>{points.length} 个节点</small>
+          </div>
+          <div className="library-showcase__canvas">
+            <CustomTreeCanvas nodes={nodes} edges={edges} selectedId={null} interactive={false} autoRotate />
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </section>
   );
 }

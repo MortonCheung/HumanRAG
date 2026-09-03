@@ -45,7 +45,7 @@ export function TreeIdentityForm({ onSubmit, onChange, busy = false }: TreeIdent
           id="tree-desc"
           value={description}
           onChange={(e) => update({ description: e.target.value })}
-          placeholder="它将帮助你组织哪一类知识？可稍后填写"
+          placeholder="说明知识范围，可稍后填写"
           rows={3}
         />
       </div>
@@ -58,7 +58,7 @@ export function TreeIdentityForm({ onSubmit, onChange, busy = false }: TreeIdent
       </div>
       <p className="tree-identity-form__note">名称、简介和颜色都不是必填项，创建后仍可在设置中修改。</p>
       <button type="submit" className="tree-identity-form__submit" disabled={busy}>
-        {busy ? '正在生成知识空间' : '创建知识树'}
+        {busy ? '正在创建' : '创建知识树'}
       </button>
     </form>
   );
