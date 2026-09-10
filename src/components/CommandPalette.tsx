@@ -29,7 +29,7 @@ export function CommandPalette() {
   return (
     <AnimatePresence>
       {open && (
-        <motion.section className="command-palette" role="dialog" aria-modal="true" aria-label="搜索知识节点" initial={{ opacity: 0, y: 10, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 6, scale: 0.985 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>
+        <motion.section className="command-palette" role="dialog" aria-modal="true" aria-label="搜索知识节点" initial={{ opacity: 0, y: 10, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.985 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>
           <div className="command-palette__input">
             <MagnifyingGlass size={18} />
             <input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索知识、技能或练习" aria-label="搜索输入" />

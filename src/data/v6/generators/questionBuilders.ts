@@ -19,7 +19,7 @@ export function buildChoice(input: {
 }): QuestionMaterial {
   const entries = [
     { text: input.correct, misconception: undefined as string | undefined, isCorrect: true },
-    ...input.wrong.map((wrong) => ({ text: wrong.text, misconception: wrong.misconception, isCorrect: false })),
+    ...input.wrong.filter((wrong, index, all) => wrong.text.normalize('NFKC').trim() !== input.correct.normalize('NFKC').trim() && all.findIndex((item) => item.text.normalize('NFKC').trim() === wrong.text.normalize('NFKC').trim()) === index).map((wrong) => ({ text: wrong.text, misconception: wrong.misconception, isCorrect: false })),
   ];
   const shuffled = input.rng.shuffle(entries);
   const options = shuffled.map((entry, index) => ({ id: LETTERS[index], text: entry.text }));
@@ -111,11 +111,24 @@ export function buildNumericChoice(input: {
   wrong: Array<{ value: number | string; misconception: string }>;
   explanation: string;
 }): QuestionMaterial {
+  const correctText = `${input.correct}${input.unit ?? ''}`;
+  const normalizedCorrect = correctText.normalize('NFKC').trim();
+  const uniqueWrong = input.wrong.filter((entry, index, all) => {
+    const text = `${entry.value}${input.unit ?? ''}`.normalize('NFKC').trim();
+    return text !== normalizedCorrect && all.findIndex((candidate) => `${candidate.value}${input.unit ?? ''}`.normalize('NFKC').trim() === text) === index;
+  });
+  // Numeric distractors can collapse for symmetric values (for example cos=0).
+  // Keep the question valid with a deterministic nearby value rather than a duplicate answer.
+  if (uniqueWrong.length === 0) {
+    const base = Number(input.correct);
+    const fallback = Number.isFinite(base) ? (base === 0 ? 1 : base + (base > 0 ? 1 : -1)) : `${input.correct}（未归一化）`;
+    uniqueWrong.push({ value: fallback, misconception: '这个数值没有按题干要求完成计算。' });
+  }
   return buildChoice({
     rng: input.rng,
     stem: input.stem,
-    correct: `${input.correct}${input.unit ?? ''}`,
-    wrong: input.wrong.map((entry) => ({
+    correct: correctText,
+    wrong: uniqueWrong.map((entry) => ({
       text: `${entry.value}${input.unit ?? ''}`,
       misconception: entry.misconception,
     })),

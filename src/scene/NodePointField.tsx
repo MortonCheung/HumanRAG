@@ -1,137 +1,96 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import type { SceneModel, VisualState } from '../graph/types';
+import type { SceneModel } from '../graph/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
+import { neuronAppearance, neuronFragmentShader, neuronVertexShader } from './neuronAppearance';
 
-const OPACITY: Record<VisualState, number> = { dormant: 0.16, contextual: 0.35, lensActive: 0.72, upstream: 0.95, downstream: 0.95, lateral: 0.6, selected: 1, recommendedPath: 0.92, searchMatch: 1 };
+function pointGeometry(count: number) {
+  const geometry = new THREE.BufferGeometry();
+  for (const [name, itemSize] of [['position', 3], ['color', 3], ['aSize', 1], ['aStrength', 1]] as const) {
+    geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count * itemSize), itemSize).setUsage(THREE.DynamicDrawUsage));
+  }
+  return geometry;
+}
 
-const vertex = `attribute float aSize; attribute float aOpacity; attribute vec3 color; varying vec3 vColor; varying float vOpacity; uniform float uTime; uniform float uLife; void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); float pulse=1.0+sin(uTime*2.15+position.x*0.23+position.z*0.17)*(0.026*uLife); gl_PointSize=clamp(aSize*pulse*(250.0/max(1.0,-mv.z)),3.0,42.0); gl_Position=projectionMatrix*mv; vColor=color; vOpacity=aOpacity; }`;
-const fragment = `varying vec3 vColor; varying float vOpacity; void main(){ vec2 uv=gl_PointCoord-0.5; float d=length(uv)*2.0; if(d>1.0) discard; float core=1.0-smoothstep(0.12,0.34,d); float membrane=(1.0-smoothstep(0.38,0.62,d))*0.35; float halo=(1.0-smoothstep(0.25,1.0,d))*0.17; gl_FragColor=vec4(vColor,(core+membrane+halo)*vOpacity); }`;
-
-export function NodePointField({
-  model,
-  lifeActive,
-  experiencePhase,
-}: {
+/** One real node, one emissive point. Its halo never needs lighting or postprocessing. */
+export function NodePointField({ model, experiencePhase, motionAllowed }: {
   model: SceneModel;
-  lifeActive: boolean;
   experiencePhase: SpatialExperiencePhase;
+  motionAllowed: boolean;
 }) {
-  const points = useRef<THREE.Points>(null);
-  const positionTargets = useRef<Float32Array>(new Float32Array(model.nodes.length * 3));
-  const moving = useRef(false);
   const hoveredNodeId = useKnowledgeStore((state) => state.hoveredNodeId);
-  const { invalidate } = useThree();
-  const geometry = useMemo(() => {
-    const positions = new Float32Array(model.nodes.length * 3);
-    const colors = new Float32Array(model.nodes.length * 3);
-    const sizes = new Float32Array(model.nodes.length);
-    const opacity = new Float32Array(model.nodes.length);
-    const color = new THREE.Color();
+  const { invalidate, viewport } = useThree();
+  const geometry = useMemo(() => pointGeometry(model.nodes.length), [model.nodes.length]);
+  const targets = useRef<Array<{ size: number; strength: number }>>([]);
+  const settling = useRef(false);
+  const uniforms = useMemo(() => ({ uDpr: { value: viewport.dpr } }), [viewport.dpr]);
+
+  useLayoutEffect(() => {
+    const positions = geometry.getAttribute('position');
+    const colors = geometry.getAttribute('color');
+    const sizes = geometry.getAttribute('aSize');
+    const strengths = geometry.getAttribute('aStrength');
     model.nodes.forEach((node, index) => {
-      positions.set(node.displayPosition, index * 3);
-      color.set(node.visualState === 'selected' ? '#fff7e6' : node.domainColor);
-      colors.set([color.r, color.g, color.b], index * 3);
-      sizes[index] = (node.visualState === 'selected' ? 1.7 : node.visualState === 'upstream' || node.visualState === 'downstream' ? 1.35 : 1) * (node.coreRadius * 24 + 4);
-      opacity[index] = OPACITY[node.visualState];
+      const appearance = neuronAppearance(node.type, node.visualState, node.id === hoveredNodeId);
+      if (experiencePhase !== 'universe') appearance.strength = Math.max(0.9, appearance.strength);
+      targets.current[index] = appearance;
+      positions.setXYZ(index, ...node.displayPosition);
+      // Branch color belongs to the corona; the nucleus stays white in every state.
+      const color = new THREE.Color(node.domainColor).lerp(new THREE.Color('#c8edff'), 0.7);
+      colors.setXYZ(index, color.r, color.g, color.b);
+      if (!motionAllowed || sizes.getX(index) === 0) {
+        sizes.setX(index, appearance.size);
+        strengths.setX(index, appearance.strength);
+      }
     });
-    const next = new THREE.BufferGeometry();
-    next.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    next.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    next.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-    next.setAttribute('aOpacity', new THREE.BufferAttribute(opacity, 1));
-    positionTargets.current = positions.slice();
-    return next;
-    // 节点顺序和数量是图谱拓扑；选择节点时不应重建 GPU 几何体。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model.nodes.length]);
-  const material = useMemo(() => new THREE.ShaderMaterial({
-    vertexShader: vertex,
-    fragmentShader: fragment,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    uniforms: { uTime: { value: 0 }, uLife: { value: 0 } },
-  }), []);
-
-  useEffect(() => () => material.dispose(), [material]);
-
-  useEffect(() => {
-    return () => { geometry.dispose(); };
-  }, [geometry]);
-
-  useEffect(() => {
-    material.uniforms.uLife.value = lifeActive ? 1 : 0;
+    targets.current.length = model.nodes.length;
+    [positions, colors, sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
+    settling.current = motionAllowed;
     invalidate();
-  }, [invalidate, lifeActive, material]);
+  }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, invalidate]);
 
-  useEffect(() => {
-    const positionAttribute = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
-    const sizeAttribute = geometry.getAttribute('aSize') as THREE.BufferAttribute;
-    const opacityAttribute = geometry.getAttribute('aOpacity') as THREE.BufferAttribute;
-    const baseColor = new THREE.Color();
-    const hoverColor = new THREE.Color('#fff8dc');
-
-    model.nodes.forEach((node, index) => {
-      const offset = index * 3;
-      const [x, y, z] = node.displayPosition;
-      positionTargets.current[offset] = x;
-      positionTargets.current[offset + 1] = y;
-      positionTargets.current[offset + 2] = z;
-      if (
-        Math.abs(positionAttribute.getX(index) - x) > 0.001
-        || Math.abs(positionAttribute.getY(index) - y) > 0.001
-        || Math.abs(positionAttribute.getZ(index) - z) > 0.001
-      ) moving.current = true;
-      const hovered = node.id === hoveredNodeId;
-      baseColor.set(node.visualState === 'selected' ? '#fff7e6' : node.domainColor);
-      if (hovered && node.visualState !== 'selected') baseColor.lerp(hoverColor, 0.28);
-      colorAttribute.setXYZ(index, baseColor.r, baseColor.g, baseColor.b);
-      const stateScale = node.visualState === 'selected'
-        ? 1.7
-        : node.visualState === 'upstream' || node.visualState === 'downstream' ? 1.35 : 1;
-      const landingScale = experiencePhase === 'landing' ? 1.18 : 1;
-      const landingOpacity = experiencePhase === 'landing' ? Math.max(0.34, OPACITY[node.visualState]) : OPACITY[node.visualState];
-      sizeAttribute.setX(index, stateScale * (node.coreRadius * 24 + 4) * (hovered ? 1.24 : 1) * landingScale);
-      opacityAttribute.setX(index, hovered ? Math.max(0.92, landingOpacity) : landingOpacity);
+  useFrame((_, delta) => {
+    if (!settling.current) return;
+    const sizes = geometry.getAttribute('aSize');
+    const strengths = geometry.getAttribute('aStrength');
+    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 14);
+    let remaining = 0;
+    targets.current.forEach((target, index) => {
+      const sizeDelta = target.size - sizes.getX(index);
+      const strengthDelta = target.strength - strengths.getX(index);
+      sizes.setX(index, sizes.getX(index) + sizeDelta * alpha);
+      strengths.setX(index, strengths.getX(index) + strengthDelta * alpha);
+      remaining = Math.max(remaining, Math.abs(sizeDelta), Math.abs(strengthDelta));
     });
-
-    colorAttribute.needsUpdate = true;
-    sizeAttribute.needsUpdate = true;
-    opacityAttribute.needsUpdate = true;
-    invalidate();
-  }, [experiencePhase, geometry, hoveredNodeId, invalidate, model.nodes]);
-
-  useFrame(({ clock }, delta) => {
-    material.uniforms.uTime.value = clock.elapsedTime;
-    if (!moving.current) return;
-    const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const current = positions.array as Float32Array;
-    const targets = positionTargets.current;
-    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 5.4);
-    let maxDelta = 0;
-    for (let index = 0; index < current.length; index += 1) {
-      const difference = targets[index] - current[index];
-      maxDelta = Math.max(maxDelta, Math.abs(difference));
-      current[index] += difference * alpha;
-    }
-    positions.needsUpdate = true;
-    if (maxDelta < 0.012) {
-      current.set(targets);
-      positions.needsUpdate = true;
-      moving.current = false;
-    } else invalidate();
+    sizes.needsUpdate = strengths.needsUpdate = true;
+    settling.current = remaining > 0.002;
+    if (settling.current) invalidate();
   });
 
-  return (
-    <points
-      ref={points}
-      geometry={geometry}
-      material={material}
-      frustumCulled={false}
-    />
-  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <points geometry={geometry} frustumCulled={false} raycast={() => null}>
+    <shaderMaterial vertexShader={neuronVertexShader} fragmentShader={neuronFragmentShader}
+      uniforms={uniforms} vertexColors transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+  </points>;
+}
+
+/** Reuse the same nucleus in tree previews/editors; their invisible hit targets stay separate. */
+export function NeuronStar({ color = '#c8edff', selected = false, size = 26 }: { color?: string; selected?: boolean; size?: number }) {
+  const dpr = useThree((state) => state.viewport.dpr);
+  const geometry = useMemo(() => {
+    const next = pointGeometry(1);
+    const tint = new THREE.Color(color).lerp(new THREE.Color('#c8edff'), 0.7);
+    next.getAttribute('color').setXYZ(0, tint.r, tint.g, tint.b);
+    next.getAttribute('aSize').setX(0, selected ? size * 1.4 : size);
+    next.getAttribute('aStrength').setX(0, selected ? 1.25 : 1);
+    return next;
+  }, [color, selected, size]);
+  const uniforms = useMemo(() => ({ uDpr: { value: dpr } }), [dpr]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return <points geometry={geometry} raycast={() => null} frustumCulled={false}>
+    <shaderMaterial vertexShader={neuronVertexShader} fragmentShader={neuronFragmentShader}
+      uniforms={uniforms} vertexColors transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+  </points>;
 }

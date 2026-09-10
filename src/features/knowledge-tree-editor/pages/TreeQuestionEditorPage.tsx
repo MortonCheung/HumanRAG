@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ArrowRight } from '@phosphor-icons/react';
 import { ROUTES } from '../../../app/routes';
 import { migrateV9 } from '../../../domain/knowledge/migration';
@@ -20,12 +21,7 @@ export function TreeQuestionEditorPage() {
 
   return (
     <div className="tree-question-editor-page">
-      <div className="editor-toolbar">
-        <h2>题目编辑</h2>
-      </div>
-      <p className="editor-empty">
-        题目绑定在知识点上。当前共有 {points.length} 个知识点，逐个点开维护题目。
-      </p>
+      {points.length === 0 && <p className="editor-empty">暂无知识点</p>}
       <ul className="point-list">
         {points.map((point) => (
           <li key={point.id} className="point-list__item">
@@ -37,6 +33,7 @@ export function TreeQuestionEditorPage() {
             <button
               type="button"
               className="point-list__open"
+              disabled={contentRepository.getQuestionsForNode(point.id).length === 0}
               onClick={() => libraryId && treeId && navigate(ROUTES.pointPractice(libraryId, treeId, point.id))}
               aria-label={`打开 ${point.name} 题库`}
             >

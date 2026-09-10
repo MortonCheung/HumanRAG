@@ -139,15 +139,6 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     const currentGoalId = get().selectedGoalId;
     const branchFocusId = branchRootId(nodeId);
     const branchChanged = branchFocusId !== currentGoalId;
-    const previousNode = get().selectedNodeId ? nodesById.get(get().selectedNodeId!) : null;
-    const distance = previousNode
-      ? Math.hypot(
-        node.basePosition[0] - previousNode.basePosition[0],
-        node.basePosition[1] - previousNode.basePosition[1],
-        node.basePosition[2] - previousNode.basePosition[2],
-      )
-      : Number.POSITIVE_INFINITY;
-    const shouldMoveCamera = branchChanged || distance > 14;
     if (branchChanged) {
       persist(get().profile, branchFocusId, get().qualityPreference);
     }
@@ -157,10 +148,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       activePanel: null,
       phase: 'nodeFocused',
       selectionEpoch: get().selectionEpoch + 1,
-      // 近距离切点保留视角；远距离切点平移镜头，保持用户已调好的方向与缩放。
-      cameraIntent: shouldMoveCamera
-        ? { id: `node:${nodeId}:${Date.now()}`, mode: 'node', nodeId }
-        : get().cameraIntent,
+      // The camera decides visibility using the actual screen projection, not graph distance.
+      cameraIntent: { id: `node:${nodeId}:${get().selectionEpoch + 1}`, mode: 'node', nodeId },
     });
   },
   hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
@@ -234,19 +223,12 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   prepareUniverseEntry: () => set((state) => {
-    persist(state.profile, null, state.qualityPreference);
     return {
-      phase: 'overview',
-      selectedGoalId: null,
-      selectedNodeId: null,
       hoveredNodeId: null,
       activePanel: null,
-      relationMode: 'primary',
       isPathRibbonOpen: false,
-      learningPath: [],
       unmatchedGoal: false,
       selectionEpoch: state.selectionEpoch + 1,
-      cameraIntent: { id: `entry:${Date.now()}`, mode: 'overview' },
     };
   }),
 }));

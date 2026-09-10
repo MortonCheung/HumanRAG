@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ArrowRight } from '@phosphor-icons/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
 import { migrateV9 } from '../../../domain/knowledge/migration';
 import { getPointsForTree, getTree } from '../../../domain/knowledge/selectors';

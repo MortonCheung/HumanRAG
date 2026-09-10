@@ -1,6 +1,9 @@
-import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
+import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { ROUTES } from '../../app/routes';
 import { migrateV9 } from '../../domain/knowledge/migration';
+import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
+import { NavigationModes } from '../../components/navigation/NavigationModes';
 
 const SECTIONS = [
   { key: 'structure', label: '节点' },
@@ -16,30 +19,13 @@ export function TreeEditorShell() {
 
   return (
     <div className="tree-editor-shell">
-      <header className="tree-editor-shell__header">
-        <button
-          className="tree-editor-shell__back"
-          onClick={() => navigate(ROUTES.tree(libraryId ?? '', treeId ?? ''))}
-          type="button"
-        >
-          ← 完成
-        </button>
-        <strong className="tree-editor-shell__title">{tree?.name ?? '知识树'}</strong>
-        <nav className="tree-editor-shell__nav">
-          {SECTIONS.map((s) => (
-            <NavLink
-              key={s.key}
-              to={ROUTES.treeEdit(libraryId ?? '', treeId ?? '', s.key)}
-              className={({ isActive }) =>
-                `tree-editor-shell__nav-link${isActive ? ' tree-editor-shell__nav-link--active' : ''}`
-              }
-            >
-              {s.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-      <div className="tree-editor-shell__content">
+      <WorkspaceHeader
+        title={tree?.name ?? '知识树'}
+        backLabel="返回知识树"
+        onBack={() => navigate(libraryId && treeId ? ROUTES.tree(libraryId, treeId) : ROUTES.library)}
+        modes={libraryId && treeId ? <NavigationModes label="编辑模式" items={SECTIONS.map((section) => ({ to: ROUTES.treeEdit(libraryId, treeId, section.key), label: section.label }))} /> : undefined}
+      />
+      <div key={treeId} className="tree-editor-shell__content">
         <Outlet />
       </div>
     </div>

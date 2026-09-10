@@ -83,8 +83,8 @@ function buildLayout(model: SceneModel, segmentCount: number): EdgeLayout {
 }
 
 function alphaFor(edge: SceneEdge, phase: SpatialExperiencePhase) {
-  if (edge.visualState === 'background') return phase === 'landing' ? 0.12 : 0.075;
-  if (edge.visualState === 'contextual') return 0.13;
+  if (edge.visualState === 'background') return phase !== 'universe' ? (edge.relationType === 'hierarchy' ? 0.18 : 0.016) : (edge.relationType === 'hierarchy' ? 0.14 : 0.025);
+  if (edge.visualState === 'contextual') return 0.22;
   if (edge.visualState === 'lensActive') return 0.3;
   if (edge.visualState === 'lateral') return 0.34;
   return 0.72;
@@ -98,19 +98,33 @@ const vertexShader = `
   void main(){vProgress=aProgress;vDelay=aDelay;vDirection=aDirection;vAlpha=aAlpha;vActive=aActive;vColor=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
 `;
 const fragmentShader = `
-  uniform float uTime; varying float vProgress; varying float vDelay; varying float vDirection;
+  uniform float uTime; uniform float uReveal; varying float vProgress; varying float vDelay; varying float vDirection;
   varying float vAlpha; varying float vActive; varying vec3 vColor;
-  void main(){float directed=vDirection<0.0?1.0-vProgress:vProgress;float p=fract(uTime*0.22+vDelay*0.7);float d=abs(directed-p);d=min(d,1.0-d);float signal=(1.0-smoothstep(0.0,0.07,d))*vActive;gl_FragColor=vec4(mix(vColor,vec3(1.0,0.985,0.91),signal*0.58),vAlpha*(1.0+signal*0.58));}
+  void main(){
+    float directed=vDirection<0.0?1.0-vProgress:vProgress;
+    float p=uTime*0.82-vDelay*0.3;
+    float d=abs(directed-p);
+    float signal=(1.0-smoothstep(0.0,0.08,d))*vActive;
+    float reveal=smoothstep(vProgress-0.15,vProgress,uReveal);
+    float junction=exp(-vProgress*10.0)+exp(-(1.0-vProgress)*10.0);
+    gl_FragColor=vec4(mix(vColor,vec3(0.88,0.97,1.0),signal*0.65),vAlpha*(0.68+junction*0.32+signal*0.6)*reveal);
+  }
 `;
 
 /** 固定拓扑的单批次连线：同树切点只更新属性，树聚散才计算曲线并连续插值。 */
-export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: SceneModel; experiencePhase: SpatialExperiencePhase }) {
+export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const segmentCount = Math.max(4, QUALITY_CONFIG[quality].curveSegments);
   const material = useRef<THREE.ShaderMaterial>(null);
   const targetPositions = useRef<Float32Array | null>(null);
   const moving = useRef(false);
-  const { invalidate } = useThree();
+  const { invalidate, gl } = useThree();
+  const reveal = useRef(motionAllowed && experiencePhase === 'landing' ? 0 : 1.2);
+  const pulse = useRef(3);
+  const alphaTargets = useRef<Float32Array>(new Float32Array(0));
+  const fading = useRef(false);
+  const uniforms = useMemo(() => ({ uTime: { value: 3 }, uReveal: { value: reveal.current } }), []);
+  const selectionEpoch = useKnowledgeStore((state) => state.selectionEpoch);
 
   const layout = useMemo(
     () => buildLayout(model, segmentCount),
@@ -122,6 +136,7 @@ export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: Scene
     next.setAttribute('position', new THREE.BufferAttribute(layout.positions.slice(), 3).setUsage(THREE.DynamicDrawUsage));
     next.setAttribute('aProgress', new THREE.BufferAttribute(layout.progress, 1));
     const vertexCount = layout.progress.length;
+    alphaTargets.current = new Float32Array(vertexCount);
     next.setAttribute('color', new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3));
     next.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
     next.setAttribute('aDirection', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
@@ -130,7 +145,7 @@ export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: Scene
     targetPositions.current = layout.positions.slice();
     return next;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segmentCount]);
+  }, [layout]);
 
   useEffect(() => {
     targetPositions.current = layout.positions;
@@ -160,25 +175,57 @@ export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: Scene
       } else {
         color.set(source?.domainColor ?? '#708080');
         targetColor.set(target?.domainColor ?? '#708080');
-        color.lerp(targetColor, 0.5).multiplyScalar(0.54);
+        color.lerp(targetColor, 0.5).multiplyScalar(0.82);
       }
       for (let index = 0; index < segmentCount * 2; index += 1) {
         colorAttribute.setXYZ(vertex, color.r, color.g, color.b);
         delayAttribute.setX(vertex, edge.propagationDelay);
         directionAttribute.setX(vertex, edge.direction === 'in' ? -1 : 1);
-        alphaAttribute.setX(vertex, alphaFor(edge, experiencePhase));
+        alphaTargets.current[vertex] = alphaFor(edge, experiencePhase);
+        if (!motionAllowed || alphaAttribute.getX(vertex) === 0) alphaAttribute.setX(vertex, alphaTargets.current[vertex]);
         activeAttribute.setX(vertex, active ? 1 : 0);
         vertex += 1;
       }
     });
     [colorAttribute, delayAttribute, directionAttribute, alphaAttribute, activeAttribute].forEach((attribute) => { attribute.needsUpdate = true; });
+    fading.current = motionAllowed;
     invalidate();
-  }, [experiencePhase, geometry, invalidate, model.edges, model.nodes, segmentCount]);
+  }, [experiencePhase, geometry, invalidate, model.edges, model.nodes, segmentCount, motionAllowed]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
-  useFrame(({ clock }, delta) => {
-    if (material.current) material.current.uniforms.uTime.value = clock.elapsedTime;
+  useEffect(() => {
+    pulse.current = motionAllowed && experiencePhase === 'universe' ? 0 : 3;
+    if (!motionAllowed) reveal.current = 1.2;
+    invalidate();
+  }, [selectionEpoch, experiencePhase, motionAllowed, invalidate]);
+  useEffect(() => {
+    const stop = () => { pulse.current = 3; reveal.current = 1.2; invalidate(); };
+    gl.domElement.addEventListener('pointerdown', stop);
+    gl.domElement.addEventListener('wheel', stop, { passive: true });
+    return () => { gl.domElement.removeEventListener('pointerdown', stop); gl.domElement.removeEventListener('wheel', stop); };
+  }, [gl, invalidate]);
+
+  useFrame((_, delta) => {
+    if (fading.current) {
+      const attribute = geometry.getAttribute('aAlpha') as THREE.BufferAttribute;
+      const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 9);
+      let remaining = 0;
+      for (let index = 0; index < attribute.count; index += 1) {
+        const difference = alphaTargets.current[index] - attribute.getX(index);
+        attribute.setX(index, attribute.getX(index) + difference * alpha);
+        remaining = Math.max(remaining, Math.abs(difference));
+      }
+      attribute.needsUpdate = true;
+      fading.current = remaining > 0.002;
+      if (fading.current) invalidate();
+    }
+    if (motionAllowed && (reveal.current < 1.2 || pulse.current < 3)) {
+      reveal.current = Math.min(1.2, reveal.current + Math.min(delta, 0.05));
+      pulse.current += Math.min(delta, 0.05);
+      invalidate();
+    }
+    if (material.current) { material.current.uniforms.uTime.value = pulse.current; material.current.uniforms.uReveal.value = reveal.current; }
     if (!moving.current || !targetPositions.current) return;
     const attribute = geometry.getAttribute('position') as THREE.BufferAttribute;
     const current = attribute.array as Float32Array;
@@ -198,5 +245,5 @@ export function BatchedKnowledgeEdges({ model, experiencePhase }: { model: Scene
     } else invalidate();
   });
 
-  return <lineSegments geometry={geometry}><shaderMaterial ref={material} vertexShader={vertexShader} fragmentShader={fragmentShader} transparent depthWrite={false} blending={THREE.AdditiveBlending} vertexColors uniforms={{ uTime: { value: 0 } }} /></lineSegments>;
+  return <lineSegments geometry={geometry}><shaderMaterial ref={material} vertexShader={vertexShader} fragmentShader={fragmentShader} transparent depthWrite={false} vertexColors uniforms={uniforms} /></lineSegments>;
 }

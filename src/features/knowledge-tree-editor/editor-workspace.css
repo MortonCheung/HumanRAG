@@ -1,0 +1,52 @@
+.tree-structure-editor-page__workspace { height: calc(100dvh - var(--it-nav-height) - 64px); min-height: 440px; grid-template-columns: minmax(0, 1fr) 360px; border-radius: 12px; }
+.tree-editor-panel { display: grid; grid-template-rows: auto minmax(72px, 22%) minmax(0, 1fr); background: var(--it-surface); }
+.editor-node-search { padding: 16px; }
+.editor-node-search input { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--it-rule-strong); border-radius: 8px; background: var(--it-bg); color: var(--it-text); }
+.tree-structure-editor-page__list { padding: 0 10px 10px; }
+.tree-structure-editor-page .point-list__select { min-height: 44px; }
+.tree-structure-editor-page .point-list__meta strong { font-size: 13px; }
+.point-inspector { grid-template-rows: auto auto minmax(0, 1fr); }
+.point-inspector__body { gap: 22px; padding: 16px 20px 28px; }
+.point-inspector__title { padding: 12px 20px; }
+.point-inspector__title strong { font-size: 15px; }
+.point-inspector__tabs { padding: 0 12px 8px; }
+.point-inspector__tabs button { min-height: 44px; padding: 10px 16px; font-size: 13px; }
+.point-inspector .editor-field { font-size: 12px; }
+.point-inspector .editor-field input:not([type="checkbox"]):not([type="color"]), .point-inspector .editor-field textarea, .point-inspector .editor-field select { min-height: 44px; font-size: 14px; line-height: 1.65; }
+.point-inspector .editor-field input:focus-visible, .point-inspector .editor-field textarea:focus-visible, .point-inspector .editor-field select:focus-visible { outline: 2px solid var(--it-accent); outline-offset: 4px; }
+.point-inspector__position label { grid-template-columns: 14px minmax(0, 1fr); font-size: 11px; }
+.point-inspector__checks { max-height: 190px; }
+.point-inspector .editor-check { min-height: 36px; font-size: 13px; }
+.point-inspector__danger { border-top: 1px solid var(--it-rule); padding-top: 20px; color: var(--it-text-faint); font-size: 12px; }
+.point-inspector__danger summary { cursor: pointer; min-height: 32px; }
+.point-inspector__delete { min-height: 44px; padding: 10px 12px; color: var(--it-danger); background: transparent; }
+.editor-save-error { padding: 12px 16px; margin: 0 0 12px; color: var(--it-danger); font-size: 13px; }
+.editor-mobile-switch { display: none !important; }
+.settings-form { max-width: 640px; padding-top: 32px; }
+.settings-form .editor-field { margin-bottom: 24px; }
+.settings-form .editor-field input, .settings-form .editor-field textarea { font-size: 15px; }
+.tree-genesis-page__preview-copy p:empty { display: none; }
+.point-placement-page__tree { height: min(46dvh, 420px); }
+.point-placement-page__fields input[type="search"] { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--it-rule-strong); border-radius: 8px; background: var(--it-bg); color: var(--it-text); }
+.point-placement-page__fields input[type="search"]:focus-visible { outline: 2px solid var(--it-accent); outline-offset: 3px; }
+.point-placement-page__fields .editor-check { min-height: 36px; }
+.point-placement-page__fields fieldset { max-height: 200px; overflow: auto; }
+.point-creation-shell.is-placement { display: block; }
+.point-creation-shell__form.is-placement { padding: 0; border-left: 0; overflow: visible; }
+.point-creation-shell.is-placement .point-placement-page { display: grid; grid-template-columns: minmax(0, 1fr) 360px; min-height: calc(100dvh - var(--it-nav-height)); }
+.point-creation-shell.is-placement .point-placement-page__tree { height: calc(100dvh - var(--it-nav-height)); min-height: 480px; margin: 0; border: 0; border-radius: 0; }
+.point-creation-shell.is-placement .point-placement-page__fields { max-height: calc(100dvh - var(--it-nav-height)); overflow: auto; align-content: start; gap: 28px; padding: 36px 24px; border-left: 1px solid var(--it-rule); }
+.point-creation-shell.is-placement .point-placement-page__error { grid-column: 1 / -1; margin: 0; padding: 14px 24px; }
+.point-creation-shell.is-placement .editor-field { font-size: 13px; }
+.point-creation-shell.is-placement .editor-field select, .point-creation-shell.is-placement .editor-field input[type="search"] { min-height: 44px; font-size: 14px; }
+@media (max-width: 1000px) { .tree-structure-editor-page__workspace { grid-template-columns: minmax(0, 1fr) 320px; } }
+@media (max-width: 767px) {
+  .editor-mobile-switch { display: inline-flex !important; }
+  .tree-structure-editor-page__workspace { height: calc(100dvh - var(--it-nav-height) - 36px); grid-template-columns: minmax(0, 1fr); }
+  .tree-structure-editor-page__canvas { min-height: 0; }
+  .tree-structure-editor-page[data-mobile-view="canvas"] .tree-editor-panel { display: none; }
+  .tree-structure-editor-page[data-mobile-view="properties"] .tree-structure-editor-page__canvas { display: none; }
+  .point-creation-shell.is-placement .point-placement-page { grid-template-columns: minmax(0, 1fr); }
+  .point-creation-shell.is-placement .point-placement-page__tree { height: 48dvh; min-height: 320px; }
+  .point-creation-shell.is-placement .point-placement-page__fields { max-height: none; border-left: 0; border-top: 1px solid var(--it-rule); }
+}

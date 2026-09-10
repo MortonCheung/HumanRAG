@@ -1,21 +1,16 @@
-import { motion, useReducedMotion } from 'motion/react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
-/** 单实例路由过渡：旧页面立即卸载，避免退场副本截获点击或提交。 */
+/** One live Outlet. Native transitions animate inert images of the old/new page. */
 export function RouteTransition({ routeKey, direction, children }: { routeKey: string; direction: number; children: ReactNode }) {
-  const reduced = useReducedMotion();
-  if (reduced) return <div key={routeKey}>{children}</div>;
-  return (
-    <motion.div
-      key={routeKey}
-      initial="initial"
-      animate="animate"
-      variants={{
-        initial: { opacity: 0.72, x: direction * 42 },
-        animate: { opacity: 1, x: 0, transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] } },
-      }}
-    >
-      {children}
-    </motion.div>
-  );
+  const page = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (typeof document.startViewTransition === 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Older browsers keep the same component tree and receive a light entry.
+    const animation = page.current?.animate?.([
+      { opacity: 0.82, transform: `translate3d(${direction * 24}px, 0, 0)` },
+      { opacity: 1, transform: 'translate3d(0, 0, 0)' },
+    ], { duration: 260, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    return () => animation?.cancel();
+  }, [routeKey]);
+  return <div ref={page} className="route-page">{children}</div>;
 }

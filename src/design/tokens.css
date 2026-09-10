@@ -1,26 +1,27 @@
-/* iTeach V7 全局设计 token（施工指南 §4.2 建议固定值）。
-   与知识空间旧 --ku-* 变量保持同一套中性黑基础，仅新增语义命名。 */
+/* HumanRAG. Legacy --ku-* aliases deliberately share these semantic tokens. */
 :root {
-  --it-bg-deep: #050707;
-  --it-bg: #080a0a;
-  --it-surface: #0d0f0f;
-  --it-surface-raised: #131616;
-  --it-surface-hover: #181c1b;
-  --it-text: #efefe9;
-  --it-text-soft: #a7aaa3;
-  --it-text-faint: #696f6a;
-  --it-rule: rgb(239 239 233 / 0.10);
-  --it-rule-strong: rgb(239 239 233 / 0.18);
-  --it-accent: #d8c58f;
-  --it-selected: #fff8dc;
+  --it-bg-deep: #080a10;
+  --it-bg: #0e1118;
+  --it-surface: #11151d;
+  --it-surface-raised: #191e28;
+  --it-surface-hover: #232b37;
+  --it-text: #f2f5fa;
+  --it-text-soft: #b0bac8;
+  --it-text-faint: #8a96a8;
+  --it-rule: rgb(219 231 255 / 0.10);
+  --it-rule-strong: rgb(219 231 255 / 0.22);
+  --it-control-border: #606e82;
+  --it-accent: #c5efff;
+  --it-selected: #f0fbff;
   --it-focus: var(--it-selected);
   --it-success: #91b596;
-  --it-danger: #d8897c;
+  --it-danger: #e0a497;
 
-  --it-radius-button: 7px;
-  --it-radius-input: 7px;
-  --it-radius-panel: 10px;
+  --it-radius-button: 8px;
+  --it-radius-input: 8px;
+  --it-radius-panel: 12px;
   --it-nav-height: 64px;
-  --it-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --it-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --it-mono: "SFMono-Regular", Consolas, "Geist Mono", monospace;
 }
+@media (max-width: 767px) { :root { --it-nav-height: 56px; } }

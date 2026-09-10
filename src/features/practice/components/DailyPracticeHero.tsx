@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
 import { ArrowRight, Lightning } from '@phosphor-icons/react';
 import type { PracticePlan } from '../../../ai/practice/PracticePlanner';
 

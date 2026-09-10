@@ -1,17 +1,23 @@
-import { ArrowRight, Exam } from '@phosphor-icons/react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Exam } from '@phosphor-icons/react';
+import { useParams, useLocation } from 'react-router-dom';
+import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
-import { getPointsForTree } from '../../../domain/knowledge/selectors';
-import { isPointActionable } from '../../../domain/knowledge/selectors';
+import { getPointsForTree, isPointActionable } from '../../../domain/knowledge/selectors';
+import { contentRepository } from '../../../services/content/ContentRepository';
+import { WorkspaceActions } from '../../workspace/WorkspaceHeader';
+import { TreePointDirectory } from '../components/TreePointDirectory';
 
 export function TreePracticePage() {
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const points = treeId ? getPointsForTree(treeId).filter(isPointActionable) : [];
+  const hasQuestions = points.some((point) => contentRepository.getQuestionsForNode(point.id).length > 0);
+  const initialPointFilterId = (location.state as { pointFilterId?: string } | null)?.pointFilterId;
 
   return (
-    <section className="tree-scope-page">
-      <header><span className="page-kicker">题库</span><h2>按知识点练习</h2><p>先明确练习范围，再进入对应微型题库；也可以覆盖整棵知识树。</p></header>
+    <>
+      <WorkspaceActions primary>
       <button
         onClick={() => {
           if (libraryId && treeId) {
@@ -19,28 +25,13 @@ export function TreePracticePage() {
           }
         }}
         type="button"
-        className="tree-practice-start"
+        className="context-nav__button context-nav__button--primary"
+        disabled={!hasQuestions}
       >
-        <Exam size={16} /> 开始整树练习 <ArrowRight size={14} />
+        <Exam size={16} aria-hidden="true" />整树练习
       </button>
-      <ul className="tree-point-grid">
-        {points.map((point) => (
-          <li key={point.id}>
-            <button
-              onClick={() => {
-                if (libraryId && treeId) {
-                  navigate(ROUTES.pointPractice(libraryId, treeId, point.id), { state: { origin: { kind: 'tree', libraryId, treeId } } });
-                }
-              }}
-              type="button"
-            >
-              <Exam size={16} />
-              <span><strong>{point.name}</strong><small>{point.description}</small></span>
-              <ArrowRight size={14} />
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
+      </WorkspaceActions>
+      <TreePointDirectory key={treeId} mode="practice" points={points} initialPointFilterId={initialPointFilterId} />
+    </>
   );
 }

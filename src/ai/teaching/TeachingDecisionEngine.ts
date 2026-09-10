@@ -1,6 +1,7 @@
 import type { Question, QuestionType } from '../../data/v6/schemas/questionSchema';
 import type { TeachingStep } from '../../data/v6/schemas/teachingSchema';
 import { MISCONCEPTIONS } from '../../data/v6/catalogs/misconceptionCatalog';
+import { getTcpTask, evaluateTcpTask } from '../../data/v6/handcrafted/tcpLesson';
 
 /**
  * 本地教学决策引擎（蓝图 §18）：确定性规则，不调用网络。
@@ -43,6 +44,8 @@ export function normalizeAnswer(type: QuestionType, value: string): string {
 }
 
 export function evaluateAnswer(question: Question, selected: string): AnswerEvaluation {
+  const tcpTask = getTcpTask(question.id);
+  if (tcpTask) return evaluateTcpTask(tcpTask, selected);
   const answer = question.answer;
   let correct = false;
 

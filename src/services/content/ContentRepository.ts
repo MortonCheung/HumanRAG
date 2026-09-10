@@ -11,6 +11,7 @@ import {
   questionIdsForNode,
 } from '../../data/v6/generators/generateQuestionVariants';
 import { knowledgeGraph } from '../../data/knowledgeGraph';
+import { getTcpQuestion, TCP_NODE_ID, TCP_TASKS } from '../../data/v6/handcrafted/tcpLesson';
 import { useLibraryStore, type CustomEdge, type CustomNode } from '../../store/libraryStore';
 
 /**
@@ -74,6 +75,8 @@ export const contentRepository: ContentRepository & {
   },
 
   getQuestion(questionId) {
+    const tcp = getTcpQuestion(questionId);
+    if (tcp) return tcp;
     const system = getSystemQuestion(questionId);
     if (system) return system;
     for (const library of userLibraries()) {
@@ -84,6 +87,7 @@ export const contentRepository: ContentRepository & {
   },
 
   getQuestionsForNode(nodeId) {
+    if (nodeId === TCP_NODE_ID) return TCP_TASKS.filter((task) => ['diagnostic', 'clarification', 'guided'].includes(task.role)).map((task) => getTcpQuestion(task.id)!);
     const systemIds = questionIdsForNode(nodeId);
     if (systemIds.length > 0) {
       return systemIds

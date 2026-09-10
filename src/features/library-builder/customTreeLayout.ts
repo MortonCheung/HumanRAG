@@ -2,6 +2,18 @@ import type { CustomEdge, CustomNode } from '../../store/libraryStore';
 
 export type TreePositionMap = Map<string, [number, number, number]>;
 
+/** Keep existing automatic placements stable; only a changed committed coordinate may replace one. */
+export function reconcileTreePositions(current: TreePositionMap, previous: TreePositionMap, incoming: TreePositionMap, activeId?: string, positionedIds?: Set<string>): TreePositionMap {
+  const next: TreePositionMap = new Map();
+  incoming.forEach((position, id) => {
+    const old = previous.get(id);
+    const changed = !old || ((!positionedIds || positionedIds.has(id)) && position.some((value, index) => value !== old[index]));
+    next.set(id, id === activeId || !changed ? current.get(id) ?? position : position);
+  });
+  if (next.size === current.size && [...next].every(([id, value]) => value === current.get(id))) return current;
+  return next;
+}
+
 function hash(value: string) {
   let result = 0;
   for (let index = 0; index < value.length; index += 1) result = (result * 31 + value.charCodeAt(index)) | 0;

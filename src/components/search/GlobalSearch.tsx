@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { AnimatePresence, motion } from 'motion/react';
 import { MagnifyingGlass } from '@phosphor-icons/react';
 import { nodesById } from '../../data/knowledgeGraph';

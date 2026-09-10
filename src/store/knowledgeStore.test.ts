@@ -6,13 +6,21 @@ describe('knowledgeStore spatial continuity', () => {
     useKnowledgeStore.getState().resetKnowledge();
   });
 
-  it('keeps the camera intent while switching between nearby nodes', () => {
+  it('lets the camera check actual screen visibility even for nearby nodes', () => {
     useKnowledgeStore.getState().selectNode('goal-cs-graduate');
     const firstIntent = useKnowledgeStore.getState().cameraIntent;
 
     useKnowledgeStore.getState().selectNode('direction-408');
-    expect(useKnowledgeStore.getState().cameraIntent).toBe(firstIntent);
+    expect(useKnowledgeStore.getState().cameraIntent).not.toBe(firstIntent);
+    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBe('direction-408');
     expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
+  });
+
+  it('keeps the user goal and selection when replaying entry', () => {
+    useKnowledgeStore.getState().selectNode('direction-408');
+    useKnowledgeStore.getState().prepareUniverseEntry();
+    expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
+    expect(useKnowledgeStore.getState().selectedNodeId).toBe('direction-408');
   });
 
   it('creates a node camera intent when the next node is far away', () => {

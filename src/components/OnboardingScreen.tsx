@@ -44,7 +44,7 @@ export function OnboardingScreen() {
     <section className="onboarding" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
       <header className="onboarding__header">
         <BrandMark />
-        <span>iTeach Demo · 画像仅保存在本机</span>
+        <span>HumanRAG · 信息仅保存在本机</span>
       </header>
 
       <div className="onboarding__layout">

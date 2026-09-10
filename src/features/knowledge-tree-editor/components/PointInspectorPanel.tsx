@@ -9,18 +9,21 @@ const KINDS = [
 function join(values: string[]) { return values.join('，'); }
 function split(value: string) { return value.split(/[，,\n]/).map((item) => item.trim()).filter(Boolean); }
 
-export function PointInspectorPanel({ draft, points, onChange, onCancel, onSave, onDelete, error }: {
+export function PointInspectorPanel({ draft, points, onChange, onDelete, position, onPositionChange }: {
   draft: PointDraft;
   points: KnowledgePoint[];
   onChange: (draft: PointDraft) => void;
-  onCancel: () => void;
-  onSave: () => void;
   onDelete: () => void;
-  error: string | null;
+  position: [number, number, number];
+  onPositionChange: (position: [number, number, number]) => void;
 }) {
   const [section, setSection] = useState<'content' | 'relations'>('content');
-  useEffect(() => setSection('content'), [draft.id]);
+  const [query, setQuery] = useState('');
+  const [coordinates, setCoordinates] = useState(position.map(String));
+  useEffect(() => { setSection('content'); setQuery(''); }, [draft.id]);
+  useEffect(() => setCoordinates(position.map(String)), [draft.id, position]);
   const candidates = points.filter((point) => point.id !== draft.id);
+  const matches = candidates.filter((point) => point.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
   const update = <K extends keyof PointDraft>(key: K, value: PointDraft[K]) => onChange({ ...draft, [key]: value });
   const toggle = (key: 'prerequisiteIds' | 'relatedIds', id: string) => {
     const current = draft[key];
@@ -31,11 +34,11 @@ export function PointInspectorPanel({ draft, points, onChange, onCancel, onSave,
     <section className="point-inspector" aria-label="知识点属性">
       <div className="point-inspector__title">
         <span className="point-list__swatch" style={{ background: draft.color }} />
-        <div><small>属性</small><strong>{draft.name || '未命名知识点'}</strong></div>
+        <div><strong>{draft.name || '未命名知识点'}</strong></div>
       </div>
-      <div className="point-inspector__tabs" role="tablist">
-        <button type="button" className={section === 'content' ? 'is-active' : ''} onClick={() => setSection('content')}>内容</button>
-        <button type="button" className={section === 'relations' ? 'is-active' : ''} onClick={() => setSection('relations')}>关系</button>
+      <div className="point-inspector__tabs" role="group" aria-label="属性分类">
+        <button type="button" aria-pressed={section === 'content'} className={section === 'content' ? 'is-active' : ''} onClick={() => setSection('content')}>内容</button>
+        <button type="button" aria-pressed={section === 'relations'} className={section === 'relations' ? 'is-active' : ''} onClick={() => setSection('relations')}>关系</button>
       </div>
       <div className="point-inspector__body">
         {section === 'content' ? (
@@ -58,19 +61,18 @@ export function PointInspectorPanel({ draft, points, onChange, onCancel, onSave,
         ) : (
           <>
             <label className="editor-field">上级节点<select value={draft.parentId ?? ''} onChange={(event) => update('parentId', event.target.value || undefined)}><option value="">无</option>{candidates.map((point) => <option key={point.id} value={point.id}>{point.name}</option>)}</select></label>
-            <fieldset className="editor-field point-inspector__checks"><legend>前置知识</legend>{candidates.length === 0 ? <small>暂无其他节点</small> : candidates.map((point) => <label key={point.id} className="editor-check"><input type="checkbox" checked={draft.prerequisiteIds.includes(point.id)} disabled={draft.parentId === point.id} onChange={() => toggle('prerequisiteIds', point.id)} />{point.name}</label>)}</fieldset>
-            <fieldset className="editor-field point-inspector__checks"><legend>相关知识</legend>{candidates.length === 0 ? <small>暂无其他节点</small> : candidates.map((point) => <label key={point.id} className="editor-check"><input type="checkbox" checked={draft.relatedIds.includes(point.id)} onChange={() => toggle('relatedIds', point.id)} />{point.name}</label>)}</fieldset>
-            <fieldset className="editor-field"><legend>空间位置</legend><div className="point-inspector__position">{(['X', 'Y', 'Z'] as const).map((axis, index) => <label key={axis}>{axis}<input type="number" step="0.5" value={draft.position?.[index] ?? 0} onChange={(event) => { const next = [...(draft.position ?? [0, 0, 0])] as [number, number, number]; next[index] = Number(event.target.value); update('position', next); }} /></label>)}</div></fieldset>
+            <label className="editor-field">查找关系<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
+            <fieldset className="editor-field point-inspector__checks"><legend>前置知识</legend>{matches.length === 0 ? <small>无匹配节点</small> : matches.map((point) => <label key={point.id} className="editor-check"><input type="checkbox" checked={draft.prerequisiteIds.includes(point.id) || draft.parentId === point.id} disabled={draft.parentId === point.id} onChange={() => toggle('prerequisiteIds', point.id)} />{point.name}</label>)}</fieldset>
+            <fieldset className="editor-field point-inspector__checks"><legend>相关知识</legend>{matches.length === 0 ? <small>无匹配节点</small> : matches.map((point) => <label key={point.id} className="editor-check"><input type="checkbox" checked={draft.relatedIds.includes(point.id)} onChange={() => toggle('relatedIds', point.id)} />{point.name}</label>)}</fieldset>
+            <fieldset className="editor-field"><legend>位置</legend><div className="point-inspector__position">{(['X', 'Y', 'Z'] as const).map((axis, index) => <label key={axis}>{axis}<input aria-label={`节点位置 ${axis}`} type="number" step="0.5" value={coordinates[index]} onChange={(event) => setCoordinates((current) => current.map((value, coordinate) => coordinate === index ? event.target.value : value))} onBlur={() => {
+              const next = coordinates.map(Number) as [number, number, number];
+              if (coordinates.some((value) => !value.trim()) || !next.every(Number.isFinite)) { setCoordinates(position.map(String)); return; }
+              if (next.some((value, coordinate) => value !== position[coordinate])) onPositionChange(next);
+            }} /></label>)}</div></fieldset>
           </>
         )}
-        {error && <p className="point-inspector__error">{error}</p>}
+        <details className="point-inspector__danger"><summary>节点操作</summary><button type="button" className="point-inspector__delete" onClick={onDelete}>删除节点</button></details>
       </div>
-      <footer className="point-inspector__actions">
-        <button type="button" className="point-inspector__delete" onClick={onDelete}>删除</button>
-        <span />
-        <button type="button" onClick={onCancel}>取消</button>
-        <button type="button" className="is-primary" onClick={onSave}>保存</button>
-      </footer>
     </section>
   );
 }

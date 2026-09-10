@@ -9,24 +9,26 @@ const DRAG_THRESHOLD = 7;
  * 屏幕空间拾取：点击范围以 CSS 像素计算，不依赖发光点大小、设备像素比或显卡。
  * 所有节点都进入同一最近点计算，拖动画布时不会误触选择。
  */
-export function NodeHitField({ model, onHover, onSelect }: {
+export function NodeHitField({ model, onHover, onSelect, enabled = true }: {
   model: SceneModel;
   onHover: (id: string | null) => void;
   onSelect: (id: string) => void;
+  enabled?: boolean;
 }) {
   const anchor = useRef<THREE.Group>(null);
   const currentPositions = useRef(model.nodes.map((node) => new THREE.Vector3(...node.displayPosition)));
   const modelRef = useRef(model);
   modelRef.current = model;
-  const pointerDown = useRef<{ x: number; y: number } | null>(null);
+  const pointerDown = useRef<{ x: number; y: number; id: number } | null>(null);
   const hoverFrame = useRef<number | null>(null);
   const { camera, gl } = useThree();
 
   useEffect(() => {
     currentPositions.current = model.nodes.map((node) => new THREE.Vector3(...node.displayPosition));
-  }, [model.nodes.length]);
+  }, [model.nodes]);
 
   useEffect(() => {
+    if (!enabled) { pointerDown.current = null; onHover(null); return; }
     const canvas = gl.domElement;
     const projected = new THREE.Vector3();
     const world = new THREE.Vector3();
@@ -56,8 +58,9 @@ export function NodeHitField({ model, onHover, onSelect }: {
       });
       return bestId;
     };
-    const down = (event: PointerEvent) => { pointerDown.current = { x: event.clientX, y: event.clientY }; };
+    const down = (event: PointerEvent) => { if (event.button === 0) pointerDown.current = { x: event.clientX, y: event.clientY, id: event.pointerId }; };
     const move = (event: PointerEvent) => {
+      if (event.buttons) { onHover(null); return; }
       if (hoverFrame.current !== null) cancelAnimationFrame(hoverFrame.current);
       hoverFrame.current = requestAnimationFrame(() => {
         onHover(findNearest(event.clientX, event.clientY));
@@ -67,7 +70,7 @@ export function NodeHitField({ model, onHover, onSelect }: {
     const up = (event: PointerEvent) => {
       const start = pointerDown.current;
       pointerDown.current = null;
-      if (!start || Math.hypot(event.clientX - start.x, event.clientY - start.y) > DRAG_THRESHOLD) return;
+      if (!start || start.id !== event.pointerId || event.button !== 0 || Math.hypot(event.clientX - start.x, event.clientY - start.y) > DRAG_THRESHOLD) return;
       const id = findNearest(event.clientX, event.clientY);
       if (id) onSelect(id);
     };
@@ -76,14 +79,16 @@ export function NodeHitField({ model, onHover, onSelect }: {
     canvas.addEventListener('pointermove', move);
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointerleave', leave);
+    canvas.addEventListener('pointercancel', leave);
     return () => {
       if (hoverFrame.current !== null) cancelAnimationFrame(hoverFrame.current);
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);
       canvas.removeEventListener('pointerup', up);
       canvas.removeEventListener('pointerleave', leave);
+      canvas.removeEventListener('pointercancel', leave);
     };
-  }, [camera, gl, onHover, onSelect]);
+  }, [camera, gl, enabled, onHover, onSelect]);
 
   return <group ref={anchor} />;
 }

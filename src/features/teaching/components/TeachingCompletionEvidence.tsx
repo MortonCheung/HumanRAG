@@ -1,5 +1,5 @@
 import { ArrowRight, Check, FlagCheckered, Repeat } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
 import { MasteryCelebration } from '../../../components/feedback/MasteryCelebration';
 import { contentRepository } from '../../../services/content/ContentRepository';
 import type { TeachingUnit } from '../../../data/v6/schemas/teachingSchema';

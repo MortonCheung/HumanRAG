@@ -1,0 +1,48 @@
+.route-page {
+  min-height: 100dvh;
+  view-transition-name: route-page;
+}
+
+/* The browser owns only snapshots here, never a second live form or canvas. */
+::view-transition { pointer-events: none; }
+::view-transition-group(root) { animation: none; }
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+::view-transition-group(route-page) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(.22, .68, .18, 1);
+}
+::view-transition-image-pair(route-page) { isolation: isolate; }
+::view-transition-old(route-page),
+::view-transition-new(route-page) {
+  mix-blend-mode: normal;
+  transform-origin: 50% 32%;
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(.22, .68, .18, 1);
+  animation-fill-mode: both;
+}
+:root[data-route-direction="forward"]::view-transition-old(route-page) { z-index: 1; animation-name: page-recede; }
+:root[data-route-direction="forward"]::view-transition-new(route-page) { z-index: 2; animation-name: page-arrive; }
+:root[data-route-direction="back"]::view-transition-old(route-page) { z-index: 2; animation-name: page-arrive; animation-direction: reverse; }
+:root[data-route-direction="back"]::view-transition-new(route-page) { z-index: 1; animation-name: page-recede; animation-direction: reverse; }
+:root[data-route-direction="lateral"]::view-transition-old(route-page) { animation: page-dissolve 180ms ease both; }
+:root[data-route-direction="lateral"]::view-transition-new(route-page) { animation: page-dissolve 180ms ease reverse both; }
+
+/* A menu bar is a stable host; reveal its current controls as soon as they commit. */
+::view-transition-group(context-nav) { z-index: 3; animation: none; }
+::view-transition-old(context-nav) { display: none; }
+::view-transition-new(context-nav) { animation: none; }
+
+@keyframes page-arrive {
+  from { opacity: 0; transform: translate3d(12%, 12px, 0) scale(.986); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes page-recede {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: .54; transform: translate3d(-3%, 0, 0) scale(.97); }
+}
+@keyframes page-dissolve { from { opacity: 1; } to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

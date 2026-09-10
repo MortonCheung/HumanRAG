@@ -7,6 +7,8 @@ interface SpatialExperienceValue {
   phase: SpatialExperiencePhase;
   model: SceneModel;
   beginUniverseEntry: () => void;
+  ready: boolean;
+  pendingEntry: boolean;
 }
 
 export const SpatialExperienceContext = createContext<SpatialExperienceValue | null>(null);

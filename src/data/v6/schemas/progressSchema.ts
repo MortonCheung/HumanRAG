@@ -23,6 +23,17 @@ export const EvidenceRecordSchema = z.object({
   misconceptionId: z.string().optional(),
   weight: z.number().min(0).max(1),
   createdAt: z.string().min(1),
+  eventId: z.string().optional(),
+  questionId: z.string().optional(),
+  contentVersion: z.string().optional(),
+  sessionId: z.string().optional(),
+  attempt: z.number().int().positive().optional(),
+  taskRole: z.enum(['diagnostic', 'clarification', 'guided', 'predict', 'observe']).optional(),
+  assistance: z.enum(['independent', 'hint', 'demonstration', 'unknown']).optional(),
+  firstExposure: z.boolean().optional(),
+  snapshot: z.object({ stem: z.string(), selected: z.string(), expected: z.string(), explanation: z.string() }).optional(),
+  fragmentId: z.string().optional(),
+  decisionReason: z.string().optional(),
 });
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
 

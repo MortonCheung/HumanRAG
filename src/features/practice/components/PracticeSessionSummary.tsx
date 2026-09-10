@@ -1,5 +1,5 @@
 import { ArrowRight, Repeat } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
 import type { PracticePlan } from '../../../ai/practice/PracticePlanner';
 import { MasteryCelebration } from '../../../components/feedback/MasteryCelebration';
 import { contentRepository } from '../../../services/content/ContentRepository';
@@ -10,13 +10,15 @@ interface PracticeSessionSummaryProps {
   questionIds: string[];
   answers: Record<string, PracticeAnswer>;
   onRestart: () => void;
+  returnTo: string;
+  returnState?: unknown;
 }
 
 function nodeNameOf(nodeId: string): string {
   return contentRepository.getNode(nodeId)?.name ?? nodeId;
 }
 
-export function PracticeSessionSummary({ plan, questionIds, answers, onRestart }: PracticeSessionSummaryProps) {
+export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState }: PracticeSessionSummaryProps) {
   const resultRows = questionIds
     .map((questionId) => ({ question: contentRepository.getQuestion(questionId), answer: answers[questionId] }))
     .filter((entry) => entry.question && entry.answer);
@@ -106,7 +108,7 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart }
       </div>
 
       <footer className="practice-result__actions">
-        <Link className="text-button text-button--ghost" to="/practice">返回刷题首页</Link>
+        <Link className="text-button text-button--ghost" to={returnTo} state={returnState}>返回上一级</Link>
         <button className="text-button text-button--ghost" type="button" onClick={onRestart}>
           <Repeat size={14} /> 再练一遍
         </button>

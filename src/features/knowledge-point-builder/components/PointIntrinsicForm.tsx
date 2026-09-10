@@ -13,6 +13,7 @@ export function PointIntrinsicForm({ draft, onChange, onSave }: PointIntrinsicFo
 
   return (
     <form
+      id="point-intrinsic-form"
       className="point-intrinsic-form"
       onSubmit={(e) => {
         e.preventDefault();
@@ -33,6 +34,7 @@ export function PointIntrinsicForm({ draft, onChange, onSave }: PointIntrinsicFo
           id="point-name"
           name="point-name"
           type="text"
+          required
           value={draft.name}
           onChange={(e) => handleChange('name', e.target.value)}
         />
@@ -80,11 +82,6 @@ export function PointIntrinsicForm({ draft, onChange, onSave }: PointIntrinsicFo
           value={draft.color || '#8b7355'}
           onChange={(e) => handleChange('color', e.target.value)}
         />
-      </div>
-      <div className="point-intrinsic-form__actions">
-        <button type="submit" className="point-intrinsic-form__primary">
-          设置位置与关系
-        </button>
       </div>
     </form>
   );

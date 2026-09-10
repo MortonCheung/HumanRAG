@@ -6,19 +6,20 @@ import type { SceneModel } from '../graph/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 
 const vertexShader = `
-  attribute float aSize;
-  varying vec3 vColor;
+  attribute float aSize; attribute float aAlpha;
+  varying vec3 vColor; varying float vAlpha;
   uniform float uOpacity;
   void main() {
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = clamp(aSize * (260.0 / max(1.0, -mv.z)), 2.0, 13.0);
     gl_Position = projectionMatrix * mv;
     vColor = color;
+    vAlpha = aAlpha;
   }
 `;
 
 const fragmentShader = `
-  varying vec3 vColor;
+  varying vec3 vColor; varying float vAlpha;
   uniform float uOpacity;
   void main() {
     vec2 point = gl_PointCoord - 0.5;
@@ -26,18 +27,26 @@ const fragmentShader = `
     if (distanceToCenter > 0.5) discard;
     float core = smoothstep(0.2, 0.0, distanceToCenter);
     float halo = smoothstep(0.5, 0.12, distanceToCenter) * 0.42;
-    gl_FragColor = vec4(vColor, (core + halo) * uOpacity);
+    gl_FragColor = vec4(vColor, (core + halo) * uOpacity * vAlpha);
   }
 `;
 
-/** 少量神经信号沿真实关系曲线持续传递；不受鼠标悬停和闲置状态控制。 */
+const TRAIL = 7;
+export function signalProgress(time: number, phase: number, speed: number, trail = 0) {
+  return ((phase + time * speed - trail * 0.009) % 1 + 1) % 1;
+}
+
+/** Few continuous signals, with short fading tails, attached to real prerequisite paths. */
 export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; motionAllowed: boolean }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
-  const { invalidate } = useThree();
+  const { invalidate, gl } = useThree();
+  const elapsed = useRef(0);
+  const interacting = useRef(false);
+  const uniforms = useMemo(() => ({ uOpacity: { value: 0.95 } }), []);
   const signalData = useMemo(() => {
     const byId = new Map(model.nodes.map((node) => [node.id, node]));
-    const sourceEdges = model.edges;
+    const sourceEdges = model.edges.filter((edge) => edge.relationType === 'hierarchy' || edge.relationType === 'practice_for');
     const qualityCount = quality === 'quality' ? 14 : quality === 'balanced' ? 10 : 7;
     const count = Math.min(qualityCount, sourceEdges.length);
     if (!count) return [];
@@ -48,29 +57,34 @@ export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; mot
       if (!source || !target) return null;
       return {
         curve: buildEdgeCurve(edge, source.displayPosition, target.displayPosition),
-        color: new THREE.Color(source.domainColor),
+        color: new THREE.Color(source.domainColor).lerp(new THREE.Color('#e6f5ff'), 0.72),
         phase: index / count,
-        speed: 0.035 + (index % 4) * 0.006,
+        speed: 0.10 + (index % 4) * 0.018,
       };
     }).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
     // 信号属于稳定拓扑，不随悬停、选点或分支筛选重新分配。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quality]);
+  }, [quality, model.nodes.length, model.edges.length]);
 
   const geometry = useMemo(() => {
     const next = new THREE.BufferGeometry();
-    const positions = new Float32Array(signalData.length * 3);
-    const colors = new Float32Array(signalData.length * 3);
-    const sizes = new Float32Array(signalData.length);
+    const positions = new Float32Array(signalData.length * TRAIL * 3);
+    const colors = new Float32Array(signalData.length * TRAIL * 3);
+    const sizes = new Float32Array(signalData.length * TRAIL);
+    const alphas = new Float32Array(signalData.length * TRAIL);
     signalData.forEach((signal, index) => {
-      const point = signal.curve.getPointAt(signal.phase);
-      positions.set(point.toArray(), index * 3);
-      colors.set(signal.color.toArray(), index * 3);
-      sizes[index] = 4.8 + (index % 3) * 0.8;
+      for (let trail = 0; trail < TRAIL; trail++) {
+        const vertex = index * TRAIL + trail;
+        positions.set(signal.curve.getPointAt(signalProgress(elapsed.current, signal.phase, signal.speed, trail)).toArray(), vertex * 3);
+        colors.set(signal.color.toArray(), vertex * 3);
+        sizes[vertex] = (4.8 + (index % 3) * 0.8) * (1 - trail / TRAIL * 0.55);
+        alphas[vertex] = Math.pow(1 - trail / TRAIL, 2);
+      }
     });
     next.setAttribute('position', new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
     next.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     next.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+    next.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
     return next;
   }, [signalData]);
 
@@ -83,9 +97,10 @@ export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; mot
     }
     let timer: number | null = null;
     let cancelled = false;
-    const fps = quality === 'quality' ? 24 : quality === 'balanced' ? 18 : 12;
+    let wheelTimer: number | null = null;
+    const fps = quality === 'quality' ? 25 : quality === 'balanced' ? 20 : 12;
     const schedule = () => {
-      if (cancelled || document.visibilityState === 'hidden') return;
+      if (cancelled || document.visibilityState === 'hidden' || interacting.current) return;
       timer = window.setTimeout(() => {
         invalidate();
         schedule();
@@ -96,27 +111,55 @@ export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; mot
       timer = null;
       if (document.visibilityState === 'visible') schedule();
     };
+    const pause = () => {
+      interacting.current = true;
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+    };
+    const resume = () => {
+      if (!interacting.current) return;
+      interacting.current = false;
+      // The active clock does not jump ahead when interaction ends.
+      invalidate(); schedule();
+    };
+    const wheel = () => {
+      pause();
+      if (wheelTimer !== null) window.clearTimeout(wheelTimer);
+      wheelTimer = window.setTimeout(resume, 280);
+    };
+    gl.domElement.addEventListener('pointerdown', pause);
+    gl.domElement.addEventListener('wheel', wheel, { passive: true });
+    window.addEventListener('pointerup', resume);
+    window.addEventListener('pointercancel', resume);
     document.addEventListener('visibilitychange', onVisibility);
     schedule();
     return () => {
       cancelled = true;
       if (timer !== null) window.clearTimeout(timer);
+      if (wheelTimer !== null) window.clearTimeout(wheelTimer);
+      interacting.current = false;
+      gl.domElement.removeEventListener('pointerdown', pause);
+      gl.domElement.removeEventListener('wheel', wheel);
+      window.removeEventListener('pointerup', resume);
+      window.removeEventListener('pointercancel', resume);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [invalidate, motionAllowed, quality]);
+  }, [gl, invalidate, motionAllowed, quality]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame((_, delta) => {
     const material = materialRef.current;
     if (!material) return;
-    const targetOpacity = 0.9;
+    const targetOpacity = motionAllowed ? 0.95 : 0;
     material.uniforms.uOpacity.value = THREE.MathUtils.damp(material.uniforms.uOpacity.value, targetOpacity, 5.2, delta);
-    if (!motionAllowed) return;
+    if (!motionAllowed || interacting.current) return;
+    elapsed.current += Math.min(delta, 0.09);
 
     const positions = geometry.getAttribute('position') as THREE.BufferAttribute;
     signalData.forEach((signal, index) => {
-      const progress = (signal.phase + clock.elapsedTime * signal.speed) % 1;
-      const point = signal.curve.getPointAt(progress);
-      positions.setXYZ(index, point.x, point.y, point.z);
+      for (let trail = 0; trail < TRAIL; trail++) {
+        const point = signal.curve.getPointAt(signalProgress(elapsed.current, signal.phase, signal.speed, trail));
+        positions.setXYZ(index * TRAIL + trail, point.x, point.y, point.z);
+      }
     });
     positions.needsUpdate = true;
   });
@@ -132,7 +175,7 @@ export function NeuralSignals({ model, motionAllowed }: { model: SceneModel; mot
         depthWrite={false}
         blending={THREE.AdditiveBlending}
         vertexColors
-        uniforms={{ uOpacity: { value: 0.9 } }}
+        uniforms={uniforms}
       />
     </points>
   );

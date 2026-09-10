@@ -93,6 +93,15 @@ export function saveDomain<T>(key: string, data: T): void {
   }
 }
 
+/** Critical learning writes must report failure; legacy callers keep their existing semantics. */
+export function trySaveDomain<T>(key: string, data: T): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    window.localStorage.setItem(key, JSON.stringify({ schemaVersion: SCHEMA_VERSION, updatedAt: new Date().toISOString(), data }));
+    return true;
+  } catch { return false; }
+}
+
 export function removeDomain(key: string): void {
   const storage = safeStorage();
   if (!storage) return;

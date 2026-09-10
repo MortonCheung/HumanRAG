@@ -1,6 +1,9 @@
 import type { Question } from '../../../data/v6/schemas/questionSchema';
 import { contentRepository } from '../../../services/content/ContentRepository';
 import type { PracticeAnswer } from '../../../store/practiceStore';
+import { getTcpTask } from '../../../data/v6/handcrafted/tcpLesson';
+import { TcpTaskInputs } from '../../teaching/components/TcpTaskInputs';
+import '../../teaching/tcp-lesson.css';
 
 const TYPE_LABELS: Record<Question['type'], string> = {
   'single-choice': '单选题',
@@ -31,6 +34,7 @@ export function PracticeQuestion({
 }: PracticeQuestionProps) {
   const question = contentRepository.getQuestion(questionId);
   if (!question) return null;
+  const tcpTask = getTcpTask(questionId);
 
   const locked = answer !== undefined;
   const answerData = question.answer;
@@ -124,8 +128,10 @@ export function PracticeQuestion({
         </div>
       )}
 
-      {answerData.kind === 'text' && (
+      {tcpTask && <TcpTaskInputs task={tcpTask} value={answer?.selected ?? selected} disabled={locked} onChange={(value) => onSelectChange(questionId, value)} />}
+      {answerData.kind === 'text' && !tcpTask && (
         <input
+          aria-label="你的答案"
           className="practice-question__input"
           value={locked ? answer?.selected ?? '' : selected}
           disabled={locked}

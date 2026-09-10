@@ -25,7 +25,7 @@ export function GoalLensDrawer() {
   };
   return (
     <AnimatePresence>
-      {open && <motion.aside className="side-drawer side-drawer--right" aria-label="选择目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
+      {open && <motion.aside className="side-drawer side-drawer--right" aria-label="选择目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
         <header className="drawer-header"><span>选择目标</span><button onClick={closePanel} aria-label="关闭选择目标"><X size={17} /></button></header>
         <p className="drawer-copy">选择一个方向，相关知识会突出显示，其他内容仍保留在空间中。</p>
         <div className="lens-list">

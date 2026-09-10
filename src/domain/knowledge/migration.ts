@@ -5,8 +5,23 @@ import { createSystemTrees, createComputerLibrary } from './catalog';
 import { adaptNodeToPoint, adaptEdgeToRelation, buildTreeMemberships, populateTreePointIds } from './adapters';
 import { initRegistry } from './selectors';
 
-const V9_STORAGE_KEY = 'iteach:v9:domain';
+export const V9_STORAGE_KEY = 'iteach:v9:domain';
 const V1_PROFILE_KEY = 'knowledge-universe:profile:v1';
+export type SaveResult = { ok: true } | { ok: false; error: string };
+const storageError = (): SaveResult => ({ ok: false, error: '未能保存到本机，请检查浏览器存储后重试。' });
+
+function validPosition(position: unknown): position is [number, number, number] {
+  return Array.isArray(position) && position.length === 3 && position.every((value) => typeof value === 'number' && Number.isFinite(value));
+}
+
+function isPersistedState(value: unknown): value is V9PersistedState {
+  if (!value || typeof value !== 'object') return false;
+  const state = value as V9PersistedState;
+  return state.version === 9 && Boolean(state.library?.id) && Array.isArray(state.library.treeIds)
+    && Array.isArray(state.trees) && Array.isArray(state.userTrees) && Array.isArray(state.memberships)
+    && Array.isArray(state.relations) && Array.isArray(state.points)
+    && state.points.every((point) => Boolean(point?.id) && validPosition(point.position));
+}
 
 interface V9PersistedState {
   version: 9;
@@ -45,12 +60,14 @@ export function migrateV9(): {
   memberships: TreeMembership[];
   userTrees: KnowledgeTree[];
 } {
-  // Try loading existing V9 state
+  // A damaged or inaccessible saved record must never be replaced by demo data.
+  let mayInitialize = false;
   try {
     const raw = localStorage.getItem(V9_STORAGE_KEY);
+    mayInitialize = raw === null;
     if (raw) {
       const parsed = JSON.parse(raw) as V9PersistedState;
-      if (parsed.version === 9) {
+      if (isPersistedState(parsed)) {
         initRegistry({
           libraries: new Map([[parsed.library.id, parsed.library]]),
           trees: new Map([...parsed.trees, ...parsed.userTrees].map((t) => [t.id, t])),
@@ -77,7 +94,7 @@ export function migrateV9(): {
 
   // Save
   try {
-    localStorage.setItem(V9_STORAGE_KEY, JSON.stringify(state));
+    if (mayInitialize) localStorage.setItem(V9_STORAGE_KEY, JSON.stringify(state));
   } catch {
     // Ignore storage errors
   }
@@ -107,7 +124,7 @@ export function saveV9State(
   relations: KnowledgeRelation[],
   memberships: TreeMembership[],
   userTrees: KnowledgeTree[],
-) {
+): SaveResult {
   const state: V9PersistedState = {
     version: 9,
     library,
@@ -117,10 +134,16 @@ export function saveV9State(
     memberships,
     userTrees,
   };
+  if (points.some((point) => !validPosition(point.position))) return { ok: false, error: '节点位置必须是三个有限数值。' };
   try {
+    // Do not turn a corrupt or newer saved document into a fresh demo on the next edit.
+    const previous = localStorage.getItem(V9_STORAGE_KEY);
+    if (previous && !isPersistedState(JSON.parse(previous))) return { ok: false, error: '本机知识库数据无法读取，原始数据已保留。' };
     localStorage.setItem(V9_STORAGE_KEY, JSON.stringify(state));
+    initRegistry({ libraries: new Map([[library.id, library]]), trees: new Map([...trees, ...userTrees].map((tree) => [tree.id, tree])), points: new Map(points.map((point) => [point.id, point])), relations, memberships });
+    return { ok: true };
   } catch {
-    // Ignore
+    return storageError();
   }
 }
 
@@ -159,11 +182,14 @@ export function clearLegacyProfile() {
 
 export function createTree(libraryId: string, identity: { name: string; description: string; color: string }): KnowledgeTree {
   const state = migrateV9();
+  if (state.library.id !== libraryId) throw new Error('未找到这个知识库。');
+  if (!identity.name.trim()) throw new Error('请填写知识树名称。');
+  if (checkDuplicateTreeName(identity.name, [...state.trees, ...state.userTrees])) throw new Error('这个知识库中已经有同名知识树。');
   const now = new Date().toISOString();
   const tree: KnowledgeTree = {
-    id: `tree-${Date.now()}`,
+    id: `tree-${crypto.randomUUID()}`,
     libraryId,
-    name: identity.name,
+    name: identity.name.trim(),
     description: identity.description,
     color: identity.color || '#8b7355',
     ownerType: 'user',
@@ -173,36 +199,54 @@ export function createTree(libraryId: string, identity: { name: string; descript
   };
   const userTrees = [...state.userTrees, tree];
   const library = { ...state.library, treeIds: [...state.library.treeIds, tree.id] };
-  saveV9State(library, state.trees, state.points, state.relations, state.memberships, userTrees);
-  migrateV9();
+  const result = saveV9State(library, state.trees, state.points, state.relations, state.memberships, userTrees);
+  if (!result.ok) throw new Error(result.error);
   return tree;
 }
 
 export function updateTree(treeId: string, patch: Partial<Pick<KnowledgeTree, 'name' | 'description' | 'color'>>) {
   const state = migrateV9();
+  if (![...state.trees, ...state.userTrees].some((tree) => tree.id === treeId)) return { ok: false as const, error: '未找到这个知识树。' };
+  if (patch.name !== undefined && !patch.name.trim()) return { ok: false as const, error: '请填写知识树名称。' };
+  if (patch.name !== undefined && checkDuplicateTreeName(patch.name, [...state.trees, ...state.userTrees], treeId)) return { ok: false as const, error: '这个知识库中已经有同名知识树。' };
   const now = new Date().toISOString();
   const apply = (list: KnowledgeTree[]) =>
     list.map((t) => (t.id === treeId ? { ...t, ...patch, updatedAt: now } : t));
-  saveV9State(state.library, apply(state.trees), state.points, state.relations, state.memberships, apply(state.userTrees));
-  migrateV9();
+  return saveV9State(state.library, apply(state.trees), state.points, state.relations, state.memberships, apply(state.userTrees));
 }
 
 export function deleteTree(treeId: string) {
   const state = migrateV9();
+  if (!state.userTrees.some((tree) => tree.id === treeId)) return { ok: false as const, error: '只能删除自己创建的知识树。' };
   const library = { ...state.library, treeIds: state.library.treeIds.filter((id) => id !== treeId) };
   const userTrees = state.userTrees.filter((t) => t.id !== treeId);
-  saveV9State(library, state.trees, state.points, state.relations, state.memberships, userTrees);
-  migrateV9();
+  const memberships = state.memberships.filter((membership) => membership.treeId !== treeId);
+  const retainedIds = new Set(memberships.map((membership) => membership.pointId));
+  const removedIds = new Set(state.memberships.filter((membership) => membership.treeId === treeId && !retainedIds.has(membership.pointId)).map((membership) => membership.pointId));
+  return saveV9State(library, state.trees, state.points.filter((point) => !removedIds.has(point.id)), state.relations.filter((relation) => !removedIds.has(relation.sourcePointId) && !removedIds.has(relation.targetPointId)), memberships, userTrees);
 }
 
 export function createPoint(
   treeId: string,
-  draft: Omit<PointDraft, 'id' | 'treeId'>,
+  draft: Omit<PointDraft, 'id' | 'treeId'> & { id?: string },
 ): KnowledgePoint {
   const state = migrateV9();
+  const tree = [...state.trees, ...state.userTrees].find((candidate) => candidate.id === treeId);
+  if (!tree) throw new Error('未找到这个知识树。');
+  if (!draft.name.trim()) throw new Error('请填写知识点名称。');
+  const parentIds = [...new Set([draft.parentId, ...draft.prerequisiteIds].filter((id): id is string => Boolean(id)))];
+  const relatedIds = [...new Set(draft.relatedIds)];
+  const validIds = new Set(tree.pointIds.filter((id) => state.points.some((point) => point.id === id)));
+  if ([...parentIds, ...relatedIds].some((id) => !validIds.has(id))) throw new Error('关联节点已不存在，请重新选择。');
+  const existing = draft.id && state.points.find((point) => point.id === draft.id);
+  // A retried submission owns the same id; it must not append a second object or relation.
+  if (existing) {
+    if (tree.pointIds.includes(existing.id)) return existing;
+    throw new Error('这个节点已经存在于另一棵知识树。');
+  }
   const point: KnowledgePoint = {
-    id: `point-${Date.now()}`,
-    name: draft.name,
+    id: draft.id || `point-${crypto.randomUUID()}`,
+    name: draft.name.trim(),
     kind: draft.kind,
     description: draft.description,
     content: draft.content,
@@ -222,16 +266,13 @@ export function createPoint(
   ];
   const newRelations: KnowledgeRelation[] = [
     ...state.relations,
-    ...(draft.parentId
-      ? [{ id: `rel-${point.id}-parent`, sourcePointId: draft.parentId, targetPointId: point.id, type: 'prerequisite' as const }]
-      : []),
-    ...draft.prerequisiteIds.map((src) => ({
+    ...parentIds.map((src) => ({
       id: `rel-${point.id}-pre-${src}`,
       sourcePointId: src,
       targetPointId: point.id,
       type: 'prerequisite' as const,
     })),
-    ...draft.relatedIds.map((other) => ({
+    ...relatedIds.map((other) => ({
       id: `rel-${point.id}-rel-${other}`,
       sourcePointId: point.id,
       targetPointId: other,
@@ -241,8 +282,8 @@ export function createPoint(
   const now = new Date().toISOString();
   const attach = (list: KnowledgeTree[]) =>
     list.map((t) => (t.id === treeId ? { ...t, pointIds: [...t.pointIds, point.id], updatedAt: now } : t));
-  saveV9State(state.library, attach(state.trees), points, newRelations, memberships, attach(state.userTrees));
-  migrateV9();
+  const result = saveV9State(state.library, attach(state.trees), points, newRelations, memberships, attach(state.userTrees));
+  if (!result.ok) throw new Error(result.error);
   return point;
 }
 
@@ -251,9 +292,11 @@ export function updatePoint(
   patch: Partial<Pick<KnowledgePoint, 'name' | 'kind' | 'description' | 'content' | 'color' | 'difficulty' | 'estimatedMinutes' | 'position' | 'tags' | 'learningObjectives' | 'misconceptions' | 'recommendedContent'>>,
 ) {
   const state = migrateV9();
+  if (!state.points.some((point) => point.id === pointId)) return { ok: false as const, error: '未找到该知识点。' };
+  if (patch.name !== undefined && !patch.name.trim()) return { ok: false as const, error: '请填写知识点名称。' };
+  if (patch.position !== undefined && !validPosition(patch.position)) return { ok: false as const, error: '节点位置必须是三个有限数值。' };
   const points = state.points.map((p) => (p.id === pointId ? { ...p, ...patch } : p));
-  saveV9State(state.library, state.trees, points, state.relations, state.memberships, state.userTrees);
-  migrateV9();
+  return saveV9State(state.library, state.trees, points, state.relations, state.memberships, state.userTrees);
 }
 
 export function hydratePointDraft(treeId: string, pointId: string): PointDraft | null {
@@ -303,9 +346,12 @@ export function savePointDraft(treeId: string, pointId: string, draft: PointDraf
   const state = migrateV9();
   const allTrees = [...state.trees, ...state.userTrees];
   const tree = allTrees.find((candidate) => candidate.id === treeId);
-  if (!tree || !tree.pointIds.includes(pointId)) return { ok: false, error: '未找到该知识点。' };
-  const validIds = new Set(tree.pointIds.filter((id) => id !== pointId));
-  const parentIds = [...new Set([draft.parentId, ...draft.prerequisiteIds].filter((id): id is string => Boolean(id) && validIds.has(id!)))];
+  const currentPoint = state.points.find((point) => point.id === pointId);
+  if (!tree || !currentPoint || !tree.pointIds.includes(pointId)) return { ok: false, error: '未找到该知识点。' };
+  if (!draft.name.trim()) return { ok: false, error: '请填写知识点名称。' };
+  const validIds = new Set(tree.pointIds.filter((id) => id !== pointId && state.points.some((point) => point.id === id)));
+  const parentIds = [...new Set([draft.parentId, ...draft.prerequisiteIds].filter((id): id is string => Boolean(id)))];
+  if ([...parentIds, ...draft.relatedIds].some((id) => !validIds.has(id))) return { ok: false, error: '不能关联自己或已删除的节点。' };
   if (wouldCreateCycle(state.relations, pointId, parentIds)) return { ok: false, error: '该关系会形成循环，请重新选择上级。' };
   const relatedIds = [...new Set(draft.relatedIds.filter((id) => validIds.has(id)))];
   const point: KnowledgePoint = {
@@ -315,7 +361,8 @@ export function savePointDraft(treeId: string, pointId: string, draft: PointDraf
     description: draft.description,
     content: draft.content,
     color: draft.color,
-    position: draft.position ?? [0, 0, 0],
+    // Content and relation drafts never own an already committed spatial position.
+    position: currentPoint.position,
     difficulty: draft.difficulty,
     estimatedMinutes: draft.estimatedMinutes,
     tags: draft.tags,
@@ -346,13 +393,12 @@ export function savePointDraft(treeId: string, pointId: string, draft: PointDraf
   ];
   const now = new Date().toISOString();
   const touch = (list: KnowledgeTree[]) => list.map((candidate) => candidate.id === treeId ? { ...candidate, updatedAt: now } : candidate);
-  saveV9State(state.library, touch(state.trees), points, relations, state.memberships, touch(state.userTrees));
-  migrateV9();
-  return { ok: true };
+  return saveV9State(state.library, touch(state.trees), points, relations, state.memberships, touch(state.userTrees));
 }
 
 export function deletePoint(treeId: string, pointId: string) {
   const state = migrateV9();
+  if (![...state.trees, ...state.userTrees].some((tree) => tree.id === treeId && tree.pointIds.includes(pointId))) return { ok: false as const, error: '未找到该知识点。' };
   const points = state.points.filter((p) => p.id !== pointId);
   const relations = state.relations.filter(
     (r) => r.sourcePointId !== pointId && r.targetPointId !== pointId,
@@ -360,10 +406,9 @@ export function deletePoint(treeId: string, pointId: string) {
   const memberships = state.memberships.filter((m) => m.pointId !== pointId);
   const detach = (list: KnowledgeTree[]) =>
     list.map((t) =>
-      t.id === treeId
+      t.pointIds.includes(pointId)
         ? { ...t, pointIds: t.pointIds.filter((id) => id !== pointId), updatedAt: new Date().toISOString() }
         : t,
     );
-  saveV9State(state.library, detach(state.trees), points, relations, memberships, detach(state.userTrees));
-  migrateV9();
+  return saveV9State(state.library, detach(state.trees), points, relations, memberships, detach(state.userTrees));
 }

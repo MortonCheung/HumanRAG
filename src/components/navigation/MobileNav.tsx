@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { TransitionNavLink as NavLink } from '../../app/pageNavigation';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowCounterClockwise, Books, House, Notebook, Path, X } from '@phosphor-icons/react';
 import { ROUTES } from '../../app/routes';

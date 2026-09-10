@@ -1,25 +1,23 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { GlobalNav } from '../components/navigation/GlobalNav';
-import { MobileNav } from '../components/navigation/MobileNav';
 import { RouteTransition } from './RouteTransition';
+import { getRouteDirection } from './routeTransitions';
 
 export function AppShell() {
   const location = useLocation();
-  const routeDepth = location.pathname.split('/').filter(Boolean).length;
-  const previousDepth = useRef(routeDepth);
-  const direction = routeDepth > previousDepth.current ? 1 : routeDepth < previousDepth.current ? -1 : 0;
+  const previousPath = useRef(location.pathname);
+  const direction = getRouteDirection(previousPath.current, location.pathname);
 
   useEffect(() => {
-    previousDepth.current = routeDepth;
+    previousPath.current = location.pathname;
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [location.pathname, routeDepth]);
+  }, [location.pathname]);
 
   return (
     <div className="app-root">
       <GlobalNav />
-      <MobileNav />
-      <RouteTransition key={location.pathname} routeKey={location.pathname} direction={direction}>
+      <RouteTransition routeKey={location.pathname} direction={direction}>
         <Outlet />
       </RouteTransition>
     </div>

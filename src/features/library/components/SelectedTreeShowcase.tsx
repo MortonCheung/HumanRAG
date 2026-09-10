@@ -33,7 +33,7 @@ export function SelectedTreeShowcase({ tree, points, relations }: {
             <small>{points.length} 个节点</small>
           </div>
           <div className="library-showcase__canvas">
-            <CustomTreeCanvas nodes={nodes} edges={edges} selectedId={null} interactive={false} autoRotate />
+            <CustomTreeCanvas viewKey={tree.id} nodes={nodes} edges={edges} selectedId={null} interactive={false} autoRotate />
           </div>
         </motion.div>
       </AnimatePresence>

@@ -1,5 +1,14 @@
 /* iTeach V6 刷题模块：首页与会话（蓝图 §8-9） */
 
+.practice-session--focused { grid-template-columns: 190px minmax(0, 1fr); }
+.practice-session--focused .practice-stage__scroll { padding: clamp(30px, 4.5vw, 70px) clamp(24px, 7vw, 110px) 40px; }
+.practice-session--focused .practice-question__stem { max-width: 980px; font-size: clamp(20px, 2.1vw, 29px); line-height: 1.75; }
+.practice-session--focused .practice-question__options { max-width: 950px; }
+.practice-stage__secondary { display: flex; gap: 8px; }
+.practice-answer-feedback { border-top: 1px solid var(--it-rule); margin-top: 34px; padding-top: 22px; max-width: 900px; color: var(--it-text-soft); line-height: 1.85; font-size: 15px; }
+.practice-answer-feedback .practice-feedback__verdict { font-size: 17px; }.practice-answer-feedback .text-button { margin-top: 12px; }
+@media (max-width: 720px) { .practice-session--focused { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - var(--it-nav-height)); }.practice-session--focused .practice-nav { padding: 14px 20px; border-right: 0; border-bottom: 1px solid var(--it-rule); }.practice-session--focused .practice-nav__grid { display: flex; overflow-x: auto; padding-bottom: 4px; }.practice-session--focused .practice-nav__cell { flex: 0 0 44px; min-height: 44px; }.practice-session--focused .practice-stage { flex: 1; min-height: 65dvh; }.practice-session--focused .practice-stage__scroll { padding: 30px 20px; }.practice-session--focused .practice-stage__footer { padding: 14px 20px; gap: 10px; }.practice-stage__secondary { gap: 0; } }
+
 /* ---------- 刷题首页 ---------- */
 .practice-hero { display: flex; flex-direction: column; gap: 16px; padding: 26px 28px; height: 100%; }
 .practice-hero__node { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -96,7 +105,7 @@
 .practice-session {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 360px;
-  height: calc(100dvh - var(--it-nav-height) - 54px);
+  height: calc(100dvh - var(--it-nav-height));
   min-height: 560px;
   overflow: hidden;
   background: var(--it-bg-deep);

@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   normalizeTreeName,
   checkDuplicateTreeName,
   generateAnonymousTreeName,
+  migrateV9, createTree, createPoint, hydratePointDraft, savePointDraft,
+  updatePoint, deletePoint, V9_STORAGE_KEY,
 } from './migration';
-import type { KnowledgeTree } from './types';
+import type { KnowledgeTree, PointDraft } from './types';
 
 beforeEach(() => {
   // localStorage not available in test env; migration falls back to graph build
@@ -50,5 +52,107 @@ describe('generateAnonymousTreeName', () => {
       { id: 't1', libraryId: 'computer', name: '未命名知识树 01', description: '', color: '', ownerType: 'user', pointIds: [], createdAt: '', updatedAt: '' },
     ];
     expect(generateAnonymousTreeName(trees)).toBe('未命名知识树 02');
+  });
+});
+
+describe('V9 编辑位置和提交边界', () => {
+  let values: Map<string, string>;
+  let storage: { getItem: ReturnType<typeof vi.fn>; setItem: ReturnType<typeof vi.fn> };
+  const pointDraft = (treeId: string, id: string): PointDraft => ({ id, treeId, name: id, kind: 'knowledge', description: '', content: '', color: '#b1d8ca', tags: [], learningObjectives: [], misconceptions: [], recommendedContent: [], childIds: [], prerequisiteIds: [], relatedIds: [], position: [0, 0, 0] });
+  const createFixture = () => {
+    const { library } = migrateV9();
+    const tree = createTree(library.id, { name: '编辑回归', description: '', color: '#b1d8ca' });
+    const first = createPoint(tree.id, pointDraft(tree.id, 'editable-a'));
+    const second = createPoint(tree.id, pointDraft(tree.id, 'editable-b'));
+    return { tree, first, second };
+  };
+  beforeEach(() => {
+    values = new Map();
+    storage = {
+      getItem: vi.fn((key: string) => values.get(key) ?? null),
+      setItem: vi.fn((key: string, value: string) => { values.set(key, value); }),
+    };
+    vi.stubGlobal('localStorage', storage);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('拖动之后保存旧内容/关系草稿、增删节点、重新读取都不覆盖坐标', () => {
+    const { tree, first, second } = createFixture();
+    const draft = hydratePointDraft(tree.id, first.id)!;
+    expect(draft.position).toEqual([0, 0, 0]);
+    expect(updatePoint(first.id, { position: [7.5, -3.25, 9] })).toEqual({ ok: true });
+    draft.name = '内容修改';
+    draft.content = '新的教学正文';
+    draft.relatedIds = [second.id];
+    expect(savePointDraft(tree.id, first.id, draft)).toEqual({ ok: true });
+    createPoint(tree.id, pointDraft(tree.id, 'editable-c'));
+    expect(deletePoint(tree.id, 'editable-c')).toEqual({ ok: true });
+    const restored = hydratePointDraft(tree.id, first.id)!;
+    expect(restored.position).toEqual([7.5, -3.25, 9]);
+    expect(restored.name).toBe('内容修改');
+    expect(restored.relatedIds).toContain(second.id);
+    expect(migrateV9().points.find((point) => point.id === first.id)?.position).toEqual([7.5, -3.25, 9]);
+  });
+
+  it('写入失败返回失败，原记录与调用方草稿保持，并允许原草稿重试', () => {
+    const { tree, first } = createFixture();
+    const draft = hydratePointDraft(tree.id, first.id)!;
+    draft.content = '未保存正文';
+    const original = values.get(V9_STORAGE_KEY);
+    storage.setItem.mockImplementation(() => { throw new Error('quota'); });
+    expect(savePointDraft(tree.id, first.id, draft).ok).toBe(false);
+    expect(updatePoint(first.id, { position: [4, 5, 6] }).ok).toBe(false);
+    expect(values.get(V9_STORAGE_KEY)).toBe(original);
+    expect(draft.content).toBe('未保存正文');
+    storage.setItem.mockImplementation((key: string, value: string) => values.set(key, value));
+    expect(savePointDraft(tree.id, first.id, draft)).toEqual({ ok: true });
+    expect(hydratePointDraft(tree.id, first.id)?.content).toBe('未保存正文');
+  });
+
+  it('正式提交复用草稿 id，重试不重复节点、成员或关系', () => {
+    const { tree, first } = createFixture();
+    const draft = { ...pointDraft(tree.id, 'stable-draft'), prerequisiteIds: [first.id], position: [1, 2, 3] as [number, number, number] };
+    const restoredDraft = JSON.parse(JSON.stringify(draft)) as PointDraft;
+    expect(createPoint(tree.id, restoredDraft).id).toBe(draft.id);
+    expect(createPoint(tree.id, restoredDraft).id).toBe(draft.id);
+    const state = migrateV9();
+    expect(state.points.filter((point) => point.id === draft.id)).toHaveLength(1);
+    expect(state.memberships.filter((membership) => membership.pointId === draft.id)).toHaveLength(1);
+    expect(state.relations.filter((relation) => relation.targetPointId === draft.id)).toHaveLength(1);
+    expect(state.points.find((point) => point.id === draft.id)?.position).toEqual([1, 2, 3]);
+  });
+
+  it('失败创建不混入正式树，重试使用同一草稿', () => {
+    const { tree } = createFixture();
+    const draft = pointDraft(tree.id, 'retry-draft');
+    storage.setItem.mockImplementation(() => { throw new Error('quota'); });
+    expect(() => createPoint(tree.id, draft)).toThrow('未能保存');
+    expect(migrateV9().points.some((point) => point.id === draft.id)).toBe(false);
+    storage.setItem.mockImplementation((key: string, value: string) => values.set(key, value));
+    expect(createPoint(tree.id, draft).id).toBe(draft.id);
+  });
+
+  it('拒绝循环、自连、被删除目标与非有限坐标，不复活删除节点', () => {
+    const { tree, first, second } = createFixture();
+    const a = hydratePointDraft(tree.id, first.id)!;
+    const b = hydratePointDraft(tree.id, second.id)!;
+    b.parentId = first.id;
+    expect(savePointDraft(tree.id, second.id, b).ok).toBe(true);
+    a.parentId = second.id;
+    expect(savePointDraft(tree.id, first.id, a).ok).toBe(false);
+    a.parentId = first.id;
+    expect(savePointDraft(tree.id, first.id, a).ok).toBe(false);
+    expect(updatePoint(first.id, { position: [NaN, 0, 0] }).ok).toBe(false);
+    deletePoint(tree.id, first.id);
+    expect(savePointDraft(tree.id, first.id, a).ok).toBe(false);
+    expect(savePointDraft(tree.id, second.id, b).ok).toBe(false);
+    expect(migrateV9().points.some((point) => point.id === first.id)).toBe(false);
+  });
+
+  it.each(['{broken', '{"version":10}', '{"version":9,"points":null}'])('损坏/新版本记录不会被下一次编辑覆盖：%s', (raw) => {
+    values.set(V9_STORAGE_KEY, raw);
+    const state = migrateV9();
+    expect(updatePoint(state.points[0].id, { content: '不得写入' }).ok).toBe(false);
+    expect(values.get(V9_STORAGE_KEY)).toBe(raw);
   });
 });

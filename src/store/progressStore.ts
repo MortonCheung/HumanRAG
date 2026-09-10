@@ -6,12 +6,11 @@ import type {
   MisconceptionRecord,
   RemediationTask,
 } from '../data/v6/schemas/progressSchema';
-import {
-  DEMO_HISTORY,
-  historyForLearner,
-} from '../data/v6/generators/generateDemoHistory';
+import { DEMO_HISTORY } from '../data/v6/generators/generateDemoHistory';
 import { MISCONCEPTIONS } from '../data/v6/catalogs/misconceptionCatalog';
-import { DOMAIN_KEYS, loadDomain, removeDomain, saveDomain } from '../services/persistence/demoPersistence';
+import { DOMAIN_KEYS, loadDomain, removeDomain, trySaveDomain } from '../services/persistence/demoPersistence';
+import { TCP_NODE_ID, TCP_UNIT_ID, TCP_VERSION, type TcpExposure } from '../data/v6/handcrafted/tcpLesson';
+import { EvidenceRecordSchema } from '../data/v6/schemas/progressSchema';
 
 /**
  * 学习进度唯一来源（蓝图 §17.2）：EvidenceRecord、MasteryState、MisconceptionRecord。
@@ -25,9 +24,12 @@ interface PersistedProgress {
   misconceptionRecords: MisconceptionRecord[];
   remediationTasks: RemediationTask[];
   masteryByNode: MasteryState[];
+  taskExposures: TcpExposure[];
 }
 
 interface ProgressState extends PersistedProgress {
+  storageError: string | null;
+  markExposure: (entry: Omit<TcpExposure, 'createdAt'>) => boolean;
   switchLearner: (learnerId: string) => void;
   recordAnswer: (input: {
     learnerId: string;
@@ -37,7 +39,8 @@ interface ProgressState extends PersistedProgress {
     correct: boolean;
     source: EvidenceRecord['source'];
     misconceptionId?: string;
-  }) => void;
+    evidence?: Partial<Pick<EvidenceRecord, 'eventId' | 'contentVersion' | 'sessionId' | 'attempt' | 'taskRole' | 'assistance' | 'firstExposure' | 'snapshot' | 'fragmentId' | 'decisionReason'>>;
+  }) => boolean;
   completeRemediationTask: (taskId: string) => void;
   reset: () => void;
 }
@@ -51,8 +54,8 @@ function seedEvidenceSequence(): number {
 
 const persisted = loadDomain<PersistedProgress>(DOMAIN_KEYS.progress);
 
-function persistProgress(state: PersistedProgress): void {
-  saveDomain(DOMAIN_KEYS.progress, state);
+function persistProgress(state: PersistedProgress): boolean {
+  return trySaveDomain(DOMAIN_KEYS.progress, state);
 }
 
 export const useProgressStore = create<ProgressState>((set, get) => ({
@@ -62,23 +65,36 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   misconceptionRecords: persisted?.misconceptionRecords ?? [...DEMO_HISTORY.misconceptionRecords],
   remediationTasks: persisted?.remediationTasks ?? [...DEMO_HISTORY.remediationTasks],
   masteryByNode: persisted?.masteryByNode ?? [...DEMO_HISTORY.masteryByNode],
+  taskExposures: persisted?.taskExposures ?? [],
+  storageError: null,
+
+  markExposure: (entry) => {
+    const state = get();
+    if (state.taskExposures.some((item) => item.learnerId === entry.learnerId && item.signature === entry.signature && item.eventId === entry.eventId && entry.resultKeys.every((key) => item.resultKeys.includes(key)))) return true;
+    const next = { ...state, taskExposures: [...state.taskExposures, { ...entry, createdAt: new Date().toISOString() }] };
+    if (!persistProgress(next)) { set({ storageError: '记录未保存，请检查本地存储后重试。' }); return false; }
+    set({ taskExposures: next.taskExposures, storageError: null });
+    return true;
+  },
 
   switchLearner: (learnerId) => {
-    const history = historyForLearner(learnerId);
+    // Profiles share the persisted ledger, never replace live records with demo seeds.
     const next: PersistedProgress = {
       learnerId,
-      answerRecords: history.answerRecords,
-      evidenceRecords: history.evidenceRecords,
-      misconceptionRecords: history.misconceptionRecords,
-      remediationTasks: history.remediationTasks,
-      masteryByNode: history.masteryByNode,
+      answerRecords: get().answerRecords,
+      evidenceRecords: get().evidenceRecords,
+      misconceptionRecords: get().misconceptionRecords,
+      remediationTasks: get().remediationTasks,
+      masteryByNode: get().masteryByNode,
+      taskExposures: get().taskExposures,
     };
-    persistProgress(next);
+    if (!persistProgress(next)) { set({ storageError: '记录未保存。' }); return; }
     set(next);
   },
 
   recordAnswer: (input) => {
     const state = get();
+    if (input.evidence?.eventId && state.evidenceRecords.some((record) => record.learnerId === input.learnerId && record.eventId === input.evidence?.eventId)) return true;
     const now = new Date().toISOString();
     const answerRecord: AnswerRecord = {
       id: `ans-live-${seedAnswerSequence() + state.answerRecords.filter((r) => r.id.startsWith('ans-live')).length + 1}`,
@@ -97,14 +113,18 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       misconceptionId: input.misconceptionId,
       weight: input.correct ? 0.9 : 0.6,
       createdAt: now,
+      questionId: input.questionId,
+      assistance: 'unknown',
+      ...input.evidence,
     };
+    if (!EvidenceRecordSchema.safeParse(evidenceRecord).success) { set({ storageError: '记录格式无效，结果仍保留在当前任务中。' }); return false; }
 
     let misconceptionRecords = state.misconceptionRecords;
     if (input.misconceptionId) {
       const existing = state.misconceptionRecords.find(
         (record) => record.learnerId === input.learnerId && record.misconceptionId === input.misconceptionId,
       );
-      const entry = MISCONCEPTIONS.find((candidate) => candidate.id === input.misconceptionId);
+      const entry = MISCONCEPTIONS.find((candidate) => candidate.id === input.misconceptionId) ?? (input.misconceptionId.startsWith('tcp-') ? { id: input.misconceptionId } : undefined);
       if (existing) {
         misconceptionRecords = state.misconceptionRecords.map((record) =>
           record.id === existing.id
@@ -128,15 +148,11 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       }
     }
 
-    // 掌握度：正确提升置信，错误下降；等级按置信阈值重算。按 learnerId + nodeId 隔离。
+    // Keep legacy numeric fields readable; new submissions update facts, not a fabricated probability.
     const masteryByNode = state.masteryByNode.map((mastery) => {
       if (mastery.learnerId !== input.learnerId || mastery.nodeId !== input.nodeId) return mastery;
-      const confidence = Math.min(1, Math.max(0, mastery.confidence + (input.correct ? 0.12 : -0.18)));
-      const level = confidence < 0.2 ? 0 : confidence < 0.4 ? 1 : confidence < 0.6 ? 2 : confidence < 0.85 ? 3 : 4;
       return {
         ...mastery,
-        confidence: Number(confidence.toFixed(2)),
-        level: level as MasteryState['level'],
         evidenceIds: [...mastery.evidenceIds.slice(-7), evidenceRecord.id],
         lastReviewedAt: now,
       };
@@ -151,23 +167,33 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
           {
             learnerId: input.learnerId,
             nodeId: input.nodeId,
-            level: (input.correct ? 2 : 1) as MasteryState['level'],
-            confidence: input.correct ? 0.55 : 0.35,
+            level: 0 as MasteryState['level'],
+            confidence: 0,
             evidenceIds: [evidenceRecord.id],
             lastReviewedAt: now,
           },
         ];
 
+    let remediationTasks = state.remediationTasks;
+    if (input.misconceptionId && !input.correct && !remediationTasks.some((task) => task.learnerId === input.learnerId && task.misconceptionId === input.misconceptionId && task.status !== 'done')) {
+      remediationTasks = [...remediationTasks, { id: `rem-${input.learnerId}-${input.misconceptionId}-${now}`, learnerId: input.learnerId, unitId: `tu-${input.nodeId}`, misconceptionId: input.misconceptionId, status: 'pending', createdAt: now, reason: input.evidence?.decisionReason ?? '作答显示此处需要巩固。' }];
+    }
     const next: PersistedProgress = {
       learnerId: input.learnerId,
       answerRecords: [...state.answerRecords, answerRecord],
       evidenceRecords: [...state.evidenceRecords, evidenceRecord],
       misconceptionRecords,
-      remediationTasks: state.remediationTasks,
+      remediationTasks,
       masteryByNode: fullMastery,
+      taskExposures: state.taskExposures,
     };
-    persistProgress(next);
-    set(next);
+    if (learningStatusFromEvidence(next.evidenceRecords, input.nodeId, input.learnerId).status === 'passed' && input.nodeId === TCP_NODE_ID) {
+      next.remediationTasks = next.remediationTasks.map((task) => task.learnerId === input.learnerId && task.unitId === TCP_UNIT_ID && task.misconceptionId.startsWith('tcp-') ? { ...task, status: 'done' } : task);
+      next.misconceptionRecords = next.misconceptionRecords.map((record) => record.learnerId === input.learnerId && record.nodeId === TCP_NODE_ID && record.misconceptionId.startsWith('tcp-') ? { ...record, status: 'remediated' } : record);
+    }
+    if (!persistProgress(next)) { set({ storageError: '记录未保存，保留当前答案后重试。' }); return false; }
+    set({ ...next, storageError: null });
+    return true;
   },
 
   completeRemediationTask: (taskId) => {
@@ -177,8 +203,8 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
         task.id === taskId ? { ...task, status: 'done' as const } : task,
       ),
     };
-    persistProgress(next);
-    set(next);
+    if (!persistProgress(next)) { set({ storageError: '记录未保存，请重试。' }); return; }
+    set({ ...next, storageError: null });
   },
 
   reset: () => {
@@ -190,9 +216,36 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       misconceptionRecords: [...DEMO_HISTORY.misconceptionRecords],
       remediationTasks: [...DEMO_HISTORY.remediationTasks],
       masteryByNode: [...DEMO_HISTORY.masteryByNode],
+      taskExposures: [],
+      storageError: null,
     });
   },
 }));
+
+export type LearningStatus = 'unverified' | 'needs-work' | 'assisted' | 'passed';
+export const LEARNING_STATUS_LABELS: Record<LearningStatus, string> = { unverified: '尚未验证', 'needs-work': '需要巩固', assisted: '辅助下完成', passed: '本次独立验证通过' };
+
+export function learningStatusFromEvidence(records: EvidenceRecord[], nodeId: string, learnerId: string) {
+  const entries = records.filter((entry) => entry.nodeId === nodeId && entry.learnerId === learnerId);
+  const groups = new Map<string, EvidenceRecord[]>();
+  for (const entry of entries) {
+    if (entry.source !== 'independent-check' || entry.contentVersion !== TCP_VERSION || entry.assistance !== 'independent' || entry.firstExposure !== true || !entry.sessionId || !entry.attempt) continue;
+    const key = `${entry.sessionId}:${entry.attempt}`;
+    groups.set(key, [...(groups.get(key) ?? []), entry]);
+  }
+  let lastPass = -1;
+  for (const group of groups.values()) {
+    if (group.length === 2 && group.every((entry) => entry.result === 'correct') && new Set(group.map((entry) => entry.taskRole)).size === 2 && group.some((entry) => entry.taskRole === 'predict') && group.some((entry) => entry.taskRole === 'observe')) lastPass = Math.max(lastPass, ...group.map((entry) => entries.indexOf(entry)));
+  }
+  const lastFailure = entries.reduce((last, entry, index) => entry.contentVersion && entry.result === 'incorrect' ? index : last, -1);
+  const lastAssisted = entries.reduce((last, entry, index) => entry.contentVersion && entry.result === 'correct' && ['hint', 'demonstration'].includes(entry.assistance ?? 'unknown') ? index : last, -1);
+  const status: LearningStatus = lastAssisted > Math.max(lastFailure, lastPass) ? 'assisted' : lastFailure > lastPass ? 'needs-work' : lastPass >= 0 ? 'passed' : 'unverified';
+  return { status, label: LEARNING_STATUS_LABELS[status], evidenceCount: entries.length, updatedAt: entries.at(-1)?.createdAt };
+}
+
+export function getLearningStatus(nodeId: string, learnerId = useProgressStore.getState().learnerId) {
+  return learningStatusFromEvidence(useProgressStore.getState().evidenceRecords, nodeId, learnerId);
+}
 
 export function masteryOfNode(nodeId: string): MasteryState | undefined {
   const state = useProgressStore.getState();

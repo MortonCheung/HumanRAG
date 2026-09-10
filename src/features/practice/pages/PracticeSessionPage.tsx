@@ -1,269 +1,69 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, CaretLeft, FlagCheckered, Flag, CheckCircle } from '@phosphor-icons/react';
+import { useLocation, useParams } from 'react-router-dom';
+import { TransitionLink as Link, usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { ArrowRight, CaretLeft, Flag } from '@phosphor-icons/react';
 import { useUserStore } from '../../../store/userStore';
 import { usePracticeStore } from '../../../store/practiceStore';
 import { planForSession } from '../../../ai/practice/PracticePlanner';
 import { contentRepository } from '../../../services/content/ContentRepository';
-import { DemoDataBadge } from '../../../components/feedback/DemoDataBadge';
 import { PracticeQuestion } from '../components/PracticeQuestion';
 import { PracticeSessionSummary } from '../components/PracticeSessionSummary';
 import { ROUTES } from '../../../app/routes';
+import { BRANCH_TO_TREE_ID } from '../../../domain/knowledge/catalog';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
-import { useWorkspaceOrigin } from '../../workspace/useWorkspaceOrigin';
+import { getWorkspaceParent } from '../../workspace/parentNavigation';
+import type { PracticeReturnContext } from '../../../store/teachingStore';
 import '../practice.css';
 
-function nodeNameOf(nodeId: string): string {
-  return contentRepository.getNode(nodeId)?.name ?? nodeId;
-}
-
 export function PracticeSessionPage() {
-  const { sessionId: legacySessionId, pointId, treeId, libraryId } = useParams<{ sessionId: string; pointId: string; treeId: string; libraryId: string }>();
+  const { sessionId: legacyId, pointId, treeId, libraryId } = useParams();
   const navigate = useNavigate();
-  const origin = useWorkspaceOrigin();
+  const location = useLocation();
   const learnerId = useUserStore((state) => state.activeProfileId);
-  const sessionId = legacySessionId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
-  const returnTo = origin?.kind === 'universe'
-    ? ROUTES.universe
-    : origin?.kind === 'tree'
-      ? ROUTES.treePractice(origin.libraryId, origin.treeId)
-      : libraryId && treeId ? ROUTES.treePractice(libraryId, treeId) : ROUTES.library;
-
-  const storeSessionId = usePracticeStore((state) => state.sessionId);
-  const questionIds = usePracticeStore((state) => state.questionIds);
-  const currentIndex = usePracticeStore((state) => state.currentIndex);
-  const answers = usePracticeStore((state) => state.answers);
-  const flaggedIds = usePracticeStore((state) => state.flaggedIds);
-  const status = usePracticeStore((state) => state.status);
-  const startSession = usePracticeStore((state) => state.startSession);
-  const submitAnswer = usePracticeStore((state) => state.submitAnswer);
-  const next = usePracticeStore((state) => state.next);
-  const prev = usePracticeStore((state) => state.prev);
-  const goTo = usePracticeStore((state) => state.goTo);
-  const toggleFlag = usePracticeStore((state) => state.toggleFlag);
-  const finish = usePracticeStore((state) => state.finish);
-
-  const [selections, setSelections] = useState<Record<string, string>>({});
+  const store = usePracticeStore();
   const [error, setError] = useState('');
+  const sessionId = legacyId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
+  const scopeNode = pointId ?? (legacyId?.startsWith('node:') ? legacyId.slice(5) : undefined);
+  const branch = scopeNode ? contentRepository.getNode(scopeNode)?.branchId : undefined;
+  const parent = getWorkspaceParent({ kind: 'practice', libraryId: libraryId ?? (branch ? 'computer' : undefined), treeId: treeId ?? (branch ? BRANCH_TO_TREE_ID[branch] : undefined), pointId: scopeNode });
+  const plan = useMemo(() => sessionId ? planForSession(sessionId, learnerId) : null, [sessionId, learnerId]);
+  useEffect(() => { if (plan && (usePracticeStore.getState().sessionId !== plan.id || usePracticeStore.getState().learnerId !== learnerId)) usePracticeStore.getState().startSession(plan.id, plan.questionIds); }, [plan, learnerId]);
+  useEffect(() => { setError(''); }, [store.currentIndex]);
 
-  const plan = useMemo(() => (sessionId ? planForSession(sessionId, learnerId) : null), [sessionId, learnerId]);
-
-  useEffect(() => {
-    if (plan && plan.id !== storeSessionId) {
-      startSession(plan.id, plan.questionIds);
-      setSelections({});
-      setError('');
-    }
-  }, [plan, storeSessionId, startSession]);
-
-  useEffect(() => {
-    setSelections({});
-    setError('');
-  }, [currentIndex]);
-
-  if (!plan) {
-    return (
-      <div className="page">
-        <div className="page__inner">
-          <h1 className="page-title">未找到练习会话</h1>
-          <p className="page-lead">这个练习会话不存在或题目已变更。</p>
-          <Link className="text-button" to={returnTo}>
-            <ArrowLeft size={14} /> 返回知识树
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const currentQuestionId = questionIds[currentIndex];
-  const currentQuestion = currentQuestionId ? contentRepository.getQuestion(currentQuestionId) : undefined;
-  const currentAnswer = currentQuestionId ? answers[currentQuestionId] : undefined;
-  const currentSelection = currentQuestionId ? selections[currentQuestionId] ?? '' : '';
-  const isLast = currentIndex === questionIds.length - 1;
-  const isFinished = status === 'finished';
-
-  const answeredCount = Object.keys(answers).length;
-
-  const handleSubmit = () => {
-    if (!currentQuestionId) return;
-    if (!currentSelection) {
-      setError('请先完成作答再提交。');
-      return;
-    }
-    submitAnswer(currentQuestionId, currentSelection);
-    setError('');
+  const active = store.learnerId === learnerId && store.sessionId === plan?.id;
+  const ids = active ? store.questionIds : [];
+  const id = ids[store.currentIndex];
+  const question = id ? contentRepository.getQuestion(id) : undefined;
+  const answer = id ? store.answers[id] : undefined;
+  const selected = answer?.selected ?? (id ? store.drafts[id] ?? '' : '');
+  const answeredCount = Object.keys(store.answers).filter((answerId) => ids.includes(answerId)).length;
+  const flagged = id ? store.flaggedIds.includes(id) : false;
+  const isLast = store.currentIndex === ids.length - 1;
+  const relatedNode = question ? contentRepository.getNode(question.nodeIds[0]) : undefined;
+  const unit = relatedNode ? contentRepository.getTeachingUnitForNode(relatedNode.id) : undefined;
+  const exit = () => navigate(parent.to, { state: parent.state });
+  const teach = () => {
+    if (!question || !unit || !store.sessionId || !store.retrySave()) return;
+    const context: PracticeReturnContext = { learnerId, sessionId: store.sessionId, path: location.pathname + location.search, questionId: question.id, selected, misconceptionId: answer?.misconceptionId };
+    const targetTree = treeId ?? (relatedNode ? BRANCH_TO_TREE_ID[relatedNode.branchId] : undefined);
+    navigate(targetTree ? ROUTES.pointLearn(libraryId ?? 'computer', targetTree, unit.nodeId) : ROUTES.legacyTeachUnit(unit.id), { state: { practiceReturn: context } });
+  };
+  const next = () => {
+    if (!isLast) { store.next(); return; }
+    const result = store.finish();
+    if (!result.ok) setError(result.missing ? `还有 ${result.missing} 道题未作答。` : '进度未保存，请重试。');
   };
 
-  const handleNext = () => {
-    if (isLast) {
-      const remaining = questionIds.length - answeredCount;
-      if (remaining > 0) {
-        setError(`还有 ${remaining} 道题未作答，请通过左侧题号继续完成。`);
-        return;
-      }
-      finish();
-    } else {
-      next();
-    }
-  };
-
-  const handleSelect = (questionId: string, value: string) => {
-    setSelections((prev) => ({ ...prev, [questionId]: value }));
-  };
-
-  // 结果页
-  if (isFinished) {
-    return (
-      <div className="page">
-        <WorkspaceHeader breadcrumbs={['练习', plan.title]} onBack={() => navigate(returnTo)} />
-        <div className="page__inner">
-          <PracticeSessionSummary
-            plan={plan}
-            questionIds={questionIds}
-            answers={answers}
-            onRestart={() => startSession(plan.id, plan.questionIds)}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  const flagged = currentQuestionId ? flaggedIds.includes(currentQuestionId) : false;
-  const relatedNodeId = currentQuestion?.nodeIds[0];
-  const remediationUnitId = currentQuestion?.remediationUnitId ?? (relatedNodeId ? `tu-${relatedNodeId}` : undefined);
-
-  return (
-    <div className="page">
-      <WorkspaceHeader breadcrumbs={['练习', plan.title]} onBack={() => navigate(returnTo)} />
-      <div className="practice-session">
-        <nav className="practice-nav" aria-label="题目导航">
-          <p className="practice-nav__kicker">题目 {answeredCount}/{questionIds.length}</p>
-          <div className="practice-nav__grid">
-            {questionIds.map((id, index) => {
-              const entry = answers[id];
-              const isFlagged = flaggedIds.includes(id);
-              const classes = [
-                'practice-nav__cell',
-                index === currentIndex ? 'is-current' : '',
-                entry?.correct ? 'is-correct' : '',
-                entry && !entry.correct ? 'is-wrong' : '',
-              ]
-                .filter(Boolean)
-                .join(' ');
-              return (
-                <button key={id} type="button" className={classes} onClick={() => goTo(index)}>
-                  {isFlagged ? '★' : index + 1}
-                </button>
-              );
-            })}
-          </div>
-          <Link className="text-button text-button--ghost" to={returnTo}>
-            <CaretLeft size={14} /> 退出
-          </Link>
-        </nav>
-
-        <main className="practice-stage">
-          <div className="practice-stage__scroll">
-            {currentQuestion ? (
-              <PracticeQuestion
-                questionId={currentQuestion.id}
-                index={currentIndex}
-                total={questionIds.length}
-                selected={currentSelection}
-                answer={currentAnswer}
-                onSelectChange={handleSelect}
-              />
-            ) : (
-              <p className="practice-question__stem">题目加载失败。</p>
-            )}
-          </div>
-
-          <footer className="practice-stage__footer">
-            <span className="practice-stage__hint">
-              {plan.title} · {plan.sourceLabel}
-              {error && <span style={{ color: 'var(--it-danger)', marginLeft: 10 }}>{error}</span>}
-            </span>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <button
-                type="button"
-                className={`text-button text-button--ghost ${flagged ? '' : ''}`}
-                onClick={() => currentQuestionId && toggleFlag(currentQuestionId)}
-                disabled={!currentQuestionId}
-              >
-                <Flag size={14} weight={flagged ? 'fill' : 'regular'} />
-                {flagged ? '已标记' : '标记'}
-              </button>
-              <button type="button" className="text-button text-button--ghost" onClick={prev} disabled={currentIndex === 0}>
-                <CaretLeft size={14} /> 上一题
-              </button>
-              {!currentAnswer ? (
-                <button type="button" className="text-button text-button--primary" onClick={handleSubmit}>
-                  <CheckCircle size={15} weight="regular" /> 提交答案
-                </button>
-              ) : (
-                <button type="button" className="text-button text-button--primary" onClick={handleNext}>
-                  {isLast ? <FlagCheckered size={15} weight="regular" /> : <ArrowRight size={15} />}
-                  {isLast ? '完成练习' : '下一题'}
-                </button>
-              )}
-            </div>
-          </footer>
-        </main>
-
-        <aside className="practice-feedback" aria-label="作答反馈">
-          <div className="practice-feedback__section">
-            <p className="practice-feedback__kicker">关联知识</p>
-            <p className="practice-feedback__text">{relatedNodeId ? nodeNameOf(relatedNodeId) : '—'}</p>
-          </div>
-
-          {currentAnswer ? (
-            <>
-              <div className="practice-feedback__section">
-                <p className="practice-feedback__kicker">判定</p>
-                <p className={`practice-feedback__verdict ${currentAnswer.correct ? 'is-correct' : 'is-wrong'}`}>
-                  {currentAnswer.correct ? '回答正确' : '回答错误'}
-                </p>
-                {currentAnswer.correct ? (
-                  <p className="practice-feedback__text">
-                    该答案证明了对应知识点的掌握情况，正确率已计入学习证据。
-                  </p>
-                ) : (
-                  currentAnswer.misconceptionText && (
-                    <p className="practice-feedback__text">错因：{currentAnswer.misconceptionText}</p>
-                  )
-                )}
-              </div>
-              <div className="practice-feedback__section">
-                <p className="practice-feedback__kicker">解析</p>
-                <p className="practice-feedback__text">{currentQuestion?.explanation}</p>
-              </div>
-              {!currentAnswer.correct && remediationUnitId && (
-                <div className="practice-feedback__section">
-                  <p className="practice-feedback__kicker">补救</p>
-                  <Link className="practice-feedback__node" to={`/teach/${remediationUnitId}`} state={origin ? { origin } : undefined}>
-                    <span>重新讲解「{relatedNodeId ? nodeNameOf(relatedNodeId) : '知识点'}」</span>
-                    <ArrowRight size={13} />
-                  </Link>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="practice-feedback__section">
-              <p className="practice-feedback__kicker">提示</p>
-              <p className="practice-feedback__text">
-                提交后这里会显示判定、错因与解析。提交前不显示答案。
-              </p>
-            </div>
-          )}
-
-          <div className="practice-feedback__section">
-            <p className="practice-feedback__kicker">数据说明</p>
-            <p className="practice-feedback__text">
-              <DemoDataBadge label="本地演示数据" /> 判定由本地规则引擎实时计算。
-            </p>
-          </div>
-        </aside>
-      </div>
-    </div>
-  );
+  return <div className="page">
+    <WorkspaceHeader title={plan?.title ?? '练习'} backLabel={scopeNode || treeId ? '返回知识树' : '返回知识库'} onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} />
+    {!plan ? <main className="page__inner"><h1 className="page-title">暂无可用题目</h1><p className="page-lead">这个范围的题目不存在或已被移除。</p></main> : active && store.status === 'finished' ? <div className="page__inner"><PracticeSessionSummary plan={plan} questionIds={ids} answers={store.answers} onRestart={() => store.startSession(plan.id, plan.questionIds, true)} returnTo={parent.to} returnState={parent.state} /></div> : <div className="practice-session practice-session--focused">
+      <nav className="practice-nav" aria-label="题目导航"><p className="practice-nav__kicker">本次练习 {answeredCount} / {ids.length}</p><div className="practice-nav__grid">{ids.map((questionId, index) => { const entry = store.answers[questionId]; return <button key={questionId} type="button" aria-label={`第 ${index + 1} 题${entry ? entry.correct ? '，正确' : '，错误' : '，未作答'}`} aria-current={index === store.currentIndex ? 'step' : undefined} className={`practice-nav__cell ${index === store.currentIndex ? 'is-current' : ''} ${entry ? entry.correct ? 'is-correct' : 'is-wrong' : ''}`} onClick={() => store.goTo(index)}>{index + 1}{store.flaggedIds.includes(questionId) ? '·' : ''}</button>; })}</div></nav>
+      <main className="practice-stage"><div className="practice-stage__scroll">
+        {(error || store.storageError) && <div className="lesson-save-error" role="alert">{error || store.storageError}{store.storageError && <button className="text-button" type="button" onClick={store.retrySave}>重试保存</button>}</div>}
+        {question ? <><PracticeQuestion questionId={question.id} index={store.currentIndex} total={ids.length} selected={selected} answer={answer} onSelectChange={store.setDraft} />
+          {answer && <section className="practice-answer-feedback" aria-label="作答反馈"><p className={`practice-feedback__verdict ${answer.correct ? 'is-correct' : 'is-wrong'}`}>{answer.correct ? '本题正确' : '本题未通过'}</p>{answer.correct && <p>已记录一次正确作答；是否掌握会结合后续独立任务判断。</p>}{!answer.correct && answer.misconceptionText && <p>{answer.misconceptionId ? '本次作答指向：' : '原因待确认：'}{answer.misconceptionText}</p>}<p>{question.explanation}</p>{!answer.correct && unit && <button type="button" className="text-button" onClick={teach}>看这一步的讲解 <ArrowRight size={16} /></button>}</section>}
+        </> : <p>正在恢复练习。</p>}
+      </div><footer className="practice-stage__footer"><div className="practice-stage__secondary"><button type="button" className="text-button text-button--ghost" onClick={() => id && store.toggleFlag(id)} disabled={!id}><Flag size={16} weight={flagged ? 'fill' : 'regular'} />{flagged ? '已标记' : '标记'}</button><button type="button" className="text-button text-button--ghost" onClick={store.prev} disabled={store.currentIndex === 0}><CaretLeft size={16} />上一题</button></div>{answer ? <button className="text-button text-button--primary" type="button" onClick={next}>{isLast ? '完成练习' : '下一题'} <ArrowRight size={16} /></button> : <button className="text-button text-button--primary" type="button" disabled={!question} onClick={() => { if (!selected.trim()) setError('先完成作答。'); else if (id && store.submitAnswer(id, selected)) setError(''); }}>提交答案 <ArrowRight size={16} /></button>}</footer></main>
+    </div>}
+  </div>;
 }

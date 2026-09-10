@@ -18,6 +18,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['iTeach-design-references/**', 'node_modules/**', 'dist/**', 'output/**'],
+    setupFiles: ['./src/test/setup.ts'],
   },
   build: {
     target: 'es2022',
