@@ -1,0 +1,2751 @@
+HumanRAG V11 Final｜比赛最终版详细施工方案
+0. 施工目标与绝对边界
+本轮不是继续“给现有页面润色”。
+要完成一次有控制的架构收口，使产品最终形成：
+Constellation Opening
+        ↓
+Complete Universe
+        ↓
+自然语言目标
+        ↓
+HumanRAG 检索已有知识
+        ↓
+从 Universe 中抽取并形成 KnowledgeTree
+        ↓
+无缝进入 Library，新树已选中
+        ↓
+进入 KnowledgeTree Workspace
+        ↓
+自主学习 / 带我学 / 能力验证
+        ↓
+Learning Evidence
+        ↓
+改变后续推荐与知识状态
+核心定位固定为：
+HumanRAG 首先解决的不是“怎么学”，而是面对庞大的知识空间时，“为了当前目的，现在到底应该关注什么、先做什么”。
+
+自动建树与手动建树必须是同一种 KnowledgeTree。
+禁止：
+AITree
+GeneratedTree
+GoalTree
+SmartTree
+成为第二套产品对象。
+自动 / 手动只区别：
+谁负责选节点。
+
+Task 0｜建立施工分支、冻结基线、先跑门禁
+步骤 0.1：创建分支
+基线：
+main
+71d4a23c16e9a02d1380f528d44a75ba565a8676
+新分支建议：
+git switch main
+git pull --ff-only
+git switch -c feat/v11-humanrag-competition-final
+不得直接施工 main。
+步骤 0.2：保留现有工作
+禁止：
+git reset --hard
+git clean -fd
+施工 Agent 开始前：
+git status
+git log -5 --oneline
+确认是否存在用户本地未提交内容。
+步骤 0.3：跑基线
+npm install
+npm run typecheck
+npm test
+npm run test:e2e
+npm run build
+记录：
+baseline test count
+baseline failures
+baseline build size
+baseline Lighthouse / FPS，如已有
+后续出现回归才能知道是不是本轮造成。
+Task 1｜先建立统一 Motion System，禁止各组件自己随便写动画
+这是整个项目动画变得“仓促/拖沓”的根因之一。
+当前存在：
+Landing copy exit        0.3s
+Brand exit               0.2s
+Universe DOM enter       0.42s
+Entry camera             2.4s power3.inOut
+Route                    0.52s
+Node inspector           又是另一套参数
+不是“某个动画慢”。
+而是：
+全产品根本不存在共同节奏。
+
+步骤 1.1：新增 Motion Tokens
+新增：
+src/motion/tokens.ts
+示例：
+export const MOTION = {
+  duration: {
+    press: 0.14,
+    micro: 0.20,
+    content: 0.28,
+    panel: 0.34,
+    route: 0.42,
+    cameraFocus: 0.72,
+    cameraTravel: 0.82,
+    opening: 2.0,
+  },
+
+  ease: {
+    // iOS 风格重点：迅速建立运动，后半段柔和收束。
+    out: [0.16, 1, 0.3, 1] as const,
+
+    // 用于普通状态变化，不要滥用明显 inOut。
+    standard: [0.22, 0.61, 0.36, 1] as const,
+  },
+
+  spring: {
+    direct: {
+      type: 'spring' as const,
+      stiffness: 420,
+      damping: 38,
+      mass: 0.9,
+    },
+
+    soft: {
+      type: 'spring' as const,
+      stiffness: 300,
+      damping: 34,
+      mass: 1,
+    },
+  },
+} as const;
+不要追求“参数一模一样”。
+这是默认基线。
+步骤 1.2：规定各动画库职责
+Motion
+只负责：
+DOM Panel
+文字
+按钮
+选中状态
+共享布局
+折叠展开
+Inspector
+GSAP
+负责：
+Camera
+3D 空间转换
+Opening timeline
+Universe → Tree extraction
+Library Camera switching
+Anime.js
+继续只用于：
+教学 SVG
+图形推演
+局部线条动画
+Lottie
+只允许小型、确定性反馈。
+不能拿 Lottie 装饰整个页面。
+Task 2｜把当前 SpatialExperienceShell 升级成真正的 Persistent Spatial Stage
+这是本轮最重要的架构改造。
+当前 Router 把：
+/
+ /universe
+放在 SpatialExperienceShell，
+但：
+/library
+/tree/...
+进入了另一个 AppShell。
+因此：
+Universe → Library 想做到真正无缝，在当前架构下先天困难。
+
+步骤 2.1：扩大 Spatial Shell 管理范围
+最终建议：
+SpatialExperienceShell
+├── /
+├── /universe
+├── /library
+└── /library/:libraryId/tree/:treeId
+而：
+Study
+Teach
+Verify
+Editor
+Builder
+Progress
+继续使用普通 AppShell。
+Router 示例
+src/app/AppRouter.tsx
+重构成类似：
+<Route element={<SpatialExperienceShell />}>
+  <Route
+    path={ROUTES.root}
+    lazy={async () => ({
+      Component: (await import('../features/landing/pages/LandingPage'))
+        .LandingPage,
+    })}
+  />
+
+  <Route
+    path={ROUTES.universe}
+    lazy={async () => ({
+      Component: (await loadUniversePage()).default,
+    })}
+  />
+
+  <Route
+    path={ROUTES.library}
+    lazy={async () => ({
+      Component: (await import('../features/library/pages/LibraryHomePage'))
+        .LibraryHomePage,
+    })}
+  />
+
+  <Route
+    path="/library/:libraryId/tree/:treeId"
+    lazy={async () => ({
+      Component:
+        (await import('../features/knowledge-tree/pages/KnowledgeTreePage'))
+          .KnowledgeTreePage,
+    })}
+  >
+    <Route index element={<Navigate to="path" replace />} />
+    <Route
+      path="path"
+      lazy={async () => ({
+        Component:
+          (await import('../features/knowledge-tree/pages/TreeLearningPathPanel'))
+            .TreeLearningPathPanel,
+      })}
+    />
+    <Route
+      path="verify"
+      lazy={async () => ({
+        Component:
+          (await import('../features/knowledge-tree/pages/TreeVerificationPanel'))
+            .TreeVerificationPanel,
+      })}
+    />
+  </Route>
+</Route>
+其余：
+<Route element={<AppShell />}>
+  <Route path=".../study" ... />
+  <Route path=".../teach" ... />
+  <Route path=".../verify/session" ... />
+  <Route path=".../edit/..." ... />
+  ...
+</Route>
+步骤 2.2：一个 Canvas，不再每个空间页面造一个 Canvas
+新增：
+src/features/spatial/SpatialStageCanvas.tsx
+src/features/spatial/SpatialSceneRouter.tsx
+src/features/spatial/spatialStageStore.ts
+结构：
+export function SpatialStageCanvas() {
+  return (
+    <Canvas
+      frameloop="demand"
+      dpr={[0.7, 1.5]}
+      gl={{
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+        stencil: false,
+      }}
+    >
+      <PerspectiveCamera makeDefault ... />
+
+      <SpatialSceneRouter />
+    </Canvas>
+  );
+}
+SpatialSceneRouter
+function SpatialSceneRouter() {
+  const mode = useSpatialStageStore((s) => s.mode);
+
+  return (
+    <>
+      {(mode === 'intro' ||
+        mode === 'universe' ||
+        mode === 'extracting') && (
+        <UniverseScene />
+      )}
+
+      {(mode === 'library' ||
+        mode === 'library-handoff') && (
+        <LibraryPreviewUniverseScene />
+      )}
+
+      {mode === 'tree' && (
+        <KnowledgeTreeScene />
+      )}
+    </>
+  );
+}
+注意：
+切 Scene 允许 React component mount/unmount，但 Canvas / WebGL Context 永远不重建。
+
+Task 3｜重做 Opening：知识星座
+最终 Opening 不再显示完整 Universe。
+第一镜：
+少量真实知识节点按照经过设计的星座构图存在。
+
+不是随机乱排。
+步骤 3.1：建立星座 Presets
+新增：
+src/scene/intro/constellationPresets.ts
+例如：
+export interface ConstellationPreset {
+  id: string;
+  points: Array<[number, number, number]>;
+}
+
+export const CONSTELLATION_PRESETS: ConstellationPreset[] = [
+  {
+    id: 'orion-inspired',
+    points: [
+      [-4.6,  3.4, 0],
+      [ 3.8,  3.8, 0],
+      [-1.4,  0.8, 0],
+      [ 0.0,  0.3, 0],
+      [ 1.4, -0.2, 0],
+      [-3.6, -3.4, 0],
+      [ 4.3, -3.6, 0],
+    ],
+  },
+
+  {
+    id: 'dipper-inspired',
+    points: [
+      [-5,  1.8, 0],
+      [-3,  0.7, 0],
+      [-1,  0.4, 0],
+      [ 1, -0.3, 0],
+      [ 2.8, 0.2, 0],
+      [ 4.0, 1.8, 0],
+      [ 5.3, 0.6, 0],
+    ],
+  },
+
+  {
+    id: 'cassiopeia-inspired',
+    points: [
+      [-5,  1.0, 0],
+      [-2.6,-1.3, 0],
+      [ 0,  1.7, 0],
+      [ 2.7,-1.1, 0],
+      [ 5,  1.2, 0],
+    ],
+  },
+];
+步骤 3.2：星座节点必须是真实连通子图
+绝对不要：
+随便找 7 个节点，再画假连线让它变成猎户座。
+
+那会误导知识关系。
+实现：
+先找真实连通子图
+↓
+再把这些真实节点映射到星座构图
+比如：
+export function pickIntroSubgraph(
+  preset: ConstellationPreset,
+  graph: KnowledgeGraphData,
+  seedId: string,
+) {
+  const selected: string[] = [];
+  const queue = [seedId];
+  const seen = new Set<string>();
+
+  while (queue.length && selected.length < preset.points.length) {
+    const id = queue.shift()!;
+
+    if (seen.has(id)) continue;
+
+    seen.add(id);
+    selected.push(id);
+
+    graph.edges
+      .filter((e) => e.source === id || e.target === id)
+      .forEach((e) => {
+        const next = e.source === id ? e.target : e.source;
+
+        if (!seen.has(next)) queue.push(next);
+      });
+  }
+
+  const ids = new Set(selected);
+
+  return {
+    nodeIds: selected,
+    edges: graph.edges.filter(
+      (edge) => ids.has(edge.source) && ids.has(edge.target),
+    ),
+  };
+}
+Preset 只负责：
+Composition。
+
+知识语义仍然是真实的。
+步骤 3.3：每次只随机 Preset，不随机几何
+const presetRef = useRef<ConstellationPreset>();
+
+if (!presetRef.current) {
+  presetRef.current =
+    CONSTELLATION_PRESETS[
+      Math.floor(Math.random() * CONSTELLATION_PRESETS.length)
+    ];
+}
+一次进入生命周期内不能变化。
+Task 4｜Opening 动画状态机
+Opening 最终状态：
+intro
+→ awakening
+→ settling
+→ universe
+删除：
+skipVersion
+entry-skip
+Esc 跳过
+当前这些全部存在于 SpatialExperienceShell。
+全部移除。
+步骤 4.1：开场 Timeline
+总长度先定：
+约 2.0 秒
+不是死规定，最终肉眼调。
+时间关系：
+0.00  用户点击
+0.05  CTA 立即反馈
+0.08  星座开始一次 Signal
+0.20  Camera 开始摆正
+0.28  星座外网络开始生长
+0.50  周边节点逐层点亮
+1.05  Navigation 开始落下
+1.55  主 Camera 接近终点
+1.80  UI 达到工作态
+2.00  完全可操作
+entryShot 不再 2.4s power3.inOut
+当前：
+duration: 2.4,
+ease: 'power3.inOut'
+改成类似：
+return gsap.timeline({
+  onComplete: complete,
+})
+.to(progress, {
+  value: 1,
+  duration: 1.92,
+  ease: 'power3.out',
+  onUpdate: updatePose,
+});
+更推荐 Timeline 分阶段：
+const timeline = gsap.timeline({
+  onComplete,
+});
+
+timeline
+  .to(cameraProgress, {
+    value: 0.76,
+    duration: 1.05,
+    ease: 'power2.out',
+  }, 0)
+
+  .to(cameraProgress, {
+    value: 1,
+    duration: 0.78,
+    ease: 'power3.out',
+  }, 1.02);
+核心：
+运动几乎立刻发生，大部分位移较早完成，尾部给足时间收住。
+
+Task 5｜星座 → Universe 的节点点亮逻辑
+用户要求：
+连线走到下一个节点 → 下一个节点点亮 → 下一条线继续。
+
+不要 JS 一颗一颗 setTimeout 336 次。
+使用：
+propagationDelay
++
+Shader / Attribute
+现有 BatchedKnowledgeEdges 已经有：
+aProgress
+aDelay
+uTime
+propagationDelay
+这正是应该继续用的基础。
+节点 Shader 增加 revealDelay
+Node attributes：
+aRevealDelay
+fragment/vertex strength：
+float reveal = smoothstep(
+  aRevealDelay,
+  aRevealDelay + 0.16,
+  uRevealTime
+);
+
+vStrength *= reveal;
+构图上：
+星座主节点
+↓
+一级关系
+↓
+二级关系
+↓
+远处背景知识
+按真实关系计算 delay。
+Task 6｜真正实现 Synaptic Pulse，删除移动水滴式 Signal
+现在 NeuralSignals 本质还是几个移动点，并且用户交互时暂停。
+而 BatchedKnowledgeEdges 已经拥有更适合做 Pulse 的 Shader 基础。
+所以：
+不要继续修 NeuralSignals。
+
+最终让：
+BatchedKnowledgeEdges
+承担脉冲。
+步骤 6.1：Shader 改成亮度波峰
+示例：
+float wrapDistance(float a, float b) {
+  float d = abs(a - b);
+  return min(d, 1.0 - d);
+}
+
+void main() {
+  float phase = fract(uTime * 0.18 + vDelay);
+  float d = wrapDistance(vProgress, phase);
+
+  float pulse =
+    (1.0 - smoothstep(0.0, 0.08, d))
+    * vActive;
+
+  vec3 pulseColor = vec3(0.92, 0.98, 1.0);
+
+  vec3 finalColor =
+    mix(vColor, pulseColor, pulse * 0.78);
+
+  float alpha =
+    vAlpha * (1.0 + pulse * 0.9);
+
+  gl_FragColor = vec4(finalColor, alpha);
+}
+效果应该是：
+────────░▒▓██▓▒░────────
+不是：
+● →
+步骤 6.2：删除交互暂停
+当前代码：
+gl.domElement.addEventListener('pointerdown', stop);
+gl.domElement.addEventListener('wheel', stop);
+删除这个逻辑。
+Camera 用户操作：
+Pulse 继续。
+
+性能降级方式：
+High     14~16 active pulses
+Balanced 8~10
+Low      4~6
+不是：
+用户一操作就冻结。
+
+Task 7｜导航栏必须从开场中自然落下
+当前 GlobalNav 只有进入 /universe 后才 mount，因此必然突然出现。
+改：
+<GlobalNav phase={phase} />
+从 Spatial Shell 第一帧就存在。
+CSS / Motion
+初始：
+.context-nav[data-intro="true"] {
+  opacity: 0;
+  transform: translate3d(0, -14px, 0);
+  pointer-events: none;
+}
+后半段：
+<motion.header
+  animate={{
+    opacity: navVisible ? 1 : 0,
+    y: navVisible ? 0 : -14,
+  }}
+  transition={{
+    duration: 0.48,
+    ease: MOTION.ease.out,
+  }}
+/>
+不要：
+从 -64px 整个砸下来
+“降下来”应该只是：
+UI settling。
+
+Task 8｜彻底修导航操作消失问题
+当前：
+primary
+actions
+生命周期/展示方式不同。
+Library 现在：
+primaryAction = 创建知识树
+actions = 进入知识树 / 综合题库
+步骤 8.1：CTA 层级改正
+最终：
+强视觉按钮
+进入知识树
+普通操作
+创建知识树
+综合题库/能力验证
+代码：
+<WorkspaceHeader
+  title="知识库"
+
+  primaryAction={
+    selectedTree ? (
+      <button
+        className="context-nav__button context-nav__button--primary"
+        onClick={() =>
+          navigate(
+            ROUTES.tree(domain.library.id, selectedTree.id)
+          )
+        }
+      >
+        进入知识树
+      </button>
+    ) : undefined
+  }
+
+  actions={
+    <>
+      <button
+        className="context-nav__button"
+        onClick={() =>
+          navigate(ROUTES.treeNew(domain.library.id))
+        }
+      >
+        <Plus size={16} />
+        创建知识树
+      </button>
+
+      <button
+        className="context-nav__button"
+        onClick={() =>
+          navigate(
+            ROUTES.libraryPractice(domain.library.id)
+          )
+        }
+      >
+        能力验证
+      </button>
+    </>
+  }
+/>
+步骤 8.2：Desktop actions 必须常驻
+Desktop：
+actions slot
+永远在 DOM
+永远不是 dropdown
+Mobile：
+才进入：
+overflow menu
+不要让：
+actions 是否存在
+
+和：
+actionsOpen
+
+绑定。
+Task 9｜性能设置删废话
+当前 ExplorerInterface 两段：
+左键旋转……
+当前渲染档位：高画质
+直接删除。
+最后：
+<section className="settings-panel">
+  <header>性能设置</header>
+
+  <div className="quality-options">
+    <QualityOption value="auto">自动</QualityOption>
+    <QualityOption value="quality">高画质</QualityOption>
+    <QualityOption value="balanced">均衡</QualityOption>
+    <QualityOption value="performance">性能优先</QualityOption>
+  </div>
+</section>
+选中状态本身就是信息。
+Task 10｜Goal Panel 改成 HumanRAG 真正核心入口
+当前 GoalLensDrawer 还是：
+匹配已有固定目标。
+
+需要升级成：
+根据自然语言，从完整知识世界中生成一棵已有节点组成的 KnowledgeTree。
+
+步骤 10.1：Goal UI
+不要：
+考试类型
+目标分数
+每天时长
+下拉框
+标签矩阵
+五步表单
+做：
+你现在想做什么？
+
+┌───────────────────────────────┐
+│ 我准备考 408，网络基础比较弱， │
+│ 数据结构还可以，也对 AI 感兴趣 │
+└───────────────────────────────┘
+
+也可以说说你的基础、兴趣、擅长或薄弱方向。
+
+                         [整理知识]
+代码：
+<form onSubmit={handleCompose}>
+  <label htmlFor="goal-prompt">
+    你现在想做什么？
+  </label>
+
+  <textarea
+    id="goal-prompt"
+    value={prompt}
+    onChange={(e) => setPrompt(e.target.value)}
+    placeholder="例如：我准备考 408，网络比较薄弱，数据结构还可以。"
+    rows={4}
+  />
+
+  <p className="goal-panel__hint">
+    也可以说说你的基础、兴趣、擅长或薄弱方向。
+  </p>
+
+  <button
+    type="submit"
+    disabled={!prompt.trim()}
+  >
+    整理相关知识
+  </button>
+</form>
+不要写：
+“AI 智能生成专属路线”。
+
+太模板。
+Task 11｜新增 GoalTreeComposer：从已有知识中提取，不生成知识点
+新增：
+src/ai/knowledge-tree/GoalTreeComposer.ts
+接口：
+export interface GoalTreeDraft {
+  name: string;
+  description: string;
+
+  pointIds: string[];
+
+  reasons: Record<
+    string,
+    string[]
+  >;
+}
+步骤 11.1：候选来源必须是 Registry
+不能硬编码：
+408
+AI
+frontend
+game
+使用：
+const registry = getRegistry();
+
+const points = [...registry.points.values()];
+const relations = registry.relations;
+这样未来增加：
+法律
+设计
+商科
+医学
+Composer 不需要重写。
+步骤 11.2：自然语言评分
+第一版不需要 LLM。
+先做确定性、可解释、比赛稳定的：
+function scorePoint(
+  point: KnowledgePoint,
+  query: GoalQuery,
+) {
+  let score = 0;
+
+  const text = [
+    point.name,
+    point.description,
+    ...point.tags,
+    ...point.learningObjectives,
+    ...point.recommendedContent,
+  ].join(' ').toLowerCase();
+
+  for (const term of query.goalTerms) {
+    if (point.name.includes(term)) score += 8;
+    else if (point.tags.some(t => t.includes(term))) score += 5;
+    else if (text.includes(term)) score += 2;
+  }
+
+  for (const term of query.weakTerms) {
+    if (text.includes(term)) score += 3.5;
+  }
+
+  for (const term of query.interestTerms) {
+    if (text.includes(term)) score += 1.5;
+  }
+
+  for (const term of query.strongTerms) {
+    if (text.includes(term)) score += 0.5;
+  }
+
+  return score;
+}
+解释：
+- “薄弱”不是不选，反而应当增加相关权重。
+- “擅长”不删除，只降低学习优先级。
+- 兴趣可以影响边缘节点。
+步骤 11.3：图关系传播
+不能只做关键词搜索。
+Seed node 找到以后：
+Seed
+↓
+前置
+↓
+课程父节点
+↓
+直接后续
+↓
+关联练习
+按关系扩展。
+示例：
+function propagateScores(
+  scores: Map<string, number>,
+  relations: KnowledgeRelation[],
+) {
+  const next = new Map(scores);
+
+  for (const relation of relations) {
+    const source = scores.get(relation.sourcePointId) ?? 0;
+    const target = scores.get(relation.targetPointId) ?? 0;
+
+    if (relation.type === 'prerequisite') {
+      next.set(
+        relation.sourcePointId,
+        Math.max(
+          next.get(relation.sourcePointId) ?? 0,
+          target * 0.72,
+        ),
+      );
+    }
+
+    if (relation.type === 'hierarchy') {
+      next.set(
+        relation.targetPointId,
+        Math.max(
+          next.get(relation.targetPointId) ?? 0,
+          source * 0.66,
+        ),
+      );
+    }
+
+    if (relation.type === 'related') {
+      next.set(
+        relation.targetPointId,
+        Math.max(
+          next.get(relation.targetPointId) ?? 0,
+          source * 0.30,
+        ),
+      );
+    }
+  }
+
+  return next;
+}
+步骤 11.4：必须保证是一棵合理子图
+结果不能变成：
+7 个毫无关系的知识点
+Composer 最后：
+1. 取高分 Seed。
+2. 补必要前置。
+3. 补连接节点。
+4. 补直属 practice。
+5. 去重。
+6. 限制比赛版合理规模。
+建议：
+最少 8
+典型 18~36
+最多 48
+不是硬限制产品未来。
+只是 Demo 避免一次抽 200 个节点。
+Task 12｜自动建树和手动建树必须共用真正的 createTree
+当前 createTree() 明确总是：
+pointIds: []
+这是本轮必须修的领域层。
+步骤 12.1：扩展为通用树创建事务
+不要新增：
+createAiTree()
+改：
+export interface CreateTreeInput {
+  identity: TreeIdentity;
+  pointIds?: string[];
+}
+然后：
+export function createTree(
+  libraryId: string,
+  input: CreateTreeInput,
+): KnowledgeTree {
+  const state = migrateV9();
+
+  if (state.library.id !== libraryId) {
+    throw new Error('未找到这个知识库。');
+  }
+
+  const existingTrees = [
+    ...state.trees,
+    ...state.userTrees,
+  ];
+
+  if (
+    checkDuplicateTreeName(
+      input.identity.name,
+      existingTrees,
+    )
+  ) {
+    throw new Error(
+      '这个知识库中已经有同名知识树。',
+    );
+  }
+
+  const validPointIds = [
+    ...new Set(input.pointIds ?? []),
+  ];
+
+  const pointSet = new Set(
+    state.points.map((p) => p.id),
+  );
+
+  if (
+    validPointIds.some(id => !pointSet.has(id))
+  ) {
+    throw new Error(
+      '知识树包含不存在的知识点。',
+    );
+  }
+
+  const now = new Date().toISOString();
+
+  const tree: KnowledgeTree = {
+    id: `tree-${crypto.randomUUID()}`,
+    libraryId,
+    name: input.identity.name.trim(),
+    description: input.identity.description,
+    color: input.identity.color,
+    ownerType: 'user',
+    pointIds: validPointIds,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const memberships = [
+    ...state.memberships,
+    ...deriveTreeMemberships(
+      tree.id,
+      validPointIds,
+      state.relations,
+    ),
+  ];
+
+  const nextLibrary = {
+    ...state.library,
+    treeIds: [
+      ...state.library.treeIds,
+      tree.id,
+    ],
+  };
+
+  const nextUserTrees = [
+    ...state.userTrees,
+    tree,
+  ];
+
+  const result = saveV9State(
+    nextLibrary,
+    state.trees,
+    state.points,
+    state.relations,
+    memberships,
+    nextUserTrees,
+  );
+
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  return tree;
+}
+步骤 12.2：手动创建继续这样
+createTree(libraryId, {
+  identity: {
+    name,
+    description,
+    color,
+  },
+});
+自动创建
+createTree(libraryId, {
+  identity: draft.identity,
+  pointIds: draft.pointIds,
+});
+就是这么简单。
+领域模型没有“AI 树”。
+Task 13｜自动树必须自动拥有题库、教学等已有资源
+当前 ContentRepository 已经按：
+nodeId
+获取 TeachingUnit 和 Questions。
+所以：
+不复制题目，不复制教学。
+
+生成树只需要：
+pointIds
+即可。
+但 PracticePlanner 有一个必须修的 Bug
+现在：
+buildTreePlan(treeId)
+通过：
+TREE_ID_TO_BRANCH[treeId]
+查系统分支。
+自动树 ID：
+tree-uuid
+会失败。
+改成真正从 Tree 取：
+function buildTreePlan(
+  treeId: string,
+): PracticePlan | null {
+  const tree = getTree(treeId);
+
+  if (!tree) return null;
+
+  const questionIds = dedupe(
+    tree.pointIds.flatMap((pointId) =>
+      contentRepository
+        .getQuestionsForNode(pointId)
+        .map((q) => q.id),
+    ),
+  ).slice(0, 28);
+
+  if (!questionIds.length) {
+    return null;
+  }
+
+  return {
+    id: `tree:${tree.id}`,
+    mode: 'goal',
+    title: `${tree.name} · 能力验证`,
+    description: '',
+    sourceLabel: tree.name,
+    questionIds,
+    estimatedMinutes:
+      Math.round(
+        questionIds.length
+          * MINUTES_PER_QUESTION,
+      ),
+  };
+}
+这样：
+手动树、自动树、系统树全部正常。
+
+Task 14｜实现自动建树的核心空间动画
+这是 HumanRAG 的标志性交互。
+新增：
+src/features/spatial/transitions/GoalTreeExtraction.tsx
+src/features/spatial/transitions/goalTreeTransitionStore.ts
+状态：
+type ExtractionPhase =
+  | 'idle'
+  | 'highlighting'
+  | 'detaching'
+  | 'receding'
+  | 'forming'
+  | 'connecting'
+  | 'ready'
+  | 'handoff';
+步骤 14.1：提交后立即并行执行
+A. GoalTreeComposer
+B. Tree runtime/preload
+C. Visual animation
+流程：
+async function startGoalTreeCreation(
+  prompt: string,
+) {
+  const draft =
+    composeGoalTree(prompt);
+
+  transitionStore.begin(draft);
+
+  const createPromise =
+    createAndPrepareTree(draft);
+
+  const animationPromise =
+    playGoalExtraction(draft);
+
+  const [tree] =
+    await Promise.all([
+      createPromise,
+      animationPromise,
+    ]);
+
+  transitionStore.setReady(tree.id);
+
+  await handoffToLibrary(tree.id);
+}
+步骤 14.2：相关节点高亮
+Universe 仍保持 canonical positions。
+高相关：
+亮度 ↑
+颜色纯度 ↑
+Halo ↑
+Label ↑
+
+非相关：
+先保持
+这是“检索结果出现”。
+步骤 14.3：无关节点后退、变暗、消失
+只发生在：
+Tree creation transition。
+
+不是普通 Goal Focus。
+例如 Shader/position override：
+const depthOffset =
+  18 * transitionProgress;
+
+position.z -=
+  depthOffset
+  * (1 - relevance);
+
+strength *=
+  1 -
+  transitionProgress
+    * (1 - relevance);
+视觉：
+相关节点站在前景
+非相关节点向空间深处退去
+最后融入黑暗
+Task 15｜旧 Universe 连线从中间向两端消失
+用户这个要求需要专门 Shader。
+旧边：
+完整
+↓
+中心先断
+↓
+断口越来越大
+↓
+剩余两端消失
+fragment：
+uniform float uDetach;
+
+float centerDistance =
+  abs(vProgress - 0.5) * 2.0;
+
+/*
+uDetach:
+-0.05 -> 1.05
+*/
+float keep =
+  smoothstep(
+    uDetach - 0.07,
+    uDetach + 0.07,
+    centerDistance
+  );
+
+alpha *= keep;
+uDetach：
+-0.05 → 1.05
+就得到：
+中间先消失 → 向端点扩散。
+
+底层 relation 不删。
+只是旧 Universe Representation 退出。
+Task 16｜节点自然聚合为最终 KnowledgeTree
+关键：
+最终 Tree Layout 从一开始就必须使用 Library 的正式 Tree Layout。
+
+不要动画阶段自己写一套坐标，然后到 /library 再换一次。
+复用：
+layoutCustomTree()
+customTreeFrame()
+当前已经存在。
+提前计算
+const targetNodes =
+  toCustomNodes(selectedPoints);
+
+const targetEdges =
+  toCustomEdges(
+    relations,
+    new Set(pointIds),
+  );
+
+const finalPositions =
+  layoutCustomTree(
+    targetNodes,
+    targetEdges,
+  );
+动画只是：
+Universe world position
+→
+finalPositions
+Task 17｜新关系从两个端点同时生长，在中间连接
+新树 Edge Shader：
+uniform float uBuild;
+
+float distanceToEnd =
+  min(
+    vProgress,
+    1.0 - vProgress
+  ) * 2.0;
+
+float visible =
+  1.0 -
+  smoothstep(
+    uBuild,
+    uBuild + 0.08,
+    distanceToEnd
+  );
+
+alpha *= visible;
+uBuild：
+0 → 1
+视觉：
+● ───→          ←─── ●
+● ───────→  ←─────── ●
+● ────────────────── ●
+Task 18｜动画真正承担加载遮挡，但不能是假 Loading
+需要两个条件：
+visualReady
+treeReady
+只有：
+if (visualReady && treeReady) {
+  startLibraryHandoff();
+}
+如果数据 400ms 就准备完成：
+动画仍然完整演到合理终点。
+
+如果数据 2.5s 才完成：
+树完成构图以后保持安静状态等待。
+
+不要：
+树卡在半途中
+也不要：
+死等固定 3 秒
+Task 19｜无缝进入 /library
+这是最重要的连续性验收之一。
+最终 Tree 已经：
+位置
+大小
+Camera
+旋转状态
+Shader
+全部与 Library Preview 一致。
+然后：
+Universe background 完全退出
+↓
+Library DOM 出现
+↓
+URL = /library
+↓
+new tree selected
+树本身不做第二次入场。
+Task 20｜把 Library 左侧重构成真正的 Preview Universe
+当前 SelectedTreeShowcase 每换一棵树：
+key={tree.id}
+旧 Canvas exit，新 Canvas mount。
+这就是“刷新模型感”。
+必须删掉这种结构。
+步骤 20.1：新增
+src/features/library/scene/LibraryPreviewUniverseScene.tsx
+src/features/library/scene/PreviewTreeGroup.tsx
+src/features/library/scene/treePreviewLayout.ts
+步骤 20.2：所有树在一个空间中
+概念：
+Tree A     Tree B     Tree C     Tree D
+
+   ●          ●         ●          ●
+它们具有稳定 Anchor。
+例如：
+export function treePreviewAnchor(
+  index: number,
+) {
+  const spacing = 44;
+
+  return new THREE.Vector3(
+    index * spacing,
+    0,
+    0,
+  );
+}
+后面树多了再改成：
+arc / spiral / grid
+但 ID → Anchor 必须稳定。
+步骤 20.3：树继续旋转
+用户已经明确：
+必须旋转。
+
+因此不要取消。
+但多个 Tree 共用一个 Camera 时：
+不再让 Camera 自动绕树转。
+
+改成：
+function PreviewTreeGroup({
+  tree,
+  anchor,
+}: Props) {
+  const ref =
+    useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+
+    const t =
+      clock.elapsedTime;
+
+    ref.current.rotation.y =
+      treeRotationPhase(tree.id)
+      + t * 0.075;
+  });
+
+  return (
+    <group
+      ref={ref}
+      position={anchor}
+    >
+      <TreeGraphScene ... />
+    </group>
+  );
+}
+用户看到的仍然：
+树缓慢旋转。
+
+但是 Camera 可以自由切换 Tree。
+Task 21｜Library 点击另一棵树的动画
+右侧点击：
+AI工程
+不是换模型。
+而是：
+Camera 去看另一棵已经在 Preview Universe 中的树。
+
+示例
+function focusPreviewTree(
+  treeId: string,
+) {
+  const anchor =
+    anchorByTreeId.get(treeId);
+
+  if (!anchor) return;
+
+  const pose =
+    getTreePreviewCameraPose(
+      treeId,
+      anchor,
+      viewport,
+    );
+
+  cameraTween.current?.kill();
+
+  cameraTween.current =
+    gsap.timeline()
+      .to(
+        cameraState,
+        {
+          x: pose.position.x,
+          y: pose.position.y,
+          z: pose.position.z,
+          tx: pose.target.x,
+          ty: pose.target.y,
+          tz: pose.target.z,
+
+          duration: 0.78,
+          ease: 'power3.out',
+
+          onUpdate:
+            applyCameraState,
+        },
+      );
+}
+结果：
+当前 Tree 旋转着滑出视野
+↓
+Camera 移动
+↓
+下一 Tree 旋转着进入
+↓
+Camera 优雅停住
+不能：
+opacity old 0
+opacity new 1
+作为主要切树方式。
+Task 22｜Library 页面删掉无意义信息
+当前：
+X 棵知识树
+X 个节点
+系统 / 个人
+大量数据并不帮助决策。
+删。
+SelectedTreeShowcase 当前也有：
+系统
+Tree name
+X 个节点
+大部分删。
+最终 Library 右边主要：
+知识树列表
+
+408
+AI 工程
+我的前端路线
+……
+必要时只保留：
+个人
+这种影响“可编辑性”的信息。
+不是数量。
+Task 23｜Knowledge Tree 彻底删除“总览 / 学习 / 题库”
+目前 Router 和页面都还是老结构。
+取消：
+TreeOverviewPage
+TreeLearningPage
+TreePracticePage
+作为产品一级模式。
+保留兼容 redirect 即可。
+最终模式
+学习路径
+能力验证
+“全景”是 Camera 控件。
+不是页面。
+Task 24｜KnowledgeTreeWorkspace 变成持久空间
+进入 Tree：
+/library/computer/tree/tree-ai
+视觉应该从：
+Library Preview
+自然继续。
+选中树还在那里。
+只是：
+Camera 从预览 framing
+→
+正式工作 framing
+然后：
+Tree becomes interactive
+右侧工作面板出现
+页面结构
+┌─────────────────────────────────────────────┐
+│ Navigation                                  │
+├──────────────────────────┬──────────────────┤
+│                          │                  │
+│                          │ 学习路径         │
+│   Persistent 3D Tree     │ / 能力验证       │
+│                          │ / 节点详情       │
+│                          │                  │
+│                          │                  │
+└──────────────────────────┴──────────────────┘
+左边：
+不因为右边状态改变而刷新。
+
+Task 25｜KnowledgeTreeScene 必须可交互
+Library：
+interactive = false
+autoRotate = true
+Tree Workspace：
+interactive = true
+autoRotate = false / 用户控制
+进入 Tree 时：
+Preview rotation 优雅停住，Camera 拉到工作机位。
+
+不能突然：
+rotation = 0
+应该：
+gsap.to(treeMotion, {
+  autoRotationWeight: 0,
+  duration: 0.45,
+  ease: 'power2.out',
+});
+Task 26｜知识点目录增加折叠
+当前所有分组无条件展开。
+需要：
+▼ 数据结构
+  线性表
+  树
+  图
+
+▶ 操作系统
+▶ 计算机网络
+▶ 组成原理
+示例代码
+function PointGroup({
+  group,
+  defaultOpen,
+}: Props) {
+  const [open, setOpen] =
+    useState(defaultOpen);
+
+  return (
+    <section>
+      <button
+        className="point-group__header"
+        aria-expanded={open}
+        onClick={() =>
+          setOpen((v) => !v)
+        }
+      >
+        <span>{group.name}</span>
+        <CaretDown
+          className={
+            open ? 'is-open' : ''
+          }
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.ul
+            initial={{
+              opacity: 0,
+              height: 0,
+            }}
+            animate={{
+              opacity: 1,
+              height: 'auto',
+            }}
+            exit={{
+              opacity: 0,
+              height: 0,
+            }}
+            transition={{
+              duration:
+                MOTION.duration.content,
+              ease: MOTION.ease.out,
+            }}
+          >
+            {group.points.map(...)}
+          </motion.ul>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+默认展开规则
+自动展开：
+当前选中节点所在组
+推荐节点所在组
+搜索结果所在组
+其他：
+默认折叠。
+
+Task 27｜真正拆开 Study / Teach / Verify
+现在：
+TreeLearningPage
+TreePracticePage
+本质还是同一个 Directory 换 mode。
+必须终止这个设计。
+最终定义
+功能	用户真正想干什么	谁控制流程
+自主学习	我自己研究清楚	用户
+带我学	我不会，带着我学会	HumanRAG
+能力验证	我到底会不会	系统测量
+
+
+Task 28｜统一知识点入口
+Node Inspector 当前只有：
+开始学习
+练习这个知识点
+改：
+自主学习
+带我学
+验证掌握
+示例：
+<div className="point-actions">
+  <button
+    onClick={() =>
+      navigate(
+        ROUTES.pointStudy(
+          libraryId,
+          treeId,
+          point.id,
+        ),
+      )
+    }
+  >
+    自主学习
+  </button>
+
+  <button
+    onClick={() =>
+      navigate(
+        ROUTES.pointTeach(
+          libraryId,
+          treeId,
+          point.id,
+        ),
+      )
+    }
+  >
+    带我学
+  </button>
+
+  <button
+    onClick={() =>
+      navigate(
+        ROUTES.pointVerify(
+          libraryId,
+          treeId,
+          point.id,
+        ),
+      )
+    }
+  >
+    验证掌握
+  </button>
+</div>
+逻辑平等。
+可以根据当前上下文高亮一个推荐操作。
+Task 29｜新增真正的 Study Workspace
+新增：
+src/features/study/pages/StudyWorkspacePage.tsx
+Study 不是学习通式：
+章节
+视频
+PPT
+附件
+而是一个知识工作台。
+结构
+TCP 拥塞控制
+
+核心问题
+为什么发送方不能无限增加发送速率？
+
+前置关系
+
+核心概念
+
+可运行 / 可拖动的交互示范
+
+典型案例
+
+自己试试
+
+进一步资料 / 来源
+示例组件
+export function StudyWorkspacePage() {
+  const { pointId } =
+    useParams();
+
+  const point =
+    contentRepository.getNode(pointId!);
+
+  const unit =
+    contentRepository
+      .getTeachingUnitForNode(
+        pointId!,
+      );
+
+  const questions =
+    contentRepository
+      .getQuestionsForNode(pointId!);
+
+  if (!point) {
+    return <NotFound />;
+  }
+
+  return (
+    <main className="study-workspace">
+      <StudyHeader point={point} />
+
+      <section className="study-reading">
+        <CoreQuestion point={point} />
+
+        <PrerequisiteStrip
+          pointId={point.id}
+        />
+
+        {unit && (
+          <StudyContent
+            unit={unit}
+          />
+        )}
+
+        <InteractiveLab
+          pointId={point.id}
+        />
+
+        <StudyExamples
+          questions={questions}
+        />
+
+        <LearningResources
+          pointId={point.id}
+        />
+      </section>
+
+      <StudyContextRail
+        pointId={point.id}
+      />
+    </main>
+  );
+}
+Task 30｜Teach：保留现有决策引擎，重新包装
+TeachingDecisionEngine 已经具有：
+diagnostic
+misconception
+guided practice
+independent check
+remediation
+并且是真的确定性决策。
+不要重写。
+重点改 UI
+Teach 应该像：
+TCP 拥塞控制
+预计约 8 分钟
+
+1 诊断
+2 理解
+3 示范
+4 尝试
+5 独立验证
+一次只处理一个任务。
+不要整个页面同时展示：
+所有步骤
+所有说明
+所有统计
+显示“为什么现在做这一步”
+例如：
+检测到：
+你把慢启动增长理解成了线性增长。
+
+所以下一步：
+重新看一次 cwnd 随 RTT 的变化。
+这是比赛非常关键的：
+AI / 自适应教学证据。
+
+Task 31｜Practice 改成“能力验证”
+当前 PracticeSessionPage 每答完一题：
+立即告诉正确/错误和 explanation。
+
+那其实更像训练。
+能力验证需要新 Mode。
+三种模式
+export type PracticeMode =
+  | 'train'
+  | 'verify'
+  | 'exam';
+Train
+即时反馈
+可以提示
+可以进入 Teach
+证据权重低
+Verify
+无提示
+尽量新题
+作答期间不教学
+Session 完成后统一反馈
+形成强证据
+Exam
+更严格
+整场结束后统一结果
+组件示例
+const shouldRevealFeedback =
+  sessionMode === 'train'
+  && Boolean(answer);
+
+return (
+  <>
+    <PracticeQuestion ... />
+
+    {shouldRevealFeedback && (
+      <PracticeAnswerFeedback
+        answer={answer}
+      />
+    )}
+
+    {sessionMode !== 'train'
+      && answer && (
+        <p className="answer-recorded">
+          已记录
+        </p>
+      )}
+  </>
+);
+Task 32｜学习证据成为比赛核心
+当前 ProgressStore 已经记录：
+firstExposure
+assistance
+taskRole
+misconception
+contentVersion
+decisionReason
+这是非常有价值的。
+页面名称从：
+学习记录
+升级：
+学习证据
+核心原则写进产品
+提示后做对，不等于独立掌握。
+
+这不是一句宣传。
+它必须由代码真实体现。
+当前 TCP 的 learningStatusFromEvidence 已经有这类严格判断。
+把它从 TCP 特例逐步泛化。
+Task 33｜Learning Evidence 页面删统计型废话
+当前：
+X 条实际作答
+X 个知识点
+这种不重要。
+重点应该是：
+已独立验证
+
+需要巩固
+
+辅助下完成
+
+待重新验证
+
+最近形成的证据
+
+当前待解决误区
+只展示：
+能改变下一步行动的信息。
+
+Task 34｜学习证据反向影响 Universe / Tree
+新增统一 Selector：
+src/domain/learning/deriveLearningState.ts
+export type LearningState =
+  | 'unknown'
+  | 'learning'
+  | 'needs-reinforcement'
+  | 'needs-verification'
+  | 'verified';
+
+export function deriveLearningState(
+  pointId: string,
+  learnerId: string,
+): LearningState {
+  const progress =
+    useProgressStore.getState();
+
+  const status =
+    learningStatusFromEvidence(
+      progress.evidenceRecords,
+      pointId,
+      learnerId,
+    );
+
+  if (
+    status.status === 'passed'
+  ) {
+    return 'verified';
+  }
+
+  if (
+    status.status === 'needs-work'
+  ) {
+    return 'needs-reinforcement';
+  }
+
+  if (
+    status.status === 'assisted'
+  ) {
+    return 'needs-verification';
+  }
+
+  return 'unknown';
+}
+Graph VisualState 再结合：
+goal relevance
++
+learning state
+决定视觉。
+Task 35｜推荐必须可以解释
+不要：
+“AI 推荐你学 TCP”。
+
+建立：
+export interface Recommendation {
+  pointId: string;
+  score: number;
+  reasons: string[];
+}
+例如：
+推荐 TCP 拥塞控制
+
+原因：
+前置知识已经具备
+最近独立验证未通过
+检测到慢启动误区
+属于当前 408 目标
+同一个 Recommendation：
+Universe Inspector
+KnowledgeTree Path
+Welcome Prompt
+共同读取。
+不能三个地方三套算法。
+Task 36｜关闭 Node Inspector 时 Camera 回 Overview
+当前 closeNodeDetail() 明确：
+关闭面板不改变 Camera。
+
+与已确认需求相反。
+改：
+closeNodeDetail: () =>
+  set((state) => ({
+    selectedNodeId: null,
+
+    phase:
+      state.selectedGoalId
+        ? 'goalFocused'
+        : 'overview',
+
+    relationMode: 'primary',
+
+    cameraIntent: {
+      id:
+        `overview:${Date.now()}`,
+
+      mode:
+        state.selectedGoalId
+          ? 'goal'
+          : 'overview',
+
+      nodeId:
+        state.selectedGoalId
+          ?? undefined,
+    },
+  }))
+如果当前有 Goal：
+回 Goal Overview。
+
+没有 Goal：
+回 Universe Overview。
+
+Task 37｜Inspector A → B 不重新弹
+NodeInspector 当前外壳已经有 layout，但 Detail Body 使用固定 key。
+改为：
+<motion.aside layout>
+  <AnimatePresence
+    mode="wait"
+    initial={false}
+  >
+    <motion.div
+      key={node.id}
+      initial={{
+        opacity: 0,
+        y: 6,
+        filter: 'blur(3px)',
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+      }}
+      exit={{
+        opacity: 0,
+        y: -4,
+        filter: 'blur(2px)',
+      }}
+      transition={{
+        duration: 0.22,
+        ease: MOTION.ease.out,
+      }}
+    >
+      <NodeDetail node={node} />
+    </motion.div>
+  </AnimatePresence>
+</motion.aside>
+Panel shell：
+不动。
+
+Task 38｜Effective Viewport 修 Camera 中心
+Camera 不应对准整个 Browser 中心。
+存在右 Inspector 时：
+真正可视区域
+=
+Canvas
+-
+Right Inspector
+-
+Top Nav
+新增：
+src/features/spatial/useEffectiveViewport.ts
+通过：
+ResizeObserver
+测量：
+nav
+inspector
+bottom sheet
+输出：
+interface EffectiveViewport {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+
+  width: number;
+  height: number;
+
+  centerX: number;
+  centerY: number;
+}
+所有：
+node focus
+panel open
+panel close
+resize
+tree workspace
+统一使用。
+Task 39｜Moonshot / Apple / Claude 风格的视觉重构
+这部分不能让 Agent理解成：
+“把按钮变得像 Kimi”。
+
+不复制品牌。
+研究结果真正转化成以下规则。
+39.1 Composition-first
+每一屏先回答：
+主体是什么？
+
+Universe
+主体：
+知识网络
+UI 退后。
+Library
+主体：
+旋转中的 Tree Preview
+右边只是选择工具。
+KnowledgeTree
+主体：
+可操作 Tree
+右边辅助行动。
+Study
+主体：
+知识内容 / 实验
+不是 Sidebar Card。
+39.2 Card Audit
+施工 Agent 必须逐页面检查：
+这个圆角矩形存在的必要性是什么？
+如果只是：
+因为里面有一组文字。
+
+删 Card。
+用：
+Spacing
+Typography
+Hairline
+Alignment
+Whitespace
+建立层级。
+禁止最终效果
+┌ Card ┐
+┌ Card ┐
+┌ Card ┐
+
+[ 紫渐变按钮 ]
+[ Glass ]
+[ Glow ]
+Task 40｜设计 Token 调整
+当前 tokens 已经有不错基础。
+不要重做品牌颜色。
+建议增加：
+:root {
+  --it-bg-deep: #080a10;
+
+  --it-surface-1:
+    rgb(255 255 255 / .025);
+
+  --it-surface-2:
+    rgb(255 255 255 / .045);
+
+  --it-rule:
+    rgb(226 234 244 / .10);
+
+  --it-rule-soft:
+    rgb(226 234 244 / .055);
+
+  --it-text:
+    #f2f5fa;
+
+  --it-text-soft:
+    #aeb7c4;
+
+  --it-text-faint:
+    #747f8e;
+
+  --it-accent:
+    #c5efff;
+
+  --it-radius-control:
+    8px;
+
+  --it-radius-panel:
+    10px;
+}
+不要复制 Moonshot 蓝。
+Task 41｜Typography 更高级
+原则参考 Moonshot：
+精确排版，而不是大字号乱堆。Kimi AI
+
+HumanRAG：
+Display
+48–72
+font-weight 430–500
+tracking -0.04 ~ -0.06em
+Page title
+28–40
+Functional title
+16–20
+Body
+14–16
+line-height 1.55–1.75
+Metadata
+11–12
+Mono 只用于：
+技术状态
+极少量编号
+数据
+不要整个 UI Mono。
+Task 42｜删除所有“不影响用户下一步”的文案
+采用唯一标准：
+删掉以后，用户会不会不知道下一步做什么？
+
+不会：
+删除。
+
+明确删：
+85 个节点，78 个可学习或练习
+
+X 棵知识树
+
+X 个节点
+
+当前渲染档位：高画质
+
+左键旋转……
+类似：
+覆盖 X 个知识点
+也尽量删除。
+但以下可以留：
+2 个知识点需要重新验证
+因为它影响行动。
+Task 43｜Discussion 不做聊天区
+不做：
+AI 对话
+评论区
+点赞
+在线人数
+假老师
+P1 可以做：
+留下问题
+Study：
+<button>
+  留下一个问题
+</button>
+数据：
+interface LearningQuestion {
+  id: string;
+  pointId: string;
+  learnerId: string;
+
+  text: string;
+
+  status:
+    | 'open'
+    | 'resolved';
+
+  createdAt: string;
+}
+之后：
+我的待解决问题
+可以影响 Recommendation。
+这比和 ChatGPT 比问答质量有意义。
+Task 44｜按比赛要求补真实来源
+官方明确要求：
+内容来源明确、辅助资源丰富、领域发展成果。2026年辽宁省大学生“iTeach”数字化教育应用创新大赛实施方案.docxDOCX
+
+因此 Study 内容需要支持：
+export interface LearningReference {
+  title: string;
+  source: string;
+  url?: string;
+  note?: string;
+}
+
+export interface LearningResource {
+  type:
+    | 'reference'
+    | 'reading'
+    | 'standard'
+    | 'interactive';
+
+  title: string;
+  url?: string;
+}
+不要 Agent 编造 DOI、论文或标准。
+无法核实：
+不填。
+
+TCP 已有 RFC 5681 真实来源，可继续作为比赛深度样板。
+Task 45｜比赛版重点做透一条完整教学链
+不要平均施工 300 个知识点。
+主 Demo：
+408
+↓
+计算机网络
+↓
+TCP
+完整做透：
+Goal
+↓
+HumanRAG 自动生成/定位相关 Tree
+↓
+进入 Tree
+↓
+TCP 当前需要验证
+↓
+能力验证答错
+↓
+识别误区
+↓
+带我学
+↓
+针对误区示范
+↓
+全新独立任务
+↓
+通过
+↓
+Evidence 写回
+↓
+状态发生变化
+这条流程对应比赛评分
+学习路径明确
+Goal → Tree。
+知识关联清楚
+Universe + Tree。
+模拟实践
+TCP interactive demonstration。
+学习评价
+Verify。
+反馈
+Misconception。
+AI 性
+Goal Retrieval + Teaching Decision。
+教学效果
+Evidence。
+路径可选
+用户仍然可以跳过推荐，访问其他知识。
+Task 46｜真正突出 HumanRAG，而不是 Obsidian Clone
+答辩不要说：
+“我们的知识图谱比 Obsidian 创新。”
+
+这不真实。
+产品必须在交互上证明：
+Obsidian
+知识 → 知识
+
+HumanRAG
+        用户目的
+           ↓
+知识 ← 相关性判断 → 知识
+           ↑
+        学习证据
+Universe 是完整知识世界。
+HumanRAG 改的是：
+relevance
+priority
+recommendation
+tree composition
+不是篡改知识关系。
+Task 47｜Route Transition 重新调
+当前 Route transition 是：
+520ms
+12% 横向位移
+很容易有 Web Page Slide 感。
+空间页面：
+/
+/universe
+/library
+/tree
+主要由 Spatial Stage 自己转场。
+禁止再给这些路由套大页面 Slide。
+普通页面：
+Study
+Teach
+Verify
+Progress
+Editor
+使用：
+360–440ms
+轻 opacity
+8–18px
+极轻 scale
+父 → 子：
+深入
+子 → 父：
+释放
+Sibling：
+crossfade / shared layout
+Task 48｜Reduced Motion
+Apple HIG 明确要求 Motion 可选、不能成为唯一信息载体。Apple Developer
+Reduced Motion：
+Opening
+星座静止
+↓
+短 fade
+↓
+Universe
+Goal Tree Creation
+不要飞节点。
+使用：
+Universe fade
+↓
+Final Tree fade
+数据逻辑完全一样。
+Library switch
+快速 dissolve
+Pulse
+可以停为静态强调。
+Task 49｜移动端
+最低验收：
+390 × 844
+768 × 1024
+1440 × 900
+Universe：
+右侧 Panel
+→
+Bottom Sheet
+KnowledgeTree：
+手机不能硬塞：
+左 60%
+右 40%
+改：
+Tree 占主要 viewport
+Bottom Sheet 提供 Path / Verify / Node Detail
+Study / Teach / Verify：
+正常单栏。
+Task 50｜性能要求
+目标不是越多粒子越好。
+Universe
+尽量继续：
+batched nodes
+batched edges
+frameloop="demand"
+Pulse
+用 Shader time。
+不要每帧 JS 改几百个 position。
+Library
+Preview Universe：
+如果 Tree 数量少：
+全部 mount
+以后超过例如：
+12
+再考虑：
+selected ± nearby trees
+虚拟化。
+比赛阶段不要提前优化不存在的问题。
+Task 51｜预加载
+点击 Opening CTA 以前：
+Universe module
+Shader
+GlobalNav
+ExplorerInterface
+已经准备。
+自动 Tree 动画期间：
+await Promise.all([
+  import(
+    '../features/library/pages/LibraryHomePage'
+  ),
+
+  prepareTreeRuntime(draft),
+]);
+避免最后一帧再：
+lazy load Library。
+
+Task 52｜错误处理
+自动建树如果失败：
+不要：
+动画播完
+结果没树
+状态：
+compose failed
+→
+selected nodes恢复 Universe
+→
+Panel 显示简短错误
+比如：
+没能整理这棵知识树。
+保留了你的输入，可以再试一次。
+输入不能丢。
+Task 53｜E2E：Opening
+新增：
+tests/e2e/opening.spec.ts
+必须验证：
+test('opening becomes interactive without remounting the canvas', async ({ page }) => {
+  await page.goto('/');
+
+  const canvas =
+    page.locator('canvas');
+
+  const handle =
+    await canvas.elementHandle();
+
+  await page
+    .getByRole('button', {
+      name: /进入/,
+    })
+    .click();
+
+  await expect(
+    page.getByRole('navigation'),
+  ).toBeVisible();
+
+  expect(
+    await canvas.elementHandle()
+  ).toEqual(handle);
+});
+实际 ElementHandle 对比实现可按 Playwright API调整。
+核心：
+Canvas 不变。
+
+Task 54｜E2E：导航不消失
+连续 5 轮：
+/library
+↓
+Tree
+↓
+返回
+↓
+Library
+每次：
+进入知识树
+创建知识树
+能力验证
+都必须存在。
+Task 55｜E2E：自动建树
+打开 Universe
+↓
+打开 Goal Panel
+↓
+输入：
+“我要准备408，网络基础比较弱”
+↓
+生成
+↓
+等待 /library
+↓
+新 Tree 出现在列表
+↓
+aria-selected=true
+↓
+进入知识树按钮存在
+还要验证：
+Tree pointIds 全部来自原 Registry
+没有新 KnowledgePoint
+Task 56｜Unit：自动和手动同模型
+it(
+  'automatic tree uses normal KnowledgeTree model',
+  () => {
+    const before =
+      migrateV9();
+
+    const existingIds =
+      new Set(
+        before.points.map(p => p.id),
+      );
+
+    const draft =
+      composeGoalTree(
+        '准备 408，网络薄弱',
+      );
+
+    const tree =
+      createTree('computer', {
+        identity: {
+          name: '我的408路线',
+          description: '',
+          color: '#...',
+        },
+        pointIds: draft.pointIds,
+      });
+
+    expect(
+      tree.ownerType
+    ).toBe('user');
+
+    expect(
+      tree.pointIds.every(
+        id => existingIds.has(id),
+      ),
+    ).toBe(true);
+  },
+);
+Task 57｜Unit：Strong Evidence
+测试：
+提示后答对
+≠ verified
+
+旧题再次答对
+≠ strong evidence
+
+新任务
++
+无提示
++
+独立正确
+→ verified
+这是最重要的比赛教学逻辑测试之一。
+Task 58｜E2E：Library Camera Switching
+验证：
+选 408
+↓
+记住 canvas
+↓
+点 AI
+↓
+canvas DOM identity 不变
+↓
+AI selected
+↓
+Camera state变化
+不测试：
+“动画看起来高级”。
+
+那需要手工。
+Task 59｜E2E：KnowledgeTree Persistent Scene
+进入 Tree
+↓
+Canvas = A
+↓
+Learning Path
+↓
+Capability Verification
+↓
+Node Detail
+↓
+Canvas 仍然 = A
+只换右 panel。
+Task 60｜视觉验收截图
+Desktop：
+01 constellation opening
+02 opening mid-awakening
+03 universe overview
+04 goal panel
+05 extraction high relevance
+06 forming tree
+07 library handoff
+08 library selected tree
+09 library camera switching
+10 knowledge tree path
+11 node detail
+12 study
+13 teach
+14 verification
+15 learning evidence
+尺寸：
+1440 × 900
+Mobile 核心：
+390 × 844
+Task 61｜手工 Motion 验收
+逐条肉眼检查：
+点击后有没有“等一下”？
+
+小动画是不是太短导致仓促？
+
+Camera 有没有慢悠悠起步？
+
+Camera 最后有没有突然停住？
+
+导航是不是突然 pop？
+
+星座点亮有没有节奏？
+
+线到节点以后，节点是否真的接上动画？
+
+Pulse 是否像亮度波，而不是小球？
+
+拖 Camera 时 Pulse 是否继续？
+
+A → B Inspector 有没有重新弹窗感？
+
+Library 切树是不是像换 Canvas？
+
+自动建树最后一帧和 Library 第一帧是否完全一致？
+
+树进入 Library 后是否继续正常旋转？
+
+Tree 内切 Path / Verify 时 3D 是否刷新？
+任何一项答案不好：
+不允许仅以“测试全过”结束。
+
+Task 62｜施工任务顺序
+不要大爆炸重构。
+Batch 1
+Motion Tokens
+GlobalNav persistent
+删 skip
+删性能废文案
+Commit：
+refactor: establish final motion and navigation foundation
+Batch 2
+SpatialStageCanvas
+UniverseScene extraction
+Router Spatial Shell 扩展
+Commit：
+refactor: unify persistent spatial stage
+Batch 3
+Constellation opening
+network awakening
+navigation settle
+Commit：
+feat: rebuild opening as constellation awakening
+Batch 4
+SynapticPulse
+删除 moving signal
+Commit：
+refactor: replace moving signals with synaptic pulses
+Batch 5
+GoalTreeComposer
+shared createTree transaction
+PracticePlanner user-tree support
+Commit：
+feat: compose normal knowledge trees from user goals
+Batch 6
+Universe extraction
+edge detach
+node morph
+edge rebuild
+Commit：
+feat: visualize goal-driven knowledge extraction
+Batch 7
+LibraryPreviewUniverse
+Camera tree switching
+CTA hierarchy
+copy cleanup
+Commit：
+refactor: turn library preview into a continuous tree universe
+Batch 8
+Universe → Library seamless handoff
+Commit：
+feat: preserve tree identity across library handoff
+Batch 9
+KnowledgeTreeWorkspace
+删除 overview
+Path / Verify
+persistent tree
+Commit：
+refactor: rebuild knowledge tree as a persistent workspace
+Batch 10
+collapsible groups
+node actions
+Commit：
+feat: improve knowledge point navigation
+Batch 11
+Study
+Teach polish
+Capability Verification
+Commit：
+feat: separate study teaching and verification workflows
+Batch 12
+Evidence
+Recommendation
+Graph learning state
+Commit：
+feat: connect learning evidence back to knowledge navigation
+Batch 13
+Moonshot-inspired visual audit
+remove cards
+remove copy
+responsive
+Commit：
+style: refine humanrag visual system
+Batch 14
+Tests
+Competition demo
+Docs
+Commit：
+test: lock competition journey and visual regression
+Task 63｜每一批必须过的门禁
+每 Batch：
+npm run typecheck
+npm test
+npm run build
+涉及用户路径：
+npm run test:e2e
+上一批没绿：
+不进入下一批。
+
+Task 64｜最终比赛 Demo 流程
+最终老师看到：
+0:00–0:15
+星座 Opening。
+第一眼：
+好看、特别。
+
+0:15–1:00
+进入完整 Universe。
+解释：
+所有知识仍然存在，HumanRAG 不会为了一个目标粗暴切断知识联系。
+
+1:00–2:00
+输入：
+“准备408，网络比较薄弱，数据结构还可以。”
+
+相关节点亮起。
+2:00–2:30
+知识从 Universe 中被提取。
+节点组成新的 Tree。
+2:30–3:00
+无缝落到 Library。
+新 Tree 已进入自己的知识库。
+3:00–3:40
+进入 Tree。
+展示：
+学习路径
+知识关系
+当前建议
+3:40–4:30
+能力验证。
+TCP 答错。
+4:30–5:30
+HumanRAG 检测误区。
+进入“带我学”。
+5:30–6:20
+互动演示 + 补救。
+6:20–7:00
+新的独立任务。
+通过。
+7:00–7:30
+Learning Evidence。
+强调：
+提示后做对 ≠ 掌握。
+
+7:30–8:00
+回知识空间 / 路径。
+展示：
+学习证据改变下一步建议。
+
+最后需要 Agent 永远记住的 10 条规则
+1. 不要新增聊天机器人。
+2. 不要建立第二套 AI KnowledgeTree。
+3. 自动建树只选择现有节点。
+4. 正常 Goal Focus 不改变 Universe 拓扑。
+5. 空间变化必须保持对象连续性。
+6. Library Tree 必须继续缓慢旋转。
+7. 切 Tree 是 Camera 去看另一棵，不是 Canvas 换模型。
+8. 界面只留下影响用户下一步的信息。
+9. 动画不是越快越好，也不是越慢越高级。
+10. HumanRAG 最终要证明的是：目的如何改变知识的组织方式和下一步行动。
+最终完成定义
+只有出现下面这条完整链，本轮才算施工完成：
+精致的星座开场
+        ↓
+完整 Universe 苏醒
+        ↓
+用户自然语言说明目的
+        ↓
+HumanRAG 从既有知识中检索
+        ↓
+相关知识被真实抽取
+        ↓
+形成普通 KnowledgeTree
+        ↓
+树真正写入 Library
+        ↓
+无缝出现于旋转预览空间
+        ↓
+Camera 能连续浏览不同 Tree
+        ↓
+进入 Tree 后场景不刷新
+        ↓
+自主学习 / 带我学 / 能力验证真正不同
+        ↓
+独立任务形成学习证据
+        ↓
+证据改变后续推荐
