@@ -38,6 +38,15 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
   return null;
 }
 
+function StageA11y({ model }: { model: SceneModel }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.domElement.setAttribute('role', 'img');
+    gl.domElement.setAttribute('aria-label', `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
+  }, [gl, model.edges.length, model.nodes.length]);
+  return null;
+}
+
 export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase, onReady, onError, onEntryComplete }: CameraLifecycle & {
   model: SceneModel;
   intent: CameraIntent;
@@ -74,12 +83,13 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
         fallback={<div className="scene-recovery"><p>此设备暂不支持三维显示</p><a href="/library">打开知识库</a></div>}
         gl={{ antialias: quality === 'quality', alpha: false, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping }}
         onPointerMissed={onMissed}
-        onCreated={({ gl }) => { gl.domElement.setAttribute('role', 'img'); gl.domElement.setAttribute('aria-label', 'HumanRAG 持久知识空间'); }}>
+        onCreated={({ gl }) => { gl.domElement.setAttribute('role', 'img'); }}>
         <color attach="background" args={['#080a10']} />
         <PerspectiveCamera makeDefault fov={44} near={0.1} far={420} position={[45, 33, 56]} />
         <SpatialSceneRouter model={model} intent={intent} onHover={onHover} onSelect={onSelect}
           experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} />
         <ContextHealth onError={onError} />
+        <StageA11y model={model} />
         <SceneReadiness onReady={onReady} />
         {QUALITY_CONFIG[quality].bloom && <EffectComposer multisampling={0} resolutionScale={0.5}><Bloom intensity={0.3} luminanceThreshold={1.1} luminanceSmoothing={0.18} mipmapBlur /></EffectComposer>}
       </Canvas>

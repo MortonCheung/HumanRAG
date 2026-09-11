@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import type { SceneModel } from '../graph/types';
+import type { SceneEdge, SceneModel } from '../graph/types';
 import { buildEdgeCurve } from '../graph/curves';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
@@ -9,6 +9,13 @@ import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperien
 
 const ACTIVE = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
 const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0, 7) % 997 / 997;
+
+export function selectPulsingEdgeIds(edges: SceneEdge[], budget: number) {
+  return new Set([...edges]
+    .sort((a, b) => Number(ACTIVE.has(b.visualState)) - Number(ACTIVE.has(a.visualState)) || phaseFor(a.id) - phaseFor(b.id))
+    .slice(0, Math.max(0, budget))
+    .map((edge) => edge.id));
+}
 
 /** Includes identity and positions, so equal-sized topology edits are not lost. */
 export function edgeGeometryKey(model: SceneModel) {
@@ -80,26 +87,27 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }:
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
   const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 } }), []);
   useLayoutEffect(() => {
+    const pulsing = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[quality].activePulseCount);
     let vertex = 0;
     for (const edge of model.edges) {
       const active = ACTIVE.has(edge.visualState);
       const primary = edge.relationType === 'hierarchy' || edge.relationType === 'practice_for';
       for (let index = 0; index < segments * 2; index += 1) {
         geometry.getAttribute('aAlpha').setX(vertex, active ? 0.45 : primary ? 0.16 : 0.045);
-        geometry.getAttribute('aActive').setX(vertex, active ? 0.9 : primary && phaseFor(edge.id) < 0.3 ? 0.2 : 0);
+        geometry.getAttribute('aActive').setX(vertex, pulsing.has(edge.id) ? active ? 0.9 : 0.2 : 0);
         geometry.getAttribute('aDirection').setX(vertex++, edge.direction === 'in' ? -1 : 1);
         geometry.getAttribute('aDelay').setX(vertex - 1, edge.propagationDelay);
       }
     }
     for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay']) geometry.getAttribute(name).needsUpdate = true;
     invalidate();
-  }, [geometry, model.edges, segments, invalidate]);
+  }, [geometry, model.edges, quality, segments, invalidate]);
   useEffect(() => {
     uniforms.uMotion.value = motionAllowed ? 1 : 0;
     invalidate();
     if (!motionAllowed) return;
     // Demand rendering idles at a modest rate; CameraControls requests full-rate frames during input.
-    const timer = window.setInterval(invalidate, 1000 / (quality === 'performance' ? 20 : 30));
+    const timer = window.setInterval(invalidate, 1000 / QUALITY_CONFIG[quality].idleFps);
     return () => window.clearInterval(timer);
   }, [motionAllowed, quality, invalidate, uniforms]);
   useEffect(() => {

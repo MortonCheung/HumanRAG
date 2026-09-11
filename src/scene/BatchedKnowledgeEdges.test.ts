@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildEdgeGeometry, edgeGeometryKey, synapticPulseShader } from './BatchedKnowledgeEdges';
+import { buildEdgeGeometry, edgeGeometryKey, selectPulsingEdgeIds, synapticPulseShader } from './BatchedKnowledgeEdges';
+import { QUALITY_CONFIG } from '../performance/qualityPolicy';
 import { buildSceneModel } from '../graph/relevance';
 
 describe('synaptic geometry and render clock', () => {
@@ -24,5 +25,9 @@ describe('synaptic geometry and render clock', () => {
     expect(synapticPulseShader).toContain('fract(uTime*0.18+vPhase)');
     expect(synapticPulseShader).toContain('head-directed');
     expect(synapticPulseShader).not.toContain('gl_PointCoord');
+  });
+  it.each(['quality', 'balanced', 'performance'] as const)('keeps %s pulse work within its device budget', (tier) => {
+    const ids = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[tier].activePulseCount);
+    expect(ids.size).toBe(QUALITY_CONFIG[tier].activePulseCount);
   });
 });

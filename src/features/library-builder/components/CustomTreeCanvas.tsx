@@ -159,7 +159,7 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
     const mid = a.clone().lerp(b, 0.5);
     const distance = a.distanceTo(b);
     mid.z += Math.min(2.8, distance * 0.16) * (edge.relationType === 'related' ? -1 : 1);
-    return { edge, start: a, end: b, mid, curve: new THREE.QuadraticBezierCurve3(a, mid, b) };
+    return { edge, start: a, end: b, mid };
   }).filter((item): item is NonNullable<typeof item> => item !== null), [edges, positions]);
 
   function pointerDown(event: ThreeEvent<PointerEvent>, id: string) {
@@ -266,7 +266,6 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
             lineWidth={connectSource && (edge.source === connectSource || edge.target === connectSource) ? 1.35 : 0.72}
           />
         ))}
-        {autoRotate && !dragging && curves.slice(0, 7).map(({ edge, curve }, index) => <TreeSignal key={`signal-${edge.id}`} curve={curve} phase={index / 7} color={nodes.find((node) => node.id === edge.source)?.color ?? '#84abb0'} />)}
         {nodes.map((node) => {
           const position = positions.get(node.id) ?? [node.x, node.y, node.z ?? 0];
           const selected = node.id === selectedId;
@@ -308,20 +307,6 @@ function TreeScene({ nodes, edges, selectedId, connectSource, interactive, autoR
         touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }}
       />
     </>
-  );
-}
-
-function TreeSignal({ curve, phase, color }: { curve: THREE.QuadraticBezierCurve3; phase: number; color: string }) {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    const point = curve.getPointAt((phase + clock.elapsedTime * 0.065) % 1);
-    ref.current?.position.copy(point);
-  });
-  return (
-    <mesh ref={ref}>
-      <sphereGeometry args={[0.09, 8, 6]} />
-      <meshBasicMaterial color={color} toneMapped={false} />
-    </mesh>
   );
 }
 

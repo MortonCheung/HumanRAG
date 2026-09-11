@@ -10,6 +10,7 @@ export interface QualityConfig {
   maxLabels: number;
   bloom: boolean;
   idleFps: number;
+  activePulseCount: number;
 }
 
 export interface RuntimeQualitySignals {

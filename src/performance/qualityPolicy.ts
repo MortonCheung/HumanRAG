@@ -1,9 +1,9 @@
 import type { QualityConfig, ResolvedQualityTier, RuntimeQualitySignals } from './types';
 
 export const QUALITY_CONFIG: Record<ResolvedQualityTier, QualityConfig> = {
-  quality: { tier: 'quality', maxRenderPixels: 3_600_000, minDpr: 0.65, maxDpr: 1.5, curveSegments: 18, maxLabels: 12, bloom: true, idleFps: 25 },
-  balanced: { tier: 'balanced', maxRenderPixels: 2_400_000, minDpr: 0.55, maxDpr: 1.25, curveSegments: 10, maxLabels: 8, bloom: true, idleFps: 20 },
-  performance: { tier: 'performance', maxRenderPixels: 1_300_000, minDpr: 0.5, maxDpr: 1, curveSegments: 6, maxLabels: 5, bloom: false, idleFps: 0 },
+  quality: { tier: 'quality', maxRenderPixels: 3_600_000, minDpr: 0.65, maxDpr: 1.5, curveSegments: 18, maxLabels: 12, bloom: true, idleFps: 30, activePulseCount: 16 },
+  balanced: { tier: 'balanced', maxRenderPixels: 2_400_000, minDpr: 0.55, maxDpr: 1.25, curveSegments: 10, maxLabels: 8, bloom: true, idleFps: 24, activePulseCount: 9 },
+  performance: { tier: 'performance', maxRenderPixels: 1_300_000, minDpr: 0.5, maxDpr: 1, curveSegments: 6, maxLabels: 5, bloom: false, idleFps: 18, activePulseCount: 5 },
 };
 
 export function resolveDpr(width: number, height: number, deviceDpr: number, config: QualityConfig) {
