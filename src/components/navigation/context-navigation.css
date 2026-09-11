@@ -18,7 +18,7 @@
 }
 .context-nav__leading, .context-nav__trailing, .context-nav__title-slot, .context-nav__primary-slot { display: flex; align-items: center; min-width: 0; gap: 8px; }
 .context-nav__leading { justify-self: start; }
-.context-nav[data-concealed] { visibility: hidden; opacity: 0; pointer-events: none; }
+.context-nav[data-concealed] { pointer-events: none; }
 .context-nav__trailing { justify-self: end; }
 .context-nav__center { min-width: 0; text-align: center; }
 .context-nav__title-slot { justify-content: center; gap: 18px; }

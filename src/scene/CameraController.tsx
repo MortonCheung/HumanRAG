@@ -14,10 +14,9 @@ let lastUniverseView: View | null = null;
 export interface CameraLifecycle {
   onReady: () => void;
   onEntryComplete: () => void;
-  skipVersion: number;
 }
 
-export function CameraController({ intent, model, experiencePhase, motionAllowed, onEntryComplete, skipVersion }: Omit<CameraLifecycle, 'onReady'> & {
+export function CameraController({ intent, model, experiencePhase, motionAllowed, onEntryComplete }: Omit<CameraLifecycle, 'onReady'> & {
   intent: CameraIntent; model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean;
 }) {
   const controls = useRef<CameraControlsImpl>(null);
@@ -36,10 +35,10 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       lastUniverseView = { position: instance.getPosition(new THREE.Vector3(), false), target: instance.getTarget(new THREE.Vector3(), false), offset: instance.getFocalOffset(new THREE.Vector3(), false), intentId: current.current.intent.id };
     };
     const takeControl = () => {
+      if (current.current.experiencePhase !== 'universe') return;
       timeline.current?.kill();
       timeline.current = null;
       freezeCamera(instance);
-      if (current.current.experiencePhase === 'entering') current.current.onEntryComplete();
     };
     gl.domElement.addEventListener('pointerdown', takeControl, true);
     gl.domElement.addEventListener('wheel', takeControl, { capture: true, passive: true });
@@ -107,9 +106,6 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   }, [experiencePhase, intent.id, size.width, size.height, motionAllowed, camera, invalidate, usable]);
 
   useEffect(() => {
-    if (skipVersion && current.current.experiencePhase === 'entering') timeline.current?.progress(1);
-  }, [skipVersion]);
-  useEffect(() => {
     const visibility = () => {
       if (document.hidden) timeline.current?.pause();
       else { timeline.current?.resume(); invalidate(); }
@@ -120,5 +116,5 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     return () => { document.removeEventListener('visibilitychange', visibility); gl.domElement.removeEventListener('webglcontextlost', contextLost); };
   }, [gl, invalidate]);
 
-  return <CameraControls ref={controls} enabled={experiencePhase !== 'landing'} makeDefault minDistance={4} maxDistance={240} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={motionAllowed ? 0.16 : 0} draggingSmoothTime={0.06} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
+  return <CameraControls ref={controls} enabled={experiencePhase === 'universe'} makeDefault minDistance={4} maxDistance={240} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={motionAllowed ? 0.16 : 0} draggingSmoothTime={0.06} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
 }

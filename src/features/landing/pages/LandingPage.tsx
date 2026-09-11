@@ -1,3 +1,4 @@
+import { MOTION } from '../../../motion/tokens';
 import { ArrowRight } from '@phosphor-icons/react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
@@ -27,17 +28,17 @@ export function LandingPage() {
     <main className={`it-landing${isEntering ? ' is-entering' : ''}`} inert={isEntering} aria-hidden={isEntering} hidden={phase === 'universe'}>
       <div className="it-landing__frame">
         <motion.header className="it-landing__brand" initial={false}
-          animate={{ opacity: isEntering ? 0 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.2 }}>
+          animate={{ opacity: isEntering ? 0 : 1 }} transition={{ duration: reducedMotion ? 0 : MOTION.duration.micro }}>
           <span className="it-landing__glyph" aria-hidden="true"><i /><i /><i /></span>
           <span className="it-landing__wordmark">HumanRAG</span>
         </motion.header>
         <motion.section className="it-landing__copy" aria-labelledby="landing-title"
           initial={reducedMotion ? false : { opacity: 0, y: 18 }}
           animate={{ opacity: isEntering ? 0 : 1, y: isEntering ? -24 : 0 }}
-          transition={{ duration: reducedMotion ? 0 : isEntering ? 0.3 : 0.8, ease: [0.22, 1, 0.36, 1] }}>
+          transition={{ duration: reducedMotion ? 0 : MOTION.duration.content, ease: MOTION.ease.out }}>
           <h1 id="landing-title">{welcome.lines.map((line) => <span key={line}>{line}</span>)}</h1>
         </motion.section>
-          <motion.div className="it-landing__actions" initial={false} animate={{ opacity: isEntering ? 0 : 1 }} transition={{ duration: reducedMotion ? 0 : 0.18 }}>
+          <motion.div className="it-landing__actions" initial={false} animate={{ opacity: isEntering ? 0 : 1 }} transition={{ duration: reducedMotion ? 0 : MOTION.duration.press }}>
             <button className="it-landing__primary" type="button" onClick={beginUniverseEntry} disabled={isEntering || pendingEntry}>
               <span>进入知识空间</span><ArrowRight size={20} aria-hidden="true" />
             </button>

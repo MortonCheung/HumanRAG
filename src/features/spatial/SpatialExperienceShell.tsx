@@ -36,7 +36,6 @@ function SpatialExperience() {
   const [failed, setFailed] = useState(false);
   const [pendingEntry, setPendingEntry] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [skipVersion, setSkipVersion] = useState(0);
   const mounted = useRef(true);
   const entryFocusPending = useRef(false);
   const graphPhase = useKnowledgeStore((state) => state.phase);
@@ -81,15 +80,6 @@ function SpatialExperience() {
     return () => window.clearTimeout(timeout);
   }, [attempt, failed, handleError, ready]);
   useEffect(() => {
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (phase === 'entering') { event.preventDefault(); setSkipVersion((value) => value + 1); }
-      else if (pendingEntry) setPendingEntry(false);
-    };
-    window.addEventListener('keydown', escape);
-    return () => window.removeEventListener('keydown', escape);
-  }, [pendingEntry, phase]);
-  useEffect(() => {
     // Only an actual route change resets the stage; completing a shot is not a new landing.
     setPhase(directUniverse ? 'universe' : 'landing');
   }, [directUniverse]);
@@ -101,13 +91,12 @@ function SpatialExperience() {
           <Suspense fallback={<div className="canvas-fallback" aria-hidden="true" />}>
             <KnowledgeFieldCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
               onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
-              onEntryComplete={finishEntry} skipVersion={skipVersion} />
+              onEntryComplete={finishEntry} />
           </Suspense>
         </SceneBoundary>
         <GlobalNav concealed={phase !== 'universe'} />
         <UniversePage />
         {!directUniverse && <LandingPage />}
-        {phase === 'entering' && <button className="entry-skip" onClick={() => setSkipVersion((value) => value + 1)}>跳过动画 <kbd>Esc</kbd></button>}
         {failed && <section className="scene-recovery" role="alert"><p>知识空间未能加载</p><div>
           <button className="text-button" onClick={() => { setFailed(false); setCanvasReady(false); setAttempt((value) => value + 1); }}>重试</button>
           <Link className="text-button text-button--primary" to={ROUTES.library}>打开知识库</Link>

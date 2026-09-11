@@ -19,13 +19,10 @@
 .it-landing__primary:active { transform: translateY(1px); }
 .it-landing.is-entering::before { opacity: 0; }
 .it-landing.is-entering .it-landing__primary { pointer-events: none; }
-.entry-skip { position: fixed; right: 28px; bottom: max(28px, env(safe-area-inset-bottom)); z-index: 150; min-height: 44px; padding: 0 16px; display: flex; gap: 20px; align-items: center; border: 1px solid var(--it-control-border); border-radius: 8px; color: var(--it-text); background: var(--it-surface); font-size: 13px; }
-.entry-skip kbd { color: var(--it-text-faint); font: 11px var(--it-mono); }
 .entry-pending, .scene-recovery { position: fixed; z-index: 151; right: 28px; bottom: 28px; padding: 20px 24px; border: 1px solid var(--it-rule-strong); border-radius: 12px; background: var(--it-surface); color: var(--it-text-soft); font-size: 14px; }
 .entry-pending button { background: none; min-height: 44px; padding: 0 12px; color: var(--it-accent); margin-left: 20px; }
 .scene-recovery p { margin: 0 0 16px; }
 .scene-recovery > div { display: flex; gap: 12px; }
-.spatial-experience--entering .context-nav { opacity: 0; pointer-events: none; }
 @media (max-width: 819px) {
   .it-landing__frame { padding: max(24px, env(safe-area-inset-top)) 24px 28px; min-height: 100dvh; grid-template-rows: 44px 1fr auto; }
   .it-landing::before { background: linear-gradient(180deg, #080b0d 0%, rgb(8 11 13 / .85) 25%, transparent 58%); }

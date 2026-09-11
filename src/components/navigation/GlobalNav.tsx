@@ -1,14 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { TransitionNavLink as NavLink } from '../../app/pageNavigation';
 import { CaretDown, DotsThree } from '@phosphor-icons/react';
 import { ROUTES } from '../../app/routes';
+import { MOTION } from '../../motion/tokens';
 import { createNavigationHostRef } from './navigationSlots';
 import './context-navigation.css';
 import { useSpatialOccluder } from '../../features/spatial/SpatialViewport';
 
 /** One persistent host. Pages portal their own stateful controls into these slots. */
 export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
+  const reducedMotion = useReducedMotion();
   const { ref: viewportRef } = useSpatialOccluder('navigation');
   const { pathname } = useLocation();
   const appMenu = useRef<HTMLDivElement>(null);
@@ -92,7 +95,18 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
   const fallbackTitle = pathname === ROUTES.library ? '计算机科学' : pathname === ROUTES.progress ? '学习记录' : pathname === ROUTES.universe ? '知识空间' : '';
 
   return (
-    <header ref={viewportRef} tabIndex={-1} className="context-nav" aria-label="页面导航" inert={concealed} aria-hidden={concealed} data-concealed={concealed || undefined}>
+    <motion.header
+      ref={viewportRef}
+      tabIndex={-1}
+      className="context-nav"
+      aria-label="页面导航"
+      inert={concealed}
+      aria-hidden={concealed}
+      data-concealed={concealed || undefined}
+      initial={false}
+      animate={{ opacity: concealed ? 0 : 1, y: concealed ? -14 : 0 }}
+      transition={{ duration: reducedMotion ? 0 : MOTION.duration.panel, ease: MOTION.ease.out }}
+    >
       <div className="context-nav__leading">
         <NavLink to={ROUTES.universe} className="context-nav__desktop-brand" aria-label="HumanRAG 知识空间">HumanRAG</NavLink>
         <div className="context-nav__app" ref={appMenu}>
@@ -122,6 +136,6 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
         </div>
         <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />
       </div>
-    </header>
+    </motion.header>
   );
 }

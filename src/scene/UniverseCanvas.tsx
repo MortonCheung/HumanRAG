@@ -37,7 +37,7 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
 }
 
 export function KnowledgeFieldCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase = 'universe',
-  onReady, onError, onEntryComplete, skipVersion,
+  onReady, onError, onEntryComplete,
 }: CameraLifecycle & {
   model: SceneModel; intent: CameraIntent; onHover: (id: string | null) => void;
   onSelect: (id: string) => void; onMissed: () => void;
@@ -87,7 +87,7 @@ export function KnowledgeFieldCanvas({ model, intent, onHover, onSelect, onMisse
           <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
         </group>)}
         <CameraController intent={intent} model={model} experiencePhase={experiencePhase} motionAllowed={motionAllowed}
-          onEntryComplete={onEntryComplete} skipVersion={skipVersion} />
+          onEntryComplete={onEntryComplete} />
         <ContextHealth onError={onError} />
         <SceneReadiness onReady={onReady} />
         {QUALITY_CONFIG[quality].bloom && <EffectComposer multisampling={0} resolutionScale={0.5}><Bloom intensity={0.3} luminanceThreshold={1.1} luminanceSmoothing={0.18} mipmapBlur /></EffectComposer>}

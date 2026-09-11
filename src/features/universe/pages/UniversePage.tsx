@@ -1,3 +1,4 @@
+import { MOTION } from '../../../motion/tokens';
 import { useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ExplorerInterface } from '../../../components/ExplorerInterface';
@@ -44,7 +45,7 @@ export function UniversePage() {
         className="dom-layer"
         initial={false}
         animate={{ opacity: experiencePhase === 'universe' ? 1 : 0 }}
-        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: MOTION.duration.content, ease: MOTION.ease.out }}
       >
         <ExplorerInterface model={model} />
       </motion.div>

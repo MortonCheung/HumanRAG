@@ -1,3 +1,4 @@
+import { MOTION } from '../motion/tokens';
 import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpenText, NotePencil, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion, type HTMLMotionProps } from 'motion/react';
@@ -12,7 +13,7 @@ import { ROUTES } from '../app/routes';
 import { BRANCH_TO_TREE_ID } from '../domain/knowledge/catalog';
 import { useSpatialOccluder } from '../features/spatial/SpatialViewport';
 
-const PANEL_EASE = [0.16, 1, 0.3, 1] as const;
+const PANEL_EASE = MOTION.ease.out;
 
 // Exiting content remains visible for the fade, but cannot receive input or focus.
 const InspectorShell = forwardRef<HTMLElement, HTMLMotionProps<'aside'>>((props, ref) => {
@@ -76,7 +77,7 @@ export function NodeInspector() {
           initial={{ opacity: 0, x: 14, scale: 0.985 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 14, scale: 0.985 }}
-          transition={{ layout: { duration: reducedMotion ? 0 : 0.24, ease: PANEL_EASE }, opacity: { duration: 0.16 }, x: { duration: reducedMotion ? 0 : 0.24, ease: PANEL_EASE } }}
+          transition={{ layout: { duration: reducedMotion ? 0 : MOTION.duration.panel, ease: PANEL_EASE }, opacity: { duration: MOTION.duration.micro }, x: { duration: reducedMotion ? 0 : MOTION.duration.panel, ease: PANEL_EASE } }}
         >
           <motion.header layout="position" className="node-inspector__header">
             {!expanded && <span className="node-peek__dot" style={{ background: colorForBranch(node.branchId) }} aria-hidden="true" />}
@@ -99,7 +100,7 @@ export function NodeInspector() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: reducedMotion ? 0.1 : 0.2, ease: PANEL_EASE }}
+                transition={{ duration: reducedMotion ? 0 : MOTION.duration.micro, ease: PANEL_EASE }}
               >
                 <nav className="breadcrumb" aria-label="所属路径">
                   {relations.path.map((item, index) => (
