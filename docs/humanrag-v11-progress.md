@@ -38,3 +38,11 @@
 保持 Neural Scientific Instrument，不换主题。品牌层设计强度 5/10、运动强度 6/10、内容密度 4/10；学习工作区以可读性与明确任务为先。
 
 已检查本地八类参考：UI UX Pro Max 的对比度/响应式检查；Taste 和 Impeccable 的层级、去模板审查；Awesome Design MD 的设计拆解；Ponytail 的最小实现阶梯。Anime planets 实例用于理解对象身份与焦点归还；GSAP React 示例用于作用域清理；Inspira AnimatedBeam 的同一路径低亮底线与移动能量用于突触脉冲机制参考。保持现有依赖，不拼装另一套 UI，不复制品牌资产。
+
+## G1 导航与返程
+
+- 保留 portal/宿主所有权机制；顶栏顺序改为上下文操作→主操作，返回/主操作空槽保留基础尺寸。
+- 知识点题库返回使用 `focusedPointId` 定位标识，不再缩小父级题库；兼容旧历史 state 时也不读取隐式过滤。
+- typecheck、146 项单测通过。
+- `navigation-continuity.spec.ts`：1440/768/390 三种宽度各五轮真实导航通过，覆盖 Universe→库→树→知识点学习/题库→父级；检查题库全量、唯一顶栏、返回按钮宽度、创建入口和无横向溢出。
+- 尚未覆盖新增 Study 与三种能力验证模式，将随对应工作区补充。

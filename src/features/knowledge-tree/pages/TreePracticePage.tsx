@@ -13,7 +13,7 @@ export function TreePracticePage() {
   const location = useLocation();
   const points = treeId ? getPointsForTree(treeId).filter(isPointActionable) : [];
   const hasQuestions = points.some((point) => contentRepository.getQuestionsForNode(point.id).length > 0);
-  const initialPointFilterId = (location.state as { pointFilterId?: string } | null)?.pointFilterId;
+  const focusedPointId = (location.state as { focusedPointId?: string } | null)?.focusedPointId;
 
   return (
     <>
@@ -31,7 +31,7 @@ export function TreePracticePage() {
         <Exam size={16} aria-hidden="true" />整树练习
       </button>
       </WorkspaceActions>
-      <TreePointDirectory key={treeId} mode="practice" points={points} initialPointFilterId={initialPointFilterId} />
+      <TreePointDirectory key={treeId} mode="practice" points={points} focusedPointId={focusedPointId} />
     </>
   );
 }

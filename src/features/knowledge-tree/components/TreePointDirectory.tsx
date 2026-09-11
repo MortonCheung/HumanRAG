@@ -48,7 +48,7 @@ export function groupTreePoints(points: KnowledgePoint[], allPoints: Map<string,
   return [...groups.values()];
 }
 
-export function TreePointDirectory({ mode, points, initialPointFilterId }: { mode: 'learn' | 'practice'; points: KnowledgePoint[]; initialPointFilterId?: string }) {
+export function TreePointDirectory({ mode, points, initialPointFilterId, focusedPointId }: { mode: 'learn' | 'practice'; points: KnowledgePoint[]; initialPointFilterId?: string; focusedPointId?: string }) {
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
   const navigate = useNavigate();
   const learnerId = useUserStore((state) => state.activeProfileId);
@@ -96,7 +96,7 @@ export function TreePointDirectory({ mode, points, initialPointFilterId }: { mod
           const available = mode === 'learn' ? Boolean(unit) : questionCount > 0;
           const status = learningStatusFromEvidence(evidence, point.id, learnerId);
           const detail = !available ? mode === 'learn' ? '暂无教学' : '暂无题目' : mode === 'practice' ? `${questionCount} 道题` : status.status === 'unverified' ? '开始学习' : status.label;
-          return <li key={point.id}>
+          return <li key={point.id} data-returned={point.id === focusedPointId || undefined}>
             <button type="button" disabled={!available} onClick={() => {
               if (!libraryId || !treeId) return;
               navigate(mode === 'learn' ? ROUTES.pointLearn(libraryId, treeId, point.id) : ROUTES.pointPractice(libraryId, treeId, point.id), { state: { origin: { kind: 'tree', libraryId, treeId } } });

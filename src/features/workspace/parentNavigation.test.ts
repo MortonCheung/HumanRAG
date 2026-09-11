@@ -8,9 +8,9 @@ describe('workspace parent navigation', () => {
       .toEqual({ to: ROUTES.treeLearn('computer', 'networks') });
   });
 
-  it('retains the point filter when leaving a point practice session', () => {
+  it('restores a point anchor without filtering the parent question pool', () => {
     expect(getWorkspaceParent({ kind: 'practice', libraryId: 'computer', treeId: 'networks', pointId: 'tcp' }))
-      .toEqual({ to: ROUTES.treePractice('computer', 'networks'), state: { pointFilterId: 'tcp' } });
+      .toEqual({ to: ROUTES.treePractice('computer', 'networks'), state: { focusedPointId: 'tcp' } });
     expect(getWorkspaceParent({ kind: 'practice', libraryId: 'computer', treeId: 'networks' }))
       .toEqual({ to: ROUTES.treePractice('computer', 'networks') });
   });

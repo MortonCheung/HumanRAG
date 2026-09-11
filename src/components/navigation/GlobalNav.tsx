@@ -111,7 +111,6 @@ export function GlobalNav() {
         <span className="context-nav__fallback">{fallbackTitle}</span>
       </div>
       <div className="context-nav__trailing">
-        <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />
         <div
           ref={actionMenu}
           className="context-nav__overflow"
@@ -119,6 +118,7 @@ export function GlobalNav() {
           <button type="button" className="context-nav__button context-nav__more" aria-label="页面操作" aria-controls="context-nav-actions" aria-expanded={actionsOpen} onClick={() => { setActionsOpen((open) => !open); setAppOpen(false); }}><DotsThree size={24} aria-hidden="true" /></button>
           <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!wide && !actionsOpen} />
         </div>
+        <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />
       </div>
     </header>
   );

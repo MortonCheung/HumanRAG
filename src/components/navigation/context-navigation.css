@@ -23,7 +23,8 @@
 .context-nav__title-slot { justify-content: center; gap: 18px; }
 .context-nav__title-slot:not(:empty) + .context-nav__fallback { display: none; }
 .context-nav__title, .context-nav__fallback { overflow: hidden; max-width: 24vw; font-size: 14px; font-weight: 560; white-space: nowrap; text-overflow: ellipsis; }
-.context-nav__back-slot:empty, .context-nav__primary-slot:empty { display: none; }
+.context-nav__back-slot { min-width: 44px; min-height: 44px; }
+.context-nav__primary-slot { min-width: 88px; min-height: 44px; justify-content: flex-end; }
 .context-nav__app, .context-nav__overflow { position: relative; }
 .context-nav__brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 8px; margin-left: -8px; border: 0; border-radius: 9px; background: transparent; color: var(--it-text); font: inherit; font-weight: 650; letter-spacing: -.04em; cursor: pointer; transition: background 180ms ease, color 180ms ease; }
 .context-nav__desktop-brand { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; color: var(--it-text); font-weight: 650; letter-spacing: -.04em; text-decoration: none; }
@@ -72,7 +73,7 @@
 .context-nav__app-menu a { width: 100%; justify-content: flex-start; }
 .context-nav__app-menu a.active { color: var(--it-accent); }
 .context-nav__app-menu[hidden], .context-nav__actions-slot[hidden] { display: none; }
-.context-nav__overflow:has(.context-nav__actions-slot:empty) { display: none; }
+.context-nav__overflow:has(.context-nav__actions-slot:empty) { visibility: hidden; }
 .context-nav__more { display: none; }
 .context-nav__mode-links { display: flex; align-items: center; gap: 2px; padding: 3px; }
 .context-nav__mode-links a { min-height: 36px; padding: 0 11px; border-radius: 7px; }
@@ -128,6 +129,7 @@
   .context-nav__title { font-size: 13px; }
   .context-nav__primary-slot .context-nav__button { padding: 0 8px; font-size: 13px; }
   .context-nav__primary-slot .context-nav__button svg { display: none; }
+  .context-nav__primary-slot { min-width: 44px; }
 }
 @keyframes context-menu-enter { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 380px) {
