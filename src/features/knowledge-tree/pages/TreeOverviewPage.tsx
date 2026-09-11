@@ -5,27 +5,24 @@ import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
 import { migrateV9 } from '../../../domain/knowledge/migration';
 import { getPointsForTree, getTree } from '../../../domain/knowledge/selectors';
-import { CustomTreeCanvas } from '../../library-builder/components/CustomTreeCanvas';
-import { toCustomEdges, toCustomNodes } from '../../library/treeGraphAdapter';
+import { useSpatialOccluder } from '../../spatial/SpatialViewport';
 
 export function TreeOverviewPage() {
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
   const navigate = useNavigate();
+  const stageViewport = useSpatialOccluder('stage');
   const data = useMemo(() => {
-    const domain = migrateV9();
+    migrateV9();
     const tree = treeId ? getTree(treeId) : undefined;
     const points = treeId ? getPointsForTree(treeId) : [];
-    const ids = new Set(points.map((point) => point.id));
-    return { tree, points, nodes: toCustomNodes(points), edges: toCustomEdges(domain.relations, ids) };
+    return { tree, points };
   }, [treeId]);
   const learnableCount = data.points.filter((point) => point.kind === 'knowledge' || point.kind === 'practice').length;
 
   return (
     <section className="tree-overview-page">
       <div className="tree-overview-page__hero">
-        <div className="tree-overview-page__model" aria-label="知识树三维总览">
-          <CustomTreeCanvas nodes={data.nodes} edges={data.edges} selectedId={null} interactive={false} autoRotate />
-        </div>
+        <div ref={stageViewport.ref} className="tree-overview-page__model" aria-label="知识树三维总览" />
         <div className="tree-overview-page__info">
           <span className="page-kicker">知识树</span>
           <h2>选择知识点</h2>

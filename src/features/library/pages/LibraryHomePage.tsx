@@ -5,12 +5,16 @@ import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
 import { migrateV9 } from '../../../domain/knowledge/migration';
 import type { KnowledgeTree } from '../../../domain/knowledge/types';
-import { SelectedTreeShowcase } from '../components/SelectedTreeShowcase';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
+import { useSpatialOccluder } from '../../spatial/SpatialViewport';
+import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 
 export function LibraryHomePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const selectStageTree = useSpatialStageStore((state) => state.selectTree);
+  const viewport = useSpatialOccluder('inspector');
+  const stageViewport = useSpatialOccluder('stage');
   const domain = useMemo(() => migrateV9(), []);
   const trees = useMemo(
     () => domain.library.treeIds
@@ -23,9 +27,8 @@ export function LibraryHomePage() {
     const fromTree = (location.state as { selectedTreeId?: string } | null)?.selectedTreeId;
     if (fromTree && trees.some((tree) => tree.id === fromTree)) setSelectedTreeId(fromTree);
   }, [location.state, trees]);
+  useEffect(() => { selectStageTree(selectedTreeId); }, [selectedTreeId, selectStageTree]);
   const selectedTree = trees.find((tree) => tree.id === selectedTreeId) ?? null;
-  const selectedPointIds = new Set(selectedTree?.pointIds ?? []);
-  const selectedPoints = domain.points.filter((point) => selectedPointIds.has(point.id));
 
   return (
     <main className="page library-manager">
@@ -44,11 +47,9 @@ export function LibraryHomePage() {
         </header>
 
         <div className="library-manager__workspace">
-          <div className="library-manager__preview">
-            <SelectedTreeShowcase tree={selectedTree} points={selectedPoints} relations={domain.relations} />
-          </div>
+          <div ref={stageViewport.ref} className="library-manager__preview" aria-label={selectedTree ? `${selectedTree.name}三维预览` : '知识树三维预览'} />
 
-          <aside className="library-manager__catalog" aria-label="知识树管理">
+          <aside ref={viewport.ref} className="library-manager__catalog" aria-label="知识树管理">
             <div className="library-manager__catalog-heading">
               <span>全部知识树</span>
               <small>选择预览</small>

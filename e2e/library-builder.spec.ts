@@ -9,7 +9,8 @@ test.describe('知识库、知识树与知识点创建', () => {
   test('知识库总览严格分为三维预览、知识树管理和集中操作', async ({ page }) => {
     await page.goto('/library');
     await expect(page.getByRole('heading', { name: '计算机科学' })).toBeVisible();
-    await expect(page.getByLabel('考研408三维预览').locator('canvas')).toBeVisible();
+    await expect(page.getByLabel('考研408三维预览')).toBeVisible();
+    await expect(page.locator('[data-spatial-stage] canvas')).toHaveCount(1);
     await expect(page.getByRole('listbox', { name: '知识树列表' })).toBeVisible();
     await expect(page.getByRole('button', { name: /进入知识树/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /综合题库/ })).toBeVisible();

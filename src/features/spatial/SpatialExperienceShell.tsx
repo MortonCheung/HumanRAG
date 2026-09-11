@@ -1,6 +1,6 @@
-import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { useLocation } from 'react-router-dom';
+import { matchPath, Outlet, useLocation } from 'react-router-dom';
 import { TransitionLink as Link } from '../../app/pageNavigation';
 import { GlobalNav } from '../../components/navigation/GlobalNav';
 import { buildSceneModel } from '../../graph/relevance';
@@ -10,8 +10,8 @@ import { SpatialExperienceContext, type SpatialExperiencePhase } from './Spatial
 import { UniversePage } from '../universe/pages/UniversePage';
 import { LandingPage } from '../landing/pages/LandingPage';
 import { SpatialViewportProvider } from './SpatialViewport';
-
-const KnowledgeFieldCanvas = lazy(() => import('../../scene/UniverseCanvas').then((module) => ({ default: module.KnowledgeFieldCanvas })));
+import { SpatialStageCanvas } from './SpatialStageCanvas';
+import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -28,8 +28,12 @@ export function SpatialExperienceShell() {
 function SpatialExperience() {
   const location = useLocation();
   const reducedMotion = Boolean(useReducedMotion());
+  const openingRoute = location.pathname === ROUTES.root;
   const directUniverse = location.pathname === ROUTES.universe;
-  const [phase, setPhase] = useState<SpatialExperiencePhase>(directUniverse ? 'universe' : 'landing');
+  const spatialTreeMatch = matchPath('/library/:libraryId/tree/:treeId/*', location.pathname)
+    ?? matchPath('/library/:libraryId/tree/:treeId', location.pathname);
+  const libraryRoute = location.pathname === ROUTES.library;
+  const [phase, setPhase] = useState<SpatialExperiencePhase>(openingRoute ? 'landing' : 'universe');
   const [canvasReady, setCanvasReady] = useState(false);
   // UI is eagerly mounted below; readiness now refers to the final rendered scene.
   const ready = canvasReady;
@@ -46,6 +50,8 @@ function SpatialExperience() {
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
+  const setStageMode = useSpatialStageStore((state) => state.setMode);
+  const selectTree = useSpatialStageStore((state) => state.selectTree);
 
   const model = useMemo(() => {
     return buildSceneModel({ goalId: selectedGoalId, selectedNodeId,
@@ -81,22 +87,27 @@ function SpatialExperience() {
   }, [attempt, failed, handleError, ready]);
   useEffect(() => {
     // Only an actual route change resets the stage; completing a shot is not a new landing.
-    setPhase(directUniverse ? 'universe' : 'landing');
-  }, [directUniverse]);
+    setPhase(openingRoute ? 'landing' : 'universe');
+    const mode: SpatialStageMode = spatialTreeMatch ? 'tree' : libraryRoute ? 'library' : openingRoute ? 'intro' : 'universe';
+    setStageMode(mode);
+    if (spatialTreeMatch?.params.treeId) selectTree(spatialTreeMatch.params.treeId);
+  }, [libraryRoute, openingRoute, selectTree, setStageMode, spatialTreeMatch?.params.treeId]);
+  useEffect(() => {
+    if (openingRoute && phase !== 'landing') setStageMode('universe');
+  }, [openingRoute, phase, setStageMode]);
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>
       <div className={`spatial-experience spatial-experience--${phase}`} aria-busy={!ready && !failed} style={{ viewTransitionName: 'route-page' }}>
         <SceneBoundary key={attempt} onError={handleError}>
-          <Suspense fallback={<div className="canvas-fallback" aria-hidden="true" />}>
-            <KnowledgeFieldCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
-              onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
-              onEntryComplete={finishEntry} />
-          </Suspense>
+          <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
+            onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
+            onEntryComplete={finishEntry} />
         </SceneBoundary>
-        <GlobalNav concealed={phase !== 'universe'} />
-        <UniversePage />
-        {!directUniverse && <LandingPage />}
+        <GlobalNav concealed={(openingRoute || directUniverse) && phase !== 'universe'} />
+        {(openingRoute || directUniverse) && <UniversePage />}
+        {openingRoute && <LandingPage />}
+        {!openingRoute && !directUniverse && <Outlet />}
         {failed && <section className="scene-recovery" role="alert"><p>知识空间未能加载</p><div>
           <button className="text-button" onClick={() => { setFailed(false); setCanvasReady(false); setAttempt((value) => value + 1); }}>重试</button>
           <Link className="text-button text-button--primary" to={ROUTES.library}>打开知识库</Link>

@@ -23,16 +23,16 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route element={<SpatialExperienceShell />} hydrateFallbackElement={initialView}>
       <Route path={ROUTES.root} element={null} />
       <Route path={ROUTES.universe} element={null} />
-    </Route>
-    <Route element={<AppShell />} hydrateFallbackElement={initialView}>
       <Route path={ROUTES.library} lazy={async () => ({ Component: (await import('../features/library/pages/LibraryHomePage')).LibraryHomePage })} />
-      <Route path="/library/:libraryId" element={<Navigate to={ROUTES.library} replace />} />
-      <Route path="/library/:libraryId/practice" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/KnowledgeTreePage')).KnowledgeTreePage })}>
         <Route index lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeOverviewPage')).TreeOverviewPage })} />
         <Route path="learn" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeLearningPage')).TreeLearningPage })} />
         <Route path="practice" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreePracticePage')).TreePracticePage })} />
       </Route>
+    </Route>
+    <Route element={<AppShell />} hydrateFallbackElement={initialView}>
+      <Route path="/library/:libraryId" element={<Navigate to={ROUTES.library} replace />} />
+      <Route path="/library/:libraryId/practice" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/practice/session" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/learn" lazy={teachingPage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/practice" lazy={practicePage} />
