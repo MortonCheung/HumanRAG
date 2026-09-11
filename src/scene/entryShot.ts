@@ -13,7 +13,7 @@ export function createEntryShot(from: CameraPose, to: CameraPose, apply: (pose: 
   const shot = { progress: 0 };
   const pose = { position: new THREE.Vector3(), target: new THREE.Vector3() };
   return gsap.timeline({ onComplete: complete }).to(shot, {
-    progress: 1, duration: 1.7, ease: 'power3.out',
+    progress: 1, duration: 1.92, ease: 'power3.out',
     onUpdate: () => {
       pose.target.lerpVectors(from.target, to.target, shot.progress);
       orientation.identity().slerp(rotation, shot.progress);

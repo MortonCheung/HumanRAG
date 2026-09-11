@@ -15,15 +15,18 @@ function pointGeometry(count: number) {
 }
 
 /** One real node, one emissive point. Its halo never needs lighting or postprocessing. */
-export function NodePointField({ model, experiencePhase, motionAllowed }: {
+export function NodePointField({ model, experiencePhase, motionAllowed, openingOrigins }: {
   model: SceneModel;
   experiencePhase: SpatialExperiencePhase;
   motionAllowed: boolean;
+  openingOrigins?: ReadonlyMap<string, [number, number, number]>;
 }) {
   const hoveredNodeId = useKnowledgeStore((state) => state.hoveredNodeId);
   const { invalidate, viewport } = useThree();
   const geometry = useMemo(() => pointGeometry(model.nodes.length), [model.nodes.length]);
   const targets = useRef<Array<{ size: number; strength: number }>>([]);
+  const positionTargets = useRef<Array<[number, number, number]>>([]);
+  const revealTime = useRef(10);
   const settling = useRef(false);
   const uniforms = useMemo(() => ({ uDpr: { value: viewport.dpr } }), [viewport.dpr]);
 
@@ -33,46 +36,73 @@ export function NodePointField({ model, experiencePhase, motionAllowed }: {
     const color = new THREE.Color();
     const white = new THREE.Color('#c8edff');
     model.nodes.forEach((node, index) => {
-      positions.setXYZ(index, ...node.displayPosition);
+      const origin = experiencePhase === 'awakening' ? openingOrigins?.get(node.id) : undefined;
+      positions.setXYZ(index, ...(origin ?? node.displayPosition));
+      positionTargets.current[index] = node.displayPosition;
       color.set(node.domainColor).lerp(white, 0.7);
       colors.setXYZ(index, color.r, color.g, color.b);
     });
     positions.needsUpdate = colors.needsUpdate = true;
     invalidate();
-  }, [geometry, model.nodes, invalidate]);
+    positionTargets.current.length = model.nodes.length;
+  }, [geometry, model.nodes, openingOrigins, experiencePhase, invalidate]);
 
   useLayoutEffect(() => {
     const sizes = geometry.getAttribute('aSize');
     const strengths = geometry.getAttribute('aStrength');
     model.nodes.forEach((node, index) => {
       const appearance = neuronAppearance(node.type, node.visualState, node.id === hoveredNodeId);
-      if (experiencePhase !== 'universe') appearance.strength = Math.max(0.9, appearance.strength);
+      if (experiencePhase === 'intro') appearance.strength = Math.max(0.9, appearance.strength);
       targets.current[index] = appearance;
-      if (!motionAllowed || sizes.getX(index) === 0) {
+      if (experiencePhase === 'awakening') {
+        const revealed = node.propagationDelay === 0 ? 1 : 0;
+        sizes.setX(index, appearance.size * (.68 + .32 * revealed));
+        strengths.setX(index, appearance.strength * revealed);
+      } else if (experiencePhase !== 'settling' && (!motionAllowed || sizes.getX(index) === 0)) {
         sizes.setX(index, appearance.size);
         strengths.setX(index, appearance.strength);
       }
     });
     targets.current.length = model.nodes.length;
     [sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
+    if (experiencePhase === 'awakening') revealTime.current = 0;
+    else if (experiencePhase === 'intro' || experiencePhase === 'universe') revealTime.current = 10;
     settling.current = motionAllowed;
     invalidate();
   }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, invalidate]);
 
   useFrame((_, delta) => {
     if (!settling.current) return;
+    const positions = geometry.getAttribute('position');
     const sizes = geometry.getAttribute('aSize');
     const strengths = geometry.getAttribute('aStrength');
     const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 14);
+    const opening = experiencePhase === 'awakening' || experiencePhase === 'settling';
+    if (opening) revealTime.current += Math.min(delta, .05);
     let remaining = 0;
     targets.current.forEach((target, index) => {
-      const sizeDelta = target.size - sizes.getX(index);
-      const strengthDelta = target.strength - strengths.getX(index);
+      const delay = model.nodes[index]?.propagationDelay ?? 0;
+      const reveal = opening ? THREE.MathUtils.smoothstep(revealTime.current, delay, delay + .16) : 1;
+      const desiredSize = target.size * (.68 + .32 * reveal);
+      const desiredStrength = target.strength * reveal;
+      const sizeDelta = desiredSize - sizes.getX(index);
+      const strengthDelta = desiredStrength - strengths.getX(index);
       sizes.setX(index, sizes.getX(index) + sizeDelta * alpha);
       strengths.setX(index, strengths.getX(index) + strengthDelta * alpha);
+      const targetPosition = positionTargets.current[index];
+      if (targetPosition) {
+        const positionAlpha = 1 - Math.exp(-Math.min(delta, .05) * 3.5);
+        positions.setXYZ(
+          index,
+          positions.getX(index) + (targetPosition[0] - positions.getX(index)) * positionAlpha,
+          positions.getY(index) + (targetPosition[1] - positions.getY(index)) * positionAlpha,
+          positions.getZ(index) + (targetPosition[2] - positions.getZ(index)) * positionAlpha,
+        );
+        remaining = Math.max(remaining, Math.abs(targetPosition[0] - positions.getX(index)), Math.abs(targetPosition[1] - positions.getY(index)), Math.abs(targetPosition[2] - positions.getZ(index)));
+      }
       remaining = Math.max(remaining, Math.abs(sizeDelta), Math.abs(strengthDelta));
     });
-    sizes.needsUpdate = strengths.needsUpdate = true;
+    positions.needsUpdate = sizes.needsUpdate = strengths.needsUpdate = true;
     settling.current = remaining > 0.002;
     if (settling.current) invalidate();
   });

@@ -44,7 +44,7 @@ export function UniversePage() {
       <motion.div
         className="dom-layer"
         initial={false}
-        animate={{ opacity: experiencePhase === 'universe' ? 1 : 0 }}
+        animate={{ opacity: experiencePhase === 'settling' || experiencePhase === 'universe' ? 1 : 0 }}
         transition={{ duration: MOTION.duration.content, ease: MOTION.ease.out }}
       >
         <ExplorerInterface model={model} />

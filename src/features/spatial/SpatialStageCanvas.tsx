@@ -1,7 +1,7 @@
 import { Html, PerspectiveCamera } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { CameraIntent, SceneModel } from '../../graph/types';
 import { QUALITY_CONFIG, readRuntimeQualitySignals, resolveAutoQualityTier, resolveDpr } from '../../performance/qualityPolicy';
@@ -14,6 +14,7 @@ import { NodePointField } from '../../scene/NodePointField';
 import type { SpatialExperiencePhase } from './SpatialExperienceContext';
 import { useSpatialStageStore } from './spatialStageStore';
 import { SpatialTreeScene } from './SpatialTreeScene';
+import { buildConstellationScene, CONSTELLATION_PRESETS, withAwakeningDelays } from '../../scene/intro/constellationPresets';
 
 function ContextHealth({ onError }: { onError: () => void }) {
   const { gl } = useThree();
@@ -97,15 +98,20 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
 }) {
   const mode = useSpatialStageStore((state) => state.mode);
   const activePanel = useKnowledgeStore((state) => state.activePanel);
+  const preset = useRef(CONSTELLATION_PRESETS[Math.floor(Math.random() * CONSTELLATION_PRESETS.length)]).current;
+  const introModel = useMemo(() => buildConstellationScene(model, preset, 'direction-408'), [model, preset]);
+  const awakeningModel = useMemo(() => withAwakeningDelays(model, introModel.nodes.map((node) => node.id)), [introModel.nodes, model]);
+  const openingOrigins = useMemo(() => new Map(introModel.nodes.map((node) => [node.id, node.displayPosition])), [introModel.nodes]);
   if (mode === 'library' || mode === 'tree') return <SpatialTreeScene mode={mode} motionAllowed={motionAllowed} />;
-  const anchors = model.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
+  const visibleModel = experiencePhase === 'intro' ? introModel : experiencePhase === 'awakening' || experiencePhase === 'settling' ? awakeningModel : model;
+  const anchors = visibleModel.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
   return <>
-    <BatchedKnowledgeEdges model={model} experiencePhase={experiencePhase} motionAllowed={motionAllowed} />
-    <NodePointField model={model} motionAllowed={motionAllowed} experiencePhase={experiencePhase} />
-    <NodeHitField model={model} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel} />
+    <BatchedKnowledgeEdges model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} />
+    <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} openingOrigins={openingOrigins} />
+    <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel} />
     {anchors.map((node) => <group key={node.id} position={node.displayPosition}>
       <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
     </group>)}
-    <CameraController intent={intent} model={model} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} />
+    <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} />
   </>;
 }

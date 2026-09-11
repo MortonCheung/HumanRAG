@@ -23,7 +23,7 @@ export function LandingPage() {
       variant: new Date().getDate() });
   });
   // The overlay retires without a route or scene handoff.
-  const isEntering = phase !== 'landing';
+  const isEntering = phase !== 'intro';
   return (
     <main className={`it-landing${isEntering ? ' is-entering' : ''}`} inert={isEntering} aria-hidden={isEntering} hidden={phase === 'universe'}>
       <div className="it-landing__frame">

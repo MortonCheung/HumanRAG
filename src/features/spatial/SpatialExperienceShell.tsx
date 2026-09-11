@@ -33,7 +33,7 @@ function SpatialExperience() {
   const spatialTreeMatch = matchPath('/library/:libraryId/tree/:treeId/*', location.pathname)
     ?? matchPath('/library/:libraryId/tree/:treeId', location.pathname);
   const libraryRoute = location.pathname === ROUTES.library;
-  const [phase, setPhase] = useState<SpatialExperiencePhase>(openingRoute ? 'landing' : 'universe');
+  const [phase, setPhase] = useState<SpatialExperiencePhase>(openingRoute ? 'intro' : 'universe');
   const [canvasReady, setCanvasReady] = useState(false);
   // UI is eagerly mounted below; readiness now refers to the final rendered scene.
   const ready = canvasReady;
@@ -66,11 +66,11 @@ function SpatialExperience() {
   const handleReady = useCallback(() => { setCanvasReady(true); setFailed(false); }, []);
   const handleError = useCallback(() => { setFailed(true); setCanvasReady(false); setPendingEntry(false); }, []);
   const beginUniverseEntry = useCallback(() => {
-    if (phase !== 'landing') return;
+    if (phase !== 'intro') return;
     if (!ready) { setPendingEntry(true); return; }
     setPendingEntry(false);
     if (reducedMotion) finishEntry();
-    else setPhase('entering');
+    else setPhase('awakening');
   }, [finishEntry, phase, ready, reducedMotion]);
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -81,19 +81,24 @@ function SpatialExperience() {
   }, [phase]);
   useEffect(() => { if (pendingEntry && ready) beginUniverseEntry(); }, [beginUniverseEntry, pendingEntry, ready]);
   useEffect(() => {
+    if (phase !== 'awakening') return;
+    const timer = window.setTimeout(() => setPhase('settling'), 1050);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+  useEffect(() => {
     if (ready || failed) return;
     const timeout = window.setTimeout(handleError, 8000);
     return () => window.clearTimeout(timeout);
   }, [attempt, failed, handleError, ready]);
   useEffect(() => {
     // Only an actual route change resets the stage; completing a shot is not a new landing.
-    setPhase(openingRoute ? 'landing' : 'universe');
+    setPhase(openingRoute ? 'intro' : 'universe');
     const mode: SpatialStageMode = spatialTreeMatch ? 'tree' : libraryRoute ? 'library' : openingRoute ? 'intro' : 'universe';
     setStageMode(mode);
     if (spatialTreeMatch?.params.treeId) selectTree(spatialTreeMatch.params.treeId);
   }, [libraryRoute, openingRoute, selectTree, setStageMode, spatialTreeMatch?.params.treeId]);
   useEffect(() => {
-    if (openingRoute && phase !== 'landing') setStageMode('universe');
+    if (openingRoute && phase !== 'intro') setStageMode('universe');
   }, [openingRoute, phase, setStageMode]);
 
   return (
@@ -104,7 +109,7 @@ function SpatialExperience() {
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
             onEntryComplete={finishEntry} />
         </SceneBoundary>
-        <GlobalNav concealed={(openingRoute || directUniverse) && phase !== 'universe'} />
+        <GlobalNav concealed={(openingRoute || directUniverse) && phase !== 'settling' && phase !== 'universe'} />
         {(openingRoute || directUniverse) && <UniversePage />}
         {openingRoute && <LandingPage />}
         {!openingRoute && !directUniverse && <Outlet />}

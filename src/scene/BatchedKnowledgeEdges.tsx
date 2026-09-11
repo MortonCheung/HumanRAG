@@ -37,22 +37,22 @@ export function buildEdgeGeometry(model: SceneModel, segments: number) {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
   geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
-  for (const name of ['aAlpha', 'aActive', 'aDirection']) geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count), 1));
+  for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay']) geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count), 1));
   geometry.computeBoundingSphere();
   return geometry;
 }
 
 const vertexShader = `
-  attribute float aProgress, aPhase, aAlpha, aActive, aDirection;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection;
+  attribute float aProgress, aPhase, aAlpha, aActive, aDirection, aDelay;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
   void main() {
-    vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection;
+    vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection; vDelay=aDelay;
     gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
   }
 `;
 export const synapticPulseShader = `
-  uniform float uTime, uMotion;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection;
+  uniform float uTime, uMotion, uRevealTime, uOpening;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
     float head=fract(uTime*0.18+vPhase)*1.3-0.15;
@@ -62,12 +62,15 @@ export const synapticPulseShader = `
     float pulse=(peak+tail*0.35)*vActive*uMotion;
     float junction=exp(-directed*14.0)+exp(-(1.0-directed)*14.0);
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
-    gl_FragColor=vec4(color,vAlpha*(0.75+junction*0.25)+pulse*0.54);
+    float travel=clamp((uRevealTime-vDelay)/0.14,0.0,1.0);
+    float grown=1.0-smoothstep(travel-0.025,travel+0.025,vProgress);
+    float reveal=mix(1.0,grown,uOpening);
+    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.54)*reveal);
   }
 `;
 
 /** One path batch and one render clock. Camera gestures never stop synaptic transmission. */
-export function BatchedKnowledgeEdges({ model, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
+export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const segments = QUALITY_CONFIG[quality].curveSegments;
   const { invalidate } = useThree();
@@ -75,7 +78,7 @@ export function BatchedKnowledgeEdges({ model, motionAllowed }: { model: SceneMo
   // Appearance changes leave positions, topology and material identity untouched.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 } }), []);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 } }), []);
   useLayoutEffect(() => {
     let vertex = 0;
     for (const edge of model.edges) {
@@ -85,9 +88,10 @@ export function BatchedKnowledgeEdges({ model, motionAllowed }: { model: SceneMo
         geometry.getAttribute('aAlpha').setX(vertex, active ? 0.45 : primary ? 0.16 : 0.045);
         geometry.getAttribute('aActive').setX(vertex, active ? 0.9 : primary && phaseFor(edge.id) < 0.3 ? 0.2 : 0);
         geometry.getAttribute('aDirection').setX(vertex++, edge.direction === 'in' ? -1 : 1);
+        geometry.getAttribute('aDelay').setX(vertex - 1, edge.propagationDelay);
       }
     }
-    for (const name of ['aAlpha', 'aActive', 'aDirection']) geometry.getAttribute(name).needsUpdate = true;
+    for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay']) geometry.getAttribute(name).needsUpdate = true;
     invalidate();
   }, [geometry, model.edges, segments, invalidate]);
   useEffect(() => {
@@ -98,7 +102,22 @@ export function BatchedKnowledgeEdges({ model, motionAllowed }: { model: SceneMo
     const timer = window.setInterval(invalidate, 1000 / (quality === 'performance' ? 20 : 30));
     return () => window.clearInterval(timer);
   }, [motionAllowed, quality, invalidate, uniforms]);
-  useFrame(({ clock }) => { if (motionAllowed) uniforms.uTime.value = clock.elapsedTime; });
+  useEffect(() => {
+    if (experiencePhase === 'awakening') {
+      uniforms.uRevealTime.value = 0;
+      uniforms.uOpening.value = 1;
+    } else if (experiencePhase === 'intro' || experiencePhase === 'universe') {
+      uniforms.uRevealTime.value = 10;
+      uniforms.uOpening.value = 0;
+    }
+    invalidate();
+  }, [experiencePhase, invalidate, uniforms]);
+  useFrame(({ clock }, delta) => {
+    if (motionAllowed) uniforms.uTime.value = clock.elapsedTime;
+    if ((experiencePhase === 'awakening' || experiencePhase === 'settling') && uniforms.uRevealTime.value < 3) {
+      uniforms.uRevealTime.value += Math.min(delta, .05);
+    }
+  });
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <lineSegments geometry={geometry} raycast={() => null}>
     <shaderMaterial vertexShader={vertexShader} fragmentShader={synapticPulseShader} uniforms={uniforms} transparent depthWrite={false} toneMapped={false} />

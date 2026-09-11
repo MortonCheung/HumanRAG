@@ -222,7 +222,7 @@
 .settings-form__saved { margin: 0; color: var(--it-success); font-size: 11px; }
 .custom-tree-node-label span { padding: 4px 7px; border: 1px solid var(--it-rule); border-radius: 4px; background: rgb(5 7 7 / .86); color: var(--it-text); font-size: 9px; white-space: nowrap; }
 
-.spatial-experience--entering .global-nav { animation: universeNavReveal .76s var(--it-ease) both; }
+.spatial-experience--settling .global-nav { animation: universeNavReveal .48s var(--it-ease) both; }
 
 @keyframes voidBreath { 0%, 100% { transform: scale(.98); opacity: .7; } 50% { transform: scale(1.025); opacity: 1; } }
 @keyframes cardSheen { 0%, 55% { transform: translateX(-130%); } 80%, 100% { transform: translateX(130%); } }

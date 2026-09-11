@@ -20,7 +20,7 @@
 | 0 | 冻结基线、保护工作区、完整门禁 | 记录测试数量/失败/构建大小 | 完成 |
 | 1 | Motion tokens、常驻导航、删除 skip/性能废文案 | 共用节奏，隐藏导航不可聚焦，桌面操作常驻 | 完成 |
 | 2 | 持久 SpatialStageCanvas、Scene 抽取、Router 扩展 | 四类空间路由共用 Canvas/WebGL context | 完成 |
-| 3 | 真实连通星座、苏醒传播、导航 settling | 原节点原关系，稳定 preset，约两秒进入 | 待执行 |
+| 3 | 真实连通星座、苏醒传播、导航 settling | 原节点原关系，稳定 preset，约两秒进入 | 完成 |
 | 4 | Synaptic Pulse | 沿真实边亮度波，交互继续，按设备降级 | 待执行 |
 | 5 | Registry composer、通用 createTree、用户树题库 | 自然语言选既有节点，普通 KnowledgeTree，事务校验 | 待执行 |
 | 6 | 抽取高亮、断边、退场、正式布局聚合、建边 | 不修改 canonical 图，visualReady/treeReady 双门 | 待执行 |
@@ -47,3 +47,4 @@
 - Batch 0：`typecheck` 通过；32 个文件、177 项单测通过；生产构建通过，最大空间 chunk 1,091.51 kB（gzip 302.10 kB）；25 项 E2E 全部通过。已有 Lottie eval 警告。日志在 `output/v11-final/`，该目录不纳入版本控制。
 - Batch 1：新增统一 Motion/GSAP 时间与缓动基线；导航在开场第一帧挂载并于后段短距离 settle，隐藏状态保持 inert；删除 Esc/按钮跳过入口；性能设置仅保留四档选择。类型检查、177 项单测、生产构建，以及开场/导航/评委流程 9 项 E2E 通过。
 - Batch 2：`SpatialStageCanvas` 成为 `/`、`/universe`、`/library` 和知识树使用态唯一 Canvas；旧独立 Universe Canvas 删除，Library/Tree DOM 只定义舞台窗口与面板。正式树布局从 Universe 坐标中分离，Library→Tree 保留同一场景对象并由共享 CameraControls 改变 framing。新增 Canvas DOM identity E2E；类型检查、177 项单测、生产构建及相关 4 项 E2E 通过，并人工查看 Library/Tree 桌面截图。
+- Batch 3：Opening 状态改为 `intro → awakening → settling → universe`；首次进入随机选一个稳定构图 preset，从 408 真实关系中 BFS 选择连通子图。点击后沿真实图距离为边与节点分配传播延迟，边从端点生长，节点在信号到达后显现，原星座节点向 canonical Universe 坐标收束；Camera 1.92 秒快速建立运动并柔和收尾，导航在 settling 阶段短距离落下。新增 4 项连通性/传播单测；33 文件、181 项单测、构建和 7 项相关 E2E 通过，人工查看 1440 Opening 与最终 Universe。

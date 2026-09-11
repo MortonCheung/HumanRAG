@@ -49,7 +49,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   useLayoutEffect(() => {
     const instance = controls.current;
     if (!instance) return;
-    const wasEntering = previousPhase.current === 'entering';
+    const wasEntering = previousPhase.current === 'awakening' || previousPhase.current === 'settling';
     const initial = previousPhase.current === null;
     previousPhase.current = experiencePhase;
     if (wasEntering && experiencePhase === 'universe') {
@@ -68,7 +68,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       applyCameraPose(instance, position, target, smooth && motionAllowed);
       invalidate();
     };
-    if (experiencePhase === 'landing') {
+    if (experiencePhase === 'intro') {
       void instance.setFocalOffset(0, 0, 0, false);
       const target = center.clone();
       const direction = new THREE.Vector3(0.68, 0.38, 0.76).normalize();
@@ -78,7 +78,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       apply(target.clone().addScaledVector(direction, distance * (size.width >= 820 ? 0.98 : 1.55)), target);
       return;
     }
-    if (experiencePhase === 'entering') {
+    if (experiencePhase === 'awakening') {
       const shotTimeline = createEntryShot(
         { position: instance.getPosition(new THREE.Vector3(), false), target: instance.getTarget(new THREE.Vector3(), false) },
         { position: overview, target: center },
@@ -86,8 +86,9 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
         () => current.current.onEntryComplete(),
       );
       timeline.current = shotTimeline;
-      return () => { shotTimeline.kill(); if (timeline.current === shotTimeline) timeline.current = null; };
+      return;
     }
+    if (experiencePhase === 'settling') return;
     if (initial && lastUniverseView?.intentId === intent.id) {
       apply(lastUniverseView.position, lastUniverseView.target);
       void instance.setFocalOffset(...lastUniverseView.offset.toArray(), false);
@@ -115,6 +116,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     gl.domElement.addEventListener('webglcontextlost', contextLost);
     return () => { document.removeEventListener('visibilitychange', visibility); gl.domElement.removeEventListener('webglcontextlost', contextLost); };
   }, [gl, invalidate]);
+  useEffect(() => () => { timeline.current?.kill(); }, []);
 
   return <CameraControls ref={controls} enabled={experiencePhase === 'universe'} makeDefault minDistance={4} maxDistance={240} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={motionAllowed ? 0.16 : 0} draggingSmoothTime={0.06} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
 }

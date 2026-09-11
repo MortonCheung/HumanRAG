@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { SceneModel } from '../../graph/types';
 
-export type SpatialExperiencePhase = 'landing' | 'entering' | 'universe';
+export type SpatialExperiencePhase = 'intro' | 'awakening' | 'settling' | 'universe';
 
 interface SpatialExperienceValue {
   phase: SpatialExperiencePhase;
