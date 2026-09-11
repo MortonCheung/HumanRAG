@@ -11,7 +11,7 @@ for (const viewport of viewports) {
   test(`${viewport.name}：开屏和核心内容页无横向溢出`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await resetDemoState(page);
-    await expect(page.getByRole('heading', { name: /学会你.*想做的事/ })).toBeVisible({ timeout: 12_000 });
+    await expect(page.locator('#landing-title')).toBeVisible({ timeout: 12_000 });
     await expectNoHorizontalOverflow(page);
 
     for (const path of ['/library', '/library/computer/tree/tree-408', '/progress']) {
@@ -37,7 +37,7 @@ test('390px：开屏保持单一入口且知识图谱覆盖全屏', async ({ pag
   expect(primaryBox!.x).toBeGreaterThanOrEqual(16);
   expect(primaryBox!.x + primaryBox!.width).toBeLessThanOrEqual(374);
   expect(primaryBox!.y + primaryBox!.height).toBeLessThanOrEqual(844);
-  const titleBox = await page.getByRole('heading', { name: /学会你.*想做的事/ }).boundingBox();
+  const titleBox = await page.locator('#landing-title').boundingBox();
   expect(primaryBox!.y).toBeGreaterThan(titleBox!.y + titleBox!.height + 24);
   await expect(page.getByRole('link', { name: '我的知识库' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: '刷题' })).toHaveCount(0);

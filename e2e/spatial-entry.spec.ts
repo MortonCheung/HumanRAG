@@ -9,7 +9,7 @@ test('开场保留同一个场景、导航和操作入口，进入后没有路�
   await expect(page.locator('.it-landing__copy')).toHaveCSS('opacity', '1');
   await expect(page.locator('header.context-nav')).toHaveCount(1);
   await expect(page.getByRole('banner')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /学会你.*想做的事/ })).toBeInViewport();
+  await expect(page.locator('#landing-title')).toBeInViewport();
   await expect(page.getByRole('button', { name: '进入知识空间' })).toBeInViewport();
   const before = await page.evaluateHandle(() => ({
     canvas: document.querySelector('canvas'),

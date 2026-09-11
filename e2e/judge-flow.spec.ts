@@ -7,7 +7,7 @@ test.describe('评委主流程与一级路由', () => {
   });
 
   test('从开屏进入知识空间，并能访问精简后的一级页面', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /学会你.*想做的事/ })).toBeVisible();
+    await expect(page.locator('#landing-title')).toBeVisible();
     await expect(page.getByRole('banner')).toHaveCount(0);
     await expect(page.locator('.spatial-canvas-layer canvas')).toBeVisible({ timeout: 12_000 });
 
