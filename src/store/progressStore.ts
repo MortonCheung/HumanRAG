@@ -9,8 +9,9 @@ import type {
 import { DEMO_HISTORY } from '../data/v6/generators/generateDemoHistory';
 import { MISCONCEPTIONS } from '../data/v6/catalogs/misconceptionCatalog';
 import { DOMAIN_KEYS, loadDomain, removeDomain, trySaveDomain } from '../services/persistence/demoPersistence';
-import { TCP_NODE_ID, TCP_UNIT_ID, TCP_VERSION, type TcpExposure } from '../data/v6/handcrafted/tcpLesson';
+import type { TcpExposure } from '../data/v6/handcrafted/tcpLesson';
 import { EvidenceRecordSchema } from '../data/v6/schemas/progressSchema';
+import { deriveLearningStatus } from '../features/progress/learningStatus';
 
 /**
  * 学习进度唯一来源（蓝图 §17.2）：EvidenceRecord、MasteryState、MisconceptionRecord。
@@ -39,7 +40,7 @@ interface ProgressState extends PersistedProgress {
     correct: boolean;
     source: EvidenceRecord['source'];
     misconceptionId?: string;
-    evidence?: Partial<Pick<EvidenceRecord, 'eventId' | 'contentVersion' | 'sessionId' | 'attempt' | 'taskRole' | 'assistance' | 'firstExposure' | 'snapshot' | 'fragmentId' | 'decisionReason'>>;
+    evidence?: Partial<Pick<EvidenceRecord, 'eventId' | 'contentVersion' | 'sessionId' | 'attempt' | 'taskRole' | 'assistance' | 'firstExposure' | 'verificationQuestionIds' | 'snapshot' | 'fragmentId' | 'decisionReason'>>;
   }) => boolean;
   completeRemediationTask: (taskId: string) => void;
   reset: () => void;
@@ -187,9 +188,9 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       masteryByNode: fullMastery,
       taskExposures: state.taskExposures,
     };
-    if (learningStatusFromEvidence(next.evidenceRecords, input.nodeId, input.learnerId).status === 'passed' && input.nodeId === TCP_NODE_ID) {
-      next.remediationTasks = next.remediationTasks.map((task) => task.learnerId === input.learnerId && task.unitId === TCP_UNIT_ID && task.misconceptionId.startsWith('tcp-') ? { ...task, status: 'done' } : task);
-      next.misconceptionRecords = next.misconceptionRecords.map((record) => record.learnerId === input.learnerId && record.nodeId === TCP_NODE_ID && record.misconceptionId.startsWith('tcp-') ? { ...record, status: 'remediated' } : record);
+    if (deriveLearningStatus(input.nodeId, input.learnerId, next.evidenceRecords).status === 'verified') {
+      next.remediationTasks = next.remediationTasks.map((task) => task.learnerId === input.learnerId && task.unitId === `tu-${input.nodeId}` ? { ...task, status: 'done' } : task);
+      next.misconceptionRecords = next.misconceptionRecords.map((record) => record.learnerId === input.learnerId && record.nodeId === input.nodeId ? { ...record, status: 'remediated' } : record);
     }
     if (!persistProgress(next)) { set({ storageError: '记录未保存，保留当前答案后重试。' }); return false; }
     set({ ...next, storageError: null });
@@ -226,21 +227,10 @@ export type LearningStatus = 'unverified' | 'needs-work' | 'assisted' | 'passed'
 export const LEARNING_STATUS_LABELS: Record<LearningStatus, string> = { unverified: '尚未验证', 'needs-work': '需要巩固', assisted: '辅助下完成', passed: '本次独立验证通过' };
 
 export function learningStatusFromEvidence(records: EvidenceRecord[], nodeId: string, learnerId: string) {
-  const entries = records.filter((entry) => entry.nodeId === nodeId && entry.learnerId === learnerId);
-  const groups = new Map<string, EvidenceRecord[]>();
-  for (const entry of entries) {
-    if (entry.source !== 'independent-check' || entry.contentVersion !== TCP_VERSION || entry.assistance !== 'independent' || entry.firstExposure !== true || !entry.sessionId || !entry.attempt) continue;
-    const key = `${entry.sessionId}:${entry.attempt}`;
-    groups.set(key, [...(groups.get(key) ?? []), entry]);
-  }
-  let lastPass = -1;
-  for (const group of groups.values()) {
-    if (group.length === 2 && group.every((entry) => entry.result === 'correct') && new Set(group.map((entry) => entry.taskRole)).size === 2 && group.some((entry) => entry.taskRole === 'predict') && group.some((entry) => entry.taskRole === 'observe')) lastPass = Math.max(lastPass, ...group.map((entry) => entries.indexOf(entry)));
-  }
-  const lastFailure = entries.reduce((last, entry, index) => entry.contentVersion && entry.result === 'incorrect' ? index : last, -1);
-  const lastAssisted = entries.reduce((last, entry, index) => entry.contentVersion && entry.result === 'correct' && ['hint', 'demonstration'].includes(entry.assistance ?? 'unknown') ? index : last, -1);
-  const status: LearningStatus = lastAssisted > Math.max(lastFailure, lastPass) ? 'assisted' : lastFailure > lastPass ? 'needs-work' : lastPass >= 0 ? 'passed' : 'unverified';
-  return { status, label: LEARNING_STATUS_LABELS[status], evidenceCount: entries.length, updatedAt: entries.at(-1)?.createdAt };
+  const derived = deriveLearningStatus(nodeId, learnerId, records);
+  // Keep the existing TCP/record UI contract until those views adopt V11 labels.
+  const status: LearningStatus = derived.status === 'verified' ? 'passed' : derived.status === 'needs-reinforcement' ? 'needs-work' : derived.status === 'needs-verification' ? 'assisted' : 'unverified';
+  return { ...derived, status, label: LEARNING_STATUS_LABELS[status] };
 }
 
 export function getLearningStatus(nodeId: string, learnerId = useProgressStore.getState().learnerId) {

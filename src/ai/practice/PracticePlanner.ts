@@ -3,9 +3,10 @@ import { SeededRandom } from '../../data/v6/generators/seededRandom';
 import { MOCK_PAPERS } from '../../data/v6/generators/generateQuestionVariants';
 import { contentRepository } from '../../services/content/ContentRepository';
 import { LEARNER_PROFILES } from '../../data/v6/catalogs/learnerProfileCatalog';
-import { MISCONCEPTIONS } from '../../data/v6/catalogs/misconceptionCatalog';
 import { useProgressStore } from '../../store/progressStore';
 import { TREE_ID_TO_BRANCH } from '../../domain/knowledge/catalog';
+import { getLearningRecommendation, getRecommendationNodes } from '../learningRecommendation';
+import { deriveLearningStatus, isRecordedEvidence } from '../../features/progress/learningStatus';
 
 /**
  * 刷题规划器（蓝图 §18）：把刷题入口（今日练习 / 按目标 / 按知识点 / 模拟试卷 / 错题复习）
@@ -39,16 +40,18 @@ function learnerBranchId(learnerId: string) {
   return LEARNER_PROFILES.find((profile) => profile.id === learnerId)?.branchId ?? '408';
 }
 
-/** 掌握度薄弱节点（level <= 1），按置信升序。 */
+/** Only real evidence identifies a weakness; demo confidence is not an assessment. */
 export function weakNodes(learnerId: string, limit = 6): string[] {
-  const branchId = learnerBranchId(learnerId);
-  const states = useProgressStore.getState().masteryByNode;
-  const branchNodes = new Set(knowledgeGraph.nodes.filter((node) => node.branchId === branchId).map((node) => node.id));
-  return states
-    .filter((state) => state.learnerId === learnerId && branchNodes.has(state.nodeId) && state.level <= 1)
-    .sort((a, b) => a.confidence - b.confidence)
-    .slice(0, limit)
-    .map((state) => state.nodeId);
+  const evidence = useProgressStore.getState().evidenceRecords;
+  let remaining = getRecommendationNodes(learnerId).filter((node) => ['needs-reinforcement', 'needs-verification'].includes(deriveLearningStatus(node.id, learnerId, evidence).status)).map((node) => node.id);
+  const result: string[] = [];
+  while (remaining.length && result.length < limit) {
+    const recommendation = getLearningRecommendation(learnerId, remaining);
+    if (!recommendation) break;
+    result.push(recommendation.nodeId);
+    remaining = remaining.filter((id) => id !== recommendation.nodeId);
+  }
+  return result;
 }
 
 /** 目标节点：当前 learner 分支下的 goal 类型节点。 */
@@ -79,6 +82,7 @@ function buildDailyPlan(learnerId: string): PracticePlan {
   const branchId = learnerBranchId(learnerId);
   const weak = weakNodes(learnerId, 6);
   const profile = LEARNER_PROFILES.find((entry) => entry.id === learnerId);
+  const recommendation = getLearningRecommendation(learnerId);
 
   const weakQuestionIds = dedupe(weak.flatMap((nodeId) => contentRepository.getQuestionsForNode(nodeId).map((question) => question.id)));
   const goals = goalNodesForBranch(branchId);
@@ -87,7 +91,8 @@ function buildDailyPlan(learnerId: string): PracticePlan {
   const rng = new SeededRandom(`daily-${learnerId}`);
   const pickedWeak = rng.pickMany(weakQuestionIds, 8);
   const pickedGoal = rng.pickMany(goalQuestionIds, 12);
-  const questionIds = dedupe([...pickedWeak, ...pickedGoal]).slice(0, 20);
+  const recommendedQuestions = recommendation ? contentRepository.getQuestionsForNode(recommendation.nodeId).map((question) => question.id).slice(0, 4) : [];
+  const questionIds = dedupe([...recommendedQuestions, ...pickedWeak, ...pickedGoal]).slice(0, 20);
 
   const weakNames = weak
     .slice(0, 3)
@@ -98,9 +103,8 @@ function buildDailyPlan(learnerId: string): PracticePlan {
     mode: 'daily',
     title: '今日练习',
     description:
-      weak.length > 0
-        ? `针对薄弱知识点「${weakNames.join('、')}」安排 20 题。`
-        : '结合目标分支知识点安排 20 题。',
+      recommendation ? recommendation.reasons.join(' ')
+        : weak.length > 0 ? `围绕「${weakNames.join('、')}」安排 ${questionIds.length} 题。` : '当前范围没有待验证的知识点。',
     sourceLabel: profile ? `${profile.goal} · 每日练习` : '每日练习',
     questionIds,
     estimatedMinutes: Math.round(questionIds.length * MINUTES_PER_QUESTION),
@@ -223,14 +227,12 @@ export function mistakeCount(learnerId: string): number {
 /** 当前 learner 分支下的薄弱误区条目（供首页与错题复习展示）。 */
 export function weakMisconceptions(learnerId: string, limit = 5): string[] {
   const branchId = learnerBranchId(learnerId);
-  const records = useProgressStore.getState().misconceptionRecords.filter(
-    (record) => record.learnerId === learnerId && record.status === 'open',
-  );
-  const branchMisconceptions = new Set(
-    MISCONCEPTIONS.filter((entry) => entry.branchId === branchId).map((entry) => entry.id),
-  );
+  const progress = useProgressStore.getState();
+  const records = progress.misconceptionRecords.filter((record) => record.learnerId === learnerId && record.status === 'open'
+    && progress.evidenceRecords.some((entry) => entry.learnerId === learnerId && entry.nodeId === record.nodeId && entry.misconceptionId === record.misconceptionId && entry.result !== 'correct' && isRecordedEvidence(entry))
+    && deriveLearningStatus(record.nodeId, learnerId, progress.evidenceRecords).status !== 'verified');
   return records
-    .filter((record) => branchMisconceptions.has(record.misconceptionId))
+    .filter((record) => contentRepository.getNode(record.nodeId)?.branchId === branchId)
     .sort((a, b) => b.occurrences - a.occurrences)
     .slice(0, limit)
     .map((record) => record.misconceptionId);

@@ -31,6 +31,9 @@ export const EvidenceRecordSchema = z.object({
   taskRole: z.enum(['diagnostic', 'clarification', 'guided', 'predict', 'observe']).optional(),
   assistance: z.enum(['independent', 'hint', 'demonstration', 'unknown']).optional(),
   firstExposure: z.boolean().optional(),
+  // Present only on the last submitted evidence of a completed verification round.
+  // The complete planned set is required; two answers from a longer round are not a pass.
+  verificationQuestionIds: z.array(z.string().min(1)).min(2).refine((ids) => new Set(ids).size === ids.length).optional(),
   snapshot: z.object({ stem: z.string(), selected: z.string(), expected: z.string(), explanation: z.string() }).optional(),
   fragmentId: z.string().optional(),
   decisionReason: z.string().optional(),
