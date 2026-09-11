@@ -61,7 +61,7 @@ describe('V9 编辑位置和提交边界', () => {
   const pointDraft = (treeId: string, id: string): PointDraft => ({ id, treeId, name: id, kind: 'knowledge', description: '', content: '', color: '#b1d8ca', tags: [], learningObjectives: [], misconceptions: [], recommendedContent: [], childIds: [], prerequisiteIds: [], relatedIds: [], position: [0, 0, 0] });
   const createFixture = () => {
     const { library } = migrateV9();
-    const tree = createTree(library.id, { name: '编辑回归', description: '', color: '#b1d8ca' });
+    const tree = createTree(library.id, { identity: { name: '编辑回归', description: '', color: '#b1d8ca' } });
     const first = createPoint(tree.id, pointDraft(tree.id, 'editable-a'));
     const second = createPoint(tree.id, pointDraft(tree.id, 'editable-b'));
     return { tree, first, second };
@@ -130,6 +130,31 @@ describe('V9 编辑位置和提交边界', () => {
     expect(migrateV9().points.some((point) => point.id === draft.id)).toBe(false);
     storage.setItem.mockImplementation((key: string, value: string) => values.set(key, value));
     expect(createPoint(tree.id, draft).id).toBe(draft.id);
+  });
+
+  it('手动与自动入口共用创建事务，并为已有节点建立成员关系', () => {
+    const { library } = migrateV9();
+    const manual = createTree(library.id, { identity: { name: '手动空树', description: '', color: '#b1d8ca' } });
+    const generated = createTree(library.id, {
+      identity: { name: '目标整理树', description: '来自目标', color: '#b1d8ca' },
+      pointIds: ['direction-408', 'course-computer-networks', 'knowledge-tcp', 'knowledge-tcp'],
+    });
+    const state = migrateV9();
+
+    expect(manual.pointIds).toEqual([]);
+    expect(generated.pointIds).toEqual(['direction-408', 'course-computer-networks', 'knowledge-tcp']);
+    expect(state.memberships.filter((membership) => membership.treeId === generated.id)).toHaveLength(3);
+    expect(state.memberships.find((membership) => membership.treeId === generated.id && membership.pointId === 'direction-408')?.role).toBe('root');
+    expect(state.memberships.find((membership) => membership.treeId === generated.id && membership.pointId === 'knowledge-tcp')?.role).toBe('leaf');
+  });
+
+  it('拒绝包含不存在知识点的树且不写入半成品', () => {
+    const { library } = migrateV9();
+    expect(() => createTree(library.id, {
+      identity: { name: '无效目标树', description: '', color: '#b1d8ca' },
+      pointIds: ['missing-point'],
+    })).toThrow('知识树包含不存在的知识点');
+    expect(migrateV9().userTrees.some((tree) => tree.name === '无效目标树')).toBe(false);
   });
 
   it('拒绝循环、自连、被删除目标与非有限坐标，不复活删除节点', () => {

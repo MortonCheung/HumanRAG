@@ -25,7 +25,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 describe('knowledge tree node creation entry', () => {
   it('keeps Add visible on a narrow user tree and its editor, with the real creation form reachable', async () => {
     const { library } = migrateV9();
-    const tree = createTree(library.id, { name: '导航创建回归', description: '', color: '#b1d8ca' });
+    const tree = createTree(library.id, { identity: { name: '导航创建回归', description: '', color: '#b1d8ca' } });
     const router = createMemoryRouter([{ element: <AppShell />, children: [
       { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeShell treeName={tree.name} ownerType="user" /> },
       { path: '/library/:libraryId/tree/:treeId/edit', element: <TreeEditorShell />, children: [{ path: 'structure', element: <TreeStructureEditorPage /> }] },

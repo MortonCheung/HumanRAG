@@ -4,7 +4,8 @@ import { MOCK_PAPERS } from '../../data/v6/generators/generateQuestionVariants';
 import { contentRepository } from '../../services/content/ContentRepository';
 import { LEARNER_PROFILES } from '../../data/v6/catalogs/learnerProfileCatalog';
 import { useProgressStore } from '../../store/progressStore';
-import { TREE_ID_TO_BRANCH } from '../../domain/knowledge/catalog';
+import { migrateV9 } from '../../domain/knowledge/migration';
+import { getTree } from '../../domain/knowledge/selectors';
 import { getLearningRecommendation, getRecommendationNodes } from '../learningRecommendation';
 import { deriveLearningStatus, isRecordedEvidence } from '../../features/progress/learningStatus';
 
@@ -145,18 +146,17 @@ function buildGoalPlan(nodeId: string): PracticePlan | null {
 }
 
 function buildTreePlan(treeId: string): PracticePlan | null {
-  const branchId = TREE_ID_TO_BRANCH[treeId];
-  if (!branchId) return null;
-  const branchNodes = knowledgeGraph.nodes.filter((node) => node.branchId === branchId);
-  const questionIds = dedupe(branchNodes.flatMap((node) => contentRepository.getQuestionsForNode(node.id).map((question) => question.id))).slice(0, 28);
+  migrateV9();
+  const tree = getTree(treeId);
+  if (!tree) return null;
+  const questionIds = dedupe(tree.pointIds.flatMap((pointId) => contentRepository.getQuestionsForNode(pointId).map((question) => question.id))).slice(0, 28);
   if (questionIds.length === 0) return null;
-  const treeName = { '408': '考研408', ai: 'AI工程', game: '游戏开发', frontend: '前端开发' }[branchId];
   return {
     id: `tree:${treeId}`,
     mode: 'goal',
-    title: `${treeName}综合练习`,
+    title: `${tree.name}综合练习`,
     description: `覆盖这棵知识树的主要知识点，共 ${questionIds.length} 题。`,
-    sourceLabel: `知识树 · ${treeName}`,
+    sourceLabel: `知识树 · ${tree.name}`,
     questionIds,
     estimatedMinutes: Math.round(questionIds.length * MINUTES_PER_QUESTION),
   };

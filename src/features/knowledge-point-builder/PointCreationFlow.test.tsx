@@ -33,7 +33,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function fixture(name = '创建流程回归') {
   const { library } = migrateV9();
-  const tree = createTree(library.id, { name, description: '', color: '#b1d8ca' });
+  const tree = createTree(library.id, { identity: { name, description: '', color: '#b1d8ca' } });
   const anchor = createPoint(tree.id, { ...createEmptyPointDraft(tree.id), name: '基础概念' });
   const storageKey = `iteach.point-draft.v1:${tree.id}`;
   const readDraft = () => JSON.parse(sessionStorage.getItem(storageKey)!) as PointDraft;

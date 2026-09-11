@@ -48,7 +48,7 @@ export function TreeGenesisPage() {
     setCreating(true);
     try {
       migrateV9();
-      const tree = createTree(libraryId, { ...next, name: next.name.trim() || generateAnonymousTreeName(getTreesForLibrary(libraryId)) });
+      const tree = createTree(libraryId, { identity: { ...next, name: next.name.trim() || generateAnonymousTreeName(getTreesForLibrary(libraryId)) } });
       committed.current = true;
       persist(null);
       navigate(ROUTES.treeEdit(libraryId, tree.id, 'structure'), { replace: true });

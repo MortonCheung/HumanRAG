@@ -1,6 +1,6 @@
 import { knowledgeGraph } from '../../data/knowledgeGraph';
 import type { KnowledgeNode } from '../../graph/types';
-import type { KnowledgeLibrary, KnowledgeTree, KnowledgePoint, KnowledgeRelation, TreeMembership, PointDraft } from './types';
+import type { KnowledgeLibrary, KnowledgeTree, KnowledgePoint, KnowledgeRelation, TreeMembership, PointDraft, TreeIdentity } from './types';
 import { createSystemTrees, createComputerLibrary } from './catalog';
 import { adaptNodeToPoint, adaptEdgeToRelation, buildTreeMemberships, populateTreePointIds } from './adapters';
 import { initRegistry } from './selectors';
@@ -180,11 +180,39 @@ export function clearLegacyProfile() {
   }
 }
 
-export function createTree(libraryId: string, identity: { name: string; description: string; color: string }): KnowledgeTree {
+export interface CreateTreeInput {
+  identity: TreeIdentity;
+  pointIds?: string[];
+}
+
+export function deriveTreeMemberships(
+  treeId: string,
+  pointIds: string[],
+  relations: KnowledgeRelation[],
+): TreeMembership[] {
+  const pointSet = new Set(pointIds);
+  const structural = relations.filter((relation) => pointSet.has(relation.sourcePointId)
+    && pointSet.has(relation.targetPointId)
+    && (relation.type === 'hierarchy' || relation.type === 'prerequisite' || relation.type === 'practice_for'));
+  const hasParent = new Set(structural.map((relation) => relation.targetPointId));
+  const hasChild = new Set(structural.map((relation) => relation.sourcePointId));
+  return pointIds.map((pointId, order) => ({
+    treeId,
+    pointId,
+    role: !hasParent.has(pointId) ? 'root' : hasChild.has(pointId) ? 'branch' : 'leaf',
+    order,
+  }));
+}
+
+export function createTree(libraryId: string, input: CreateTreeInput): KnowledgeTree {
   const state = migrateV9();
   if (state.library.id !== libraryId) throw new Error('未找到这个知识库。');
+  const { identity } = input;
   if (!identity.name.trim()) throw new Error('请填写知识树名称。');
   if (checkDuplicateTreeName(identity.name, [...state.trees, ...state.userTrees])) throw new Error('这个知识库中已经有同名知识树。');
+  const validPointIds = [...new Set(input.pointIds ?? [])];
+  const pointSet = new Set(state.points.map((point) => point.id));
+  if (validPointIds.some((pointId) => !pointSet.has(pointId))) throw new Error('知识树包含不存在的知识点。');
   const now = new Date().toISOString();
   const tree: KnowledgeTree = {
     id: `tree-${crypto.randomUUID()}`,
@@ -193,13 +221,14 @@ export function createTree(libraryId: string, identity: { name: string; descript
     description: identity.description,
     color: identity.color || '#8b7355',
     ownerType: 'user',
-    pointIds: [],
+    pointIds: validPointIds,
     createdAt: now,
     updatedAt: now,
   };
   const userTrees = [...state.userTrees, tree];
   const library = { ...state.library, treeIds: [...state.library.treeIds, tree.id] };
-  const result = saveV9State(library, state.trees, state.points, state.relations, state.memberships, userTrees);
+  const memberships = [...state.memberships, ...deriveTreeMemberships(tree.id, validPointIds, state.relations)];
+  const result = saveV9State(library, state.trees, state.points, state.relations, memberships, userTrees);
   if (!result.ok) throw new Error(result.error);
   return tree;
 }

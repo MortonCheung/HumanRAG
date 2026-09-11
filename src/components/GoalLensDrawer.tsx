@@ -1,42 +1,62 @@
-import { Check, Target, X } from '@phosphor-icons/react';
+import { Target, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
-import { matchGoal, nodesById } from '../data/knowledgeGraph';
+import { useState, type FormEvent } from 'react';
+import { usePageNavigate as useNavigate } from '../app/pageNavigation';
+import { ROUTES } from '../app/routes';
+import { composeGoalTree } from '../ai/knowledge-tree/GoalTreeComposer';
+import { createTree, migrateV9 } from '../domain/knowledge/migration';
 import { useKnowledgeStore } from '../store/knowledgeStore';
-
-const lenses = [
-  ['direction-408', '计算机考研 408', '数据结构、组成原理、操作系统与网络'],
-  ['direction-ai-engineering', 'AI 工程', '机器学习、深度学习、数据工程与 LLM'],
-  ['direction-game-development', '游戏开发', '数学、引擎、图形与性能'],
-  ['direction-frontend-development', '前端工程', '浏览器、React、性能与可访问性'],
-] as const;
 
 export function GoalLensDrawer() {
   const activePanel = useKnowledgeStore((state) => state.activePanel);
-  const selectedGoalId = useKnowledgeStore((state) => state.selectedGoalId);
-  const selectGoal = useKnowledgeStore((state) => state.selectGoal);
   const closePanel = useKnowledgeStore((state) => state.closePanel);
-  const [input, setInput] = useState('');
+  const navigate = useNavigate();
+  const [prompt, setPrompt] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [composing, setComposing] = useState(false);
   const open = activePanel === 'lens';
 
-  const submit = () => {
-    const match = matchGoal(input);
-    if (match.nodeId) selectGoal(match.nodeId);
+  const handleCompose = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!prompt.trim() || composing) return;
+    setComposing(true);
+    setError(null);
+    try {
+      const domain = migrateV9();
+      const draft = composeGoalTree(prompt);
+      const tree = createTree(domain.library.id, {
+        identity: { name: draft.name, description: draft.description, color: '#b1d8ca' },
+        pointIds: draft.pointIds,
+      });
+      closePanel();
+      navigate(ROUTES.library, { state: { selectedTreeId: tree.id } });
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : '未能整理知识，请稍后重试。');
+      setComposing(false);
+    }
   };
+
   return (
     <AnimatePresence>
-      {open && <motion.aside className="side-drawer side-drawer--right" aria-label="选择目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
-        <header className="drawer-header"><span>选择目标</span><button onClick={closePanel} aria-label="关闭选择目标"><X size={17} /></button></header>
-        <p className="drawer-copy">选择一个方向，相关知识会突出显示，其他内容仍保留在空间中。</p>
-        <div className="lens-list">
-          <button className={`lens-option ${selectedGoalId === null ? 'is-active' : ''}`} onClick={() => selectGoal(null)}><span>计算机科学全景</span>{selectedGoalId === null && <Check size={16} />}</button>
-          {lenses.map(([id, name, description]) => <button key={id} className={`lens-option ${selectedGoalId === id ? 'is-active' : ''}`} onClick={() => selectGoal(id)}><span><strong>{name}</strong><small>{description}</small></span>{selectedGoalId === id && <Check size={16} />}</button>)}
-        </div>
-        <div className="lens-custom">
-          <label htmlFor="goal-input">用一句话描述你的目标</label>
-          <div><input id="goal-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="例如：我要成为游戏开发工程师" /><button onClick={submit} aria-label="解析目标"><Target size={16} /></button></div>
-          {selectedGoalId && <small>当前目标：{nodesById.get(selectedGoalId)?.name}</small>}
-        </div>
+      {open && <motion.aside className="side-drawer side-drawer--right goal-panel" aria-label="整理学习目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
+        <header className="drawer-header"><span>学习目标</span><button type="button" onClick={closePanel} aria-label="关闭学习目标"><X size={17} /></button></header>
+        <form className="goal-panel__form" onSubmit={handleCompose}>
+          <label htmlFor="goal-prompt">你现在想做什么？</label>
+          <textarea
+            id="goal-prompt"
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="例如：我准备考 408，网络比较薄弱，数据结构还可以。"
+            rows={4}
+            maxLength={240}
+            autoFocus
+          />
+          <p className="goal-panel__hint">也可以说说你的基础、兴趣、擅长或薄弱方向。</p>
+          {error && <p className="goal-panel__error" role="alert">{error}</p>}
+          <button className="goal-panel__submit" type="submit" disabled={!prompt.trim() || composing}>
+            <Target size={16} aria-hidden="true" />{composing ? '正在整理…' : '整理相关知识'}
+          </button>
+        </form>
       </motion.aside>}
     </AnimatePresence>
   );

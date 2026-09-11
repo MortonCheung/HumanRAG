@@ -114,6 +114,16 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .lens-custom input { min-width: 0; height: 36px; border: 0; outline: 0; background: transparent; color: var(--ku-text); font-size: 12px; }
 .lens-custom input::placeholder { color: var(--ku-text-faint); }
 .lens-custom button { display: grid; place-items: center; background: transparent; color: var(--ku-gold); }
+.goal-panel__form { display: grid; gap: 14px; padding: 22px 18px 18px; }
+.goal-panel__form label { color: var(--ku-text); font-family: var(--ku-display); font-size: 22px; line-height: 1.2; letter-spacing: -.02em; }
+.goal-panel__form textarea { width: 100%; min-height: 124px; resize: vertical; padding: 13px 14px; border: 1px solid var(--ku-rule-strong); border-radius: 8px; outline: 0; background: rgb(255 255 255 / .025); color: var(--ku-text); font: inherit; font-size: 13px; line-height: 1.65; }
+.goal-panel__form textarea:focus { border-color: color-mix(in srgb, var(--ku-gold) 64%, var(--ku-rule-strong)); box-shadow: 0 0 0 3px rgb(204 174 113 / .08); }
+.goal-panel__form textarea::placeholder { color: var(--ku-text-faint); }
+.goal-panel__hint, .goal-panel__error { margin: -4px 0 0; color: var(--ku-text-faint); font-size: 11px; line-height: 1.55; }
+.goal-panel__error { color: #e7a59a; }
+.goal-panel__submit { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; justify-self: end; gap: 7px; padding: 0 15px; border: 1px solid color-mix(in srgb, var(--ku-gold) 60%, transparent); border-radius: 999px; background: rgb(204 174 113 / .1); color: var(--ku-gold); font-size: 12px; }
+.goal-panel__submit:hover:not(:disabled) { background: rgb(204 174 113 / .16); }
+.goal-panel__submit:disabled { cursor: default; opacity: .38; }
 .atlas-list button { display: grid; grid-template-columns: 10px 1fr 20px; }
 .atlas-list i { width: 7px; height: 7px; border-radius: 50%; }
 .atlas-list svg { color: var(--ku-text-faint); }

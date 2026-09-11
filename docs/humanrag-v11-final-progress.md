@@ -22,7 +22,7 @@
 | 2 | 持久 SpatialStageCanvas、Scene 抽取、Router 扩展 | 四类空间路由共用 Canvas/WebGL context | 完成 |
 | 3 | 真实连通星座、苏醒传播、导航 settling | 原节点原关系，稳定 preset，约两秒进入 | 完成 |
 | 4 | Synaptic Pulse | 沿真实边亮度波，交互继续，按设备降级 | 完成 |
-| 5 | Registry composer、通用 createTree、用户树题库 | 自然语言选既有节点，普通 KnowledgeTree，事务校验 | 待执行 |
+| 5 | Registry composer、通用 createTree、用户树题库 | 自然语言选既有节点，普通 KnowledgeTree，事务校验 | 完成 |
 | 6 | 抽取高亮、断边、退场、正式布局聚合、建边 | 不修改 canonical 图，visualReady/treeReady 双门 | 待执行 |
 | 7 | Library 连续预览空间、相机切树、CTA/文案 | 所有树稳定 anchor、缓慢旋转、同 Canvas | 待执行 |
 | 8 | Universe → Library 交接 | 同树布局/材质/相机/旋转相位，新树选中 | 待执行 |
@@ -49,3 +49,4 @@
 - Batch 2：`SpatialStageCanvas` 成为 `/`、`/universe`、`/library` 和知识树使用态唯一 Canvas；旧独立 Universe Canvas 删除，Library/Tree DOM 只定义舞台窗口与面板。正式树布局从 Universe 坐标中分离，Library→Tree 保留同一场景对象并由共享 CameraControls 改变 framing。新增 Canvas DOM identity E2E；类型检查、177 项单测、生产构建及相关 4 项 E2E 通过，并人工查看 Library/Tree 桌面截图。
 - Batch 3：Opening 状态改为 `intro → awakening → settling → universe`；首次进入随机选一个稳定构图 preset，从 408 真实关系中 BFS 选择连通子图。点击后沿真实图距离为边与节点分配传播延迟，边从端点生长，节点在信号到达后显现，原星座节点向 canonical Universe 坐标收束；Camera 1.92 秒快速建立运动并柔和收尾，导航在 settling 阶段短距离落下。新增 4 项连通性/传播单测；33 文件、181 项单测、构建和 7 项相关 E2E 通过，人工查看 1440 Opening 与最终 Universe。
 - Batch 4：脉冲继续由同一 batched edge shader 计算亮度波峰，并与苏醒期边生长共享属性；按高/均衡/低档稳定限制为 16/9/5 条活跃脉冲，idle 刷新为 30/24/18fps，Camera 手势不冻结时钟。删除自定义树 Canvas 的移动球形 signal。类型检查、33 文件/184 项单测、构建和空间交互 E2E 通过。
+- Batch 5：目标面板收口为单一自然语言输入；`GoalTreeComposer` 从 Registry 的名称、标签、描述与内容线索确定性评分，并沿前置、层级、关联和练习关系传播、补连接节点，输出 8–36 个已有节点及逐点理由。手动与自动创建共用带 pointIds 校验和成员推导的 `createTree` 事务，PracticePlanner 按任意 KnowledgeTree 的 pointIds 聚合内容仓库题目。类型检查、35 文件/190 项单测、生产构建和 5 项相关 E2E 通过；浏览器验证“目标 → 新个人树 → 整树练习”完整可达。
