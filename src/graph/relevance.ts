@@ -13,7 +13,13 @@ import { colorForBranch } from '../design/domainPalette';
 const SPACE_SCALE: [number, number, number] = [1.22, 1.08, 1.22];
 const descendantsCache = new Map<string, Map<string, number>>();
 const adjacencyByNode = new Map<string, Set<string>>();
+const hierarchyChildren = new Map<string, string[]>();
 for (const edge of knowledgeGraph.edges) {
+  if (edge.relationType === 'hierarchy') {
+    const children = hierarchyChildren.get(edge.source) ?? [];
+    children.push(edge.target);
+    hierarchyChildren.set(edge.source, children);
+  }
   if (!adjacencyByNode.has(edge.source)) adjacencyByNode.set(edge.source, new Set());
   if (!adjacencyByNode.has(edge.target)) adjacencyByNode.set(edge.target, new Set());
   adjacencyByNode.get(edge.source)!.add(edge.target);
@@ -34,12 +40,12 @@ function descendants(seedId: string) {
   if (cached) return cached;
   const depth = new Map<string, number>([[seedId, 0]]);
   const queue = [seedId];
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    for (const edge of knowledgeGraph.edges) {
-      if (edge.source !== current || edge.relationType !== 'hierarchy' || depth.has(edge.target)) continue;
-      depth.set(edge.target, (depth.get(current) ?? 0) + 1);
-      queue.push(edge.target);
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const current = queue[cursor];
+    for (const child of hierarchyChildren.get(current) ?? []) {
+      if (depth.has(child)) continue;
+      depth.set(child, (depth.get(current) ?? 0) + 1);
+      queue.push(child);
     }
   }
   descendantsCache.set(seedId, depth);

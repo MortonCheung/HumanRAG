@@ -16,6 +16,7 @@ export function UniversePage() {
   const returnOverview = useKnowledgeStore((state) => state.returnOverview);
 
   useEffect(() => {
+    if (experiencePhase !== 'universe') return;
     const handler = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const isTyping = ['INPUT', 'TEXTAREA'].includes(target?.tagName ?? '');
@@ -32,18 +33,18 @@ export function UniversePage() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [activePanel, closeNodeDetail, closePanel, openPanel, returnOverview]);
+  }, [activePanel, closeNodeDetail, closePanel, openPanel, returnOverview, experiencePhase]);
 
   useEffect(() => () => hoverNode(null), [hoverNode]);
 
   return (
-    <main id="knowledge-field-app" className={`app-shell universe-page app-shell--${phase}`}>
+    <main id="knowledge-field-app" className={`app-shell universe-page app-shell--${phase}`} inert={experiencePhase !== 'universe'} aria-hidden={experiencePhase !== 'universe'}>
       <div className="field-light" aria-hidden="true" />
       <motion.div
         className="dom-layer"
         initial={false}
         animate={{ opacity: experiencePhase === 'universe' ? 1 : 0 }}
-        transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
       >
         <ExplorerInterface model={model} />
       </motion.div>

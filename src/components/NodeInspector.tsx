@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BookOpenText, NotePencil, X } from '@phosphor-icons/react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion, type HTMLMotionProps } from 'motion/react';
 import { usePageNavigate as useNavigate } from '../app/pageNavigation';
 import { buildCausalCorridor } from '../graph/causalCorridor';
 import { nodesById } from '../data/knowledgeGraph';
@@ -10,8 +10,19 @@ import { colorForBranch } from '../design/domainPalette';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { ROUTES } from '../app/routes';
 import { BRANCH_TO_TREE_ID } from '../domain/knowledge/catalog';
+import { useSpatialOccluder } from '../features/spatial/SpatialViewport';
 
 const PANEL_EASE = [0.16, 1, 0.3, 1] as const;
+
+// Exiting content remains visible for the fade, but cannot receive input or focus.
+const InspectorShell = forwardRef<HTMLElement, HTMLMotionProps<'aside'>>((props, ref) => {
+  const present = useIsPresent();
+  return <motion.aside {...props} ref={ref} inert={!present} aria-hidden={!present} />;
+});
+const InspectorDetail = forwardRef<HTMLDivElement, HTMLMotionProps<'div'>>((props, ref) => {
+  const present = useIsPresent();
+  return <motion.div {...props} ref={ref} inert={!present} aria-hidden={!present} />;
+});
 
 /** 同一面板从悬停名称自然生长为点击详情，不切换面板身份。 */
 export function NodeInspector() {
@@ -36,6 +47,7 @@ export function NodeInspector() {
   const activeId = selectedNodeId ?? previewNodeId;
   const node = activeId ? nodesById.get(activeId) : undefined;
   const expanded = Boolean(selectedNodeId && node);
+  const viewport = useSpatialOccluder('inspector', expanded);
   const treeId = node ? BRANCH_TO_TREE_ID[node.branchId] : undefined;
   const actionable = node?.type === 'knowledge' || node?.type === 'practice';
 
@@ -53,7 +65,10 @@ export function NodeInspector() {
   return (
     <AnimatePresence initial={false}>
       {node && (
-        <motion.aside
+        <InspectorShell
+          ref={viewport.ref}
+          onAnimationComplete={viewport.measure}
+          onLayoutAnimationComplete={viewport.measure}
           layout
           className={`node-inspector${expanded ? ' is-expanded' : ' node-inspector--peek'}`}
           aria-live="polite"
@@ -61,7 +76,7 @@ export function NodeInspector() {
           initial={{ opacity: 0, x: 14, scale: 0.985 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 14, scale: 0.985 }}
-          transition={{ layout: { duration: reducedMotion ? 0 : 0.38, ease: PANEL_EASE }, opacity: { duration: 0.18 }, x: { duration: 0.32, ease: PANEL_EASE } }}
+          transition={{ layout: { duration: reducedMotion ? 0 : 0.24, ease: PANEL_EASE }, opacity: { duration: 0.16 }, x: { duration: reducedMotion ? 0 : 0.24, ease: PANEL_EASE } }}
         >
           <motion.header layout="position" className="node-inspector__header">
             {!expanded && <span className="node-peek__dot" style={{ background: colorForBranch(node.branchId) }} aria-hidden="true" />}
@@ -78,13 +93,13 @@ export function NodeInspector() {
 
           <AnimatePresence initial={false} mode="popLayout">
             {expanded && relations && (
-              <motion.div
-                key="node-detail-body"
+              <InspectorDetail
+                key={node.id}
                 className="node-inspector__detail"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: reducedMotion ? 0.1 : 0.28, ease: PANEL_EASE }}
+                transition={{ duration: reducedMotion ? 0.1 : 0.2, ease: PANEL_EASE }}
               >
                 <nav className="breadcrumb" aria-label="所属路径">
                   {relations.path.map((item, index) => (
@@ -113,10 +128,10 @@ export function NodeInspector() {
                   <RelationSection title="相关知识" nodes={relations.related.slice(0, 4)} onSelect={selectNode} empty="暂无直接关联。" />
                   <section className="inspector-section"><h3>推荐学习内容</h3><ol className="recommend-list">{node.recommendedContent.map((item, index) => <li key={item}><span>{index + 1}</span>{item}</li>)}</ol></section>
                 </div>
-              </motion.div>
+              </InspectorDetail>
             )}
           </AnimatePresence>
-        </motion.aside>
+        </InspectorShell>
       )}
     </AnimatePresence>
   );

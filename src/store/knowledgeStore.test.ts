@@ -43,10 +43,13 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
   });
 
-  it('does not move the camera when only closing node detail', () => {
+  it('closes detail and requests overview in the same state transition', () => {
     useKnowledgeStore.getState().selectNode('goal-frontend-engineer');
     const focusedIntent = useKnowledgeStore.getState().cameraIntent;
     useKnowledgeStore.getState().closeNodeDetail();
-    expect(useKnowledgeStore.getState().cameraIntent).toBe(focusedIntent);
+    expect(useKnowledgeStore.getState().cameraIntent).not.toBe(focusedIntent);
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
+    expect(useKnowledgeStore.getState().selectedNodeId).toBeNull();
+    expect(useKnowledgeStore.getState().hoveredNodeId).toBeNull();
   });
 });

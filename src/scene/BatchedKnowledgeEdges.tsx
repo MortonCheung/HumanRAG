@@ -1,249 +1,106 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import type { SceneEdge, SceneModel } from '../graph/types';
-import { CHAIN_GOLD, HOT_CORE } from '../design/domainPalette';
+import type { SceneModel } from '../graph/types';
+import { buildEdgeCurve } from '../graph/curves';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 
-const ACTIVE_STATES = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
+const ACTIVE = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
+const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0, 7) % 997 / 997;
 
-interface EdgeLayout { positions: Float32Array; progress: Float32Array }
-
-function stableHash(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
+/** Includes identity and positions, so equal-sized topology edits are not lost. */
+export function edgeGeometryKey(model: SceneModel) {
+  return JSON.stringify([model.nodes.map((n) => [n.id, n.displayPosition]), model.edges.map((e) => [e.id, e.source, e.target, e.relationType])]);
 }
 
-function curveControls(edge: SceneEdge, source: [number, number, number], target: [number, number, number]) {
-  const dx = target[0] - source[0];
-  const dy = target[1] - source[1];
-  const dz = target[2] - source[2];
-  const distance = Math.max(Math.hypot(dx, dy, dz), 0.001);
-  const nx = dx / distance; const ny = dy / distance; const nz = dz / distance;
-  let px = Math.abs(ny) > 0.86 ? 0 : -nz;
-  let py = Math.abs(ny) > 0.86 ? nz : 0;
-  let pz = Math.abs(ny) > 0.86 ? -ny : nx;
-  const perpendicularLength = Math.max(Math.hypot(px, py, pz), 0.001);
-  const sign = stableHash(edge.id) % 2 === 0 ? -1 : 1;
-  px = (px / perpendicularLength) * sign; py = (py / perpendicularLength) * sign; pz = (pz / perpendicularLength) * sign;
-  const phase = ((stableHash(edge.id) % 1000) / 1000 - 0.5) * 0.7;
-  if (edge.relationType === 'hierarchy' || edge.relationType === 'practice_for') {
-    const bend = Math.min(1.8, distance * 0.075) * (1 + phase);
-    return {
-      cubic: true,
-      c1: [source[0] + dx * 0.34 + px * bend, source[1] + dy * 0.34 + py * bend, source[2] + dz * 0.34 + pz * bend],
-      c2: [source[0] + dx * 0.68 + px * bend * 0.66, source[1] + dy * 0.68 + py * bend * 0.66, source[2] + dz * 0.68 + pz * bend * 0.66],
-    };
-  }
-  const bend = Math.min(3.2, distance * 0.16) * (1 + phase);
-  return { cubic: false, c1: [source[0] + dx * 0.5 + px * bend, source[1] + dy * 0.5 + py * bend + Math.min(2.4, distance * 0.08), source[2] + dz * 0.5 + pz * bend], c2: [0, 0, 0] };
-}
-
-function evaluateCurve(source: [number, number, number], target: [number, number, number], controls: ReturnType<typeof curveControls>, t: number, out: Float32Array, offset: number) {
-  const inverse = 1 - t;
-  if (controls.cubic) {
-    const a = inverse * inverse * inverse; const b = 3 * inverse * inverse * t; const c = 3 * inverse * t * t; const d = t * t * t;
-    out[offset] = a * source[0] + b * controls.c1[0] + c * controls.c2[0] + d * target[0];
-    out[offset + 1] = a * source[1] + b * controls.c1[1] + c * controls.c2[1] + d * target[1];
-    out[offset + 2] = a * source[2] + b * controls.c1[2] + c * controls.c2[2] + d * target[2];
-  } else {
-    const a = inverse * inverse; const b = 2 * inverse * t; const c = t * t;
-    out[offset] = a * source[0] + b * controls.c1[0] + c * target[0];
-    out[offset + 1] = a * source[1] + b * controls.c1[1] + c * target[1];
-    out[offset + 2] = a * source[2] + b * controls.c1[2] + c * target[2];
-  }
-}
-
-function buildLayout(model: SceneModel, segmentCount: number): EdgeLayout {
-  const byId = new Map(model.nodes.map((node) => [node.id, node]));
-  const vertexCount = model.edges.length * segmentCount * 2;
-  const positions = new Float32Array(vertexCount * 3);
-  const progress = new Float32Array(vertexCount);
+export function buildEdgeGeometry(model: SceneModel, segments: number) {
+  const nodes = new Map(model.nodes.map((node) => [node.id, node.displayPosition]));
+  const count = model.edges.length * segments * 2;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const progress = new Float32Array(count);
+  const phases = new Float32Array(count);
+  const point = new THREE.Vector3();
   let vertex = 0;
-  model.edges.forEach((edge) => {
-    const source = byId.get(edge.source);
-    const target = byId.get(edge.target);
-    const sourcePosition = source?.displayPosition ?? [0, 0, 0];
-    const targetPosition = target?.displayPosition ?? [0, 0, 0];
-    const controls = curveControls(edge, sourcePosition, targetPosition);
-    for (let index = 0; index < segmentCount; index += 1) {
-      evaluateCurve(sourcePosition, targetPosition, controls, index / segmentCount, positions, vertex * 3);
-      progress[vertex++] = index / segmentCount;
-      evaluateCurve(sourcePosition, targetPosition, controls, (index + 1) / segmentCount, positions, vertex * 3);
-      progress[vertex++] = (index + 1) / segmentCount;
+  for (const edge of model.edges) {
+    const curve = buildEdgeCurve(edge, nodes.get(edge.source) ?? [0, 0, 0], nodes.get(edge.target) ?? [0, 0, 0]);
+    for (let segment = 0; segment < segments; segment += 1) {
+      for (const t of [segment / segments, (segment + 1) / segments]) {
+        curve.getPoint(t, point).toArray(positions, vertex * 3);
+        progress[vertex] = t;
+        phases[vertex++] = phaseFor(edge.id);
+      }
     }
-  });
-  return { positions, progress };
-}
-
-function alphaFor(edge: SceneEdge, phase: SpatialExperiencePhase) {
-  if (edge.visualState === 'background') return phase !== 'universe' ? (edge.relationType === 'hierarchy' ? 0.18 : 0.016) : (edge.relationType === 'hierarchy' ? 0.14 : 0.025);
-  if (edge.visualState === 'contextual') return 0.22;
-  if (edge.visualState === 'lensActive') return 0.3;
-  if (edge.visualState === 'lateral') return 0.34;
-  return 0.72;
+  }
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
+  geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
+  for (const name of ['aAlpha', 'aActive', 'aDirection']) geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count), 1));
+  geometry.computeBoundingSphere();
+  return geometry;
 }
 
 const vertexShader = `
-  attribute float aProgress; attribute float aDelay; attribute float aDirection;
-  attribute float aAlpha; attribute float aActive;
-  varying float vProgress; varying float vDelay; varying float vDirection;
-  varying float vAlpha; varying float vActive; varying vec3 vColor;
-  void main(){vProgress=aProgress;vDelay=aDelay;vDirection=aDirection;vAlpha=aAlpha;vActive=aActive;vColor=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}
+  attribute float aProgress, aPhase, aAlpha, aActive, aDirection;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection;
+  void main() {
+    vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+  }
 `;
-const fragmentShader = `
-  uniform float uTime; uniform float uReveal; varying float vProgress; varying float vDelay; varying float vDirection;
-  varying float vAlpha; varying float vActive; varying vec3 vColor;
-  void main(){
+export const synapticPulseShader = `
+  uniform float uTime, uMotion;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection;
+  void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
-    float p=uTime*0.82-vDelay*0.3;
-    float d=abs(directed-p);
-    float signal=(1.0-smoothstep(0.0,0.08,d))*vActive;
-    float reveal=smoothstep(vProgress-0.15,vProgress,uReveal);
-    float junction=exp(-vProgress*10.0)+exp(-(1.0-vProgress)*10.0);
-    gl_FragColor=vec4(mix(vColor,vec3(0.88,0.97,1.0),signal*0.65),vAlpha*(0.68+junction*0.32+signal*0.6)*reveal);
+    float head=fract(uTime*0.18+vPhase)*1.3-0.15;
+    float behind=head-directed;
+    float peak=exp(-pow(behind/0.025,2.0));
+    float tail=exp(-max(behind,0.0)*24.0)*smoothstep(-0.015,0.015,behind);
+    float pulse=(peak+tail*0.35)*vActive*uMotion;
+    float junction=exp(-directed*14.0)+exp(-(1.0-directed)*14.0);
+    vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
+    gl_FragColor=vec4(color,vAlpha*(0.75+junction*0.25)+pulse*0.54);
   }
 `;
 
-/** 固定拓扑的单批次连线：同树切点只更新属性，树聚散才计算曲线并连续插值。 */
-export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
+/** One path batch and one render clock. Camera gestures never stop synaptic transmission. */
+export function BatchedKnowledgeEdges({ model, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
-  const segmentCount = Math.max(4, QUALITY_CONFIG[quality].curveSegments);
-  const material = useRef<THREE.ShaderMaterial>(null);
-  const targetPositions = useRef<Float32Array | null>(null);
-  const moving = useRef(false);
-  const { invalidate, gl } = useThree();
-  const reveal = useRef(motionAllowed && experiencePhase === 'landing' ? 0 : 1.2);
-  const pulse = useRef(3);
-  const alphaTargets = useRef<Float32Array>(new Float32Array(0));
-  const fading = useRef(false);
-  const uniforms = useMemo(() => ({ uTime: { value: 3 }, uReveal: { value: reveal.current } }), []);
-  const selectionEpoch = useKnowledgeStore((state) => state.selectionEpoch);
-
-  const layout = useMemo(
-    () => buildLayout(model, segmentCount),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [model.edges.length, model.nodes.length, segmentCount],
-  );
-  const geometry = useMemo(() => {
-    const next = new THREE.BufferGeometry();
-    next.setAttribute('position', new THREE.BufferAttribute(layout.positions.slice(), 3).setUsage(THREE.DynamicDrawUsage));
-    next.setAttribute('aProgress', new THREE.BufferAttribute(layout.progress, 1));
-    const vertexCount = layout.progress.length;
-    alphaTargets.current = new Float32Array(vertexCount);
-    next.setAttribute('color', new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3));
-    next.setAttribute('aDelay', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
-    next.setAttribute('aDirection', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
-    next.setAttribute('aAlpha', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
-    next.setAttribute('aActive', new THREE.BufferAttribute(new Float32Array(vertexCount), 1));
-    targetPositions.current = layout.positions.slice();
-    return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout]);
-
-  useEffect(() => {
-    targetPositions.current = layout.positions;
-    const current = geometry.getAttribute('position').array as Float32Array;
-    moving.current = current.some((value, index) => Math.abs(value - layout.positions[index]) > 0.001);
-    invalidate();
-  }, [geometry, invalidate, layout]);
-
-  useEffect(() => {
-    const byId = new Map(model.nodes.map((node) => [node.id, node]));
-    const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
-    const delayAttribute = geometry.getAttribute('aDelay') as THREE.BufferAttribute;
-    const directionAttribute = geometry.getAttribute('aDirection') as THREE.BufferAttribute;
-    const alphaAttribute = geometry.getAttribute('aAlpha') as THREE.BufferAttribute;
-    const activeAttribute = geometry.getAttribute('aActive') as THREE.BufferAttribute;
-    const color = new THREE.Color();
-    const targetColor = new THREE.Color();
-    const gold = new THREE.Color(CHAIN_GOLD);
+  const segments = QUALITY_CONFIG[quality].curveSegments;
+  const { invalidate } = useThree();
+  const key = edgeGeometryKey(model);
+  // Appearance changes leave positions, topology and material identity untouched.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 } }), []);
+  useLayoutEffect(() => {
     let vertex = 0;
-    model.edges.forEach((edge) => {
-      const source = byId.get(edge.source);
-      const target = byId.get(edge.target);
-      const active = ACTIVE_STATES.has(edge.visualState);
-      if (active) {
-        color.set(edge.visualState === 'upstream' ? HOT_CORE : edge.visualState === 'downstream' ? target?.domainColor ?? CHAIN_GOLD : CHAIN_GOLD);
-        color.lerp(gold, edge.visualState === 'downstream' ? 0.28 : 0.5);
-      } else {
-        color.set(source?.domainColor ?? '#708080');
-        targetColor.set(target?.domainColor ?? '#708080');
-        color.lerp(targetColor, 0.5).multiplyScalar(0.82);
+    for (const edge of model.edges) {
+      const active = ACTIVE.has(edge.visualState);
+      const primary = edge.relationType === 'hierarchy' || edge.relationType === 'practice_for';
+      for (let index = 0; index < segments * 2; index += 1) {
+        geometry.getAttribute('aAlpha').setX(vertex, active ? 0.45 : primary ? 0.16 : 0.045);
+        geometry.getAttribute('aActive').setX(vertex, active ? 0.9 : primary && phaseFor(edge.id) < 0.3 ? 0.2 : 0);
+        geometry.getAttribute('aDirection').setX(vertex++, edge.direction === 'in' ? -1 : 1);
       }
-      for (let index = 0; index < segmentCount * 2; index += 1) {
-        colorAttribute.setXYZ(vertex, color.r, color.g, color.b);
-        delayAttribute.setX(vertex, edge.propagationDelay);
-        directionAttribute.setX(vertex, edge.direction === 'in' ? -1 : 1);
-        alphaTargets.current[vertex] = alphaFor(edge, experiencePhase);
-        if (!motionAllowed || alphaAttribute.getX(vertex) === 0) alphaAttribute.setX(vertex, alphaTargets.current[vertex]);
-        activeAttribute.setX(vertex, active ? 1 : 0);
-        vertex += 1;
-      }
-    });
-    [colorAttribute, delayAttribute, directionAttribute, alphaAttribute, activeAttribute].forEach((attribute) => { attribute.needsUpdate = true; });
-    fading.current = motionAllowed;
+    }
+    for (const name of ['aAlpha', 'aActive', 'aDirection']) geometry.getAttribute(name).needsUpdate = true;
     invalidate();
-  }, [experiencePhase, geometry, invalidate, model.edges, model.nodes, segmentCount, motionAllowed]);
-
+  }, [geometry, model.edges, segments, invalidate]);
+  useEffect(() => {
+    uniforms.uMotion.value = motionAllowed ? 1 : 0;
+    invalidate();
+    if (!motionAllowed) return;
+    // Demand rendering idles at a modest rate; CameraControls requests full-rate frames during input.
+    const timer = window.setInterval(invalidate, 1000 / (quality === 'performance' ? 20 : 30));
+    return () => window.clearInterval(timer);
+  }, [motionAllowed, quality, invalidate, uniforms]);
+  useFrame(({ clock }) => { if (motionAllowed) uniforms.uTime.value = clock.elapsedTime; });
   useEffect(() => () => geometry.dispose(), [geometry]);
-
-  useEffect(() => {
-    pulse.current = motionAllowed && experiencePhase === 'universe' ? 0 : 3;
-    if (!motionAllowed) reveal.current = 1.2;
-    invalidate();
-  }, [selectionEpoch, experiencePhase, motionAllowed, invalidate]);
-  useEffect(() => {
-    const stop = () => { pulse.current = 3; reveal.current = 1.2; invalidate(); };
-    gl.domElement.addEventListener('pointerdown', stop);
-    gl.domElement.addEventListener('wheel', stop, { passive: true });
-    return () => { gl.domElement.removeEventListener('pointerdown', stop); gl.domElement.removeEventListener('wheel', stop); };
-  }, [gl, invalidate]);
-
-  useFrame((_, delta) => {
-    if (fading.current) {
-      const attribute = geometry.getAttribute('aAlpha') as THREE.BufferAttribute;
-      const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 9);
-      let remaining = 0;
-      for (let index = 0; index < attribute.count; index += 1) {
-        const difference = alphaTargets.current[index] - attribute.getX(index);
-        attribute.setX(index, attribute.getX(index) + difference * alpha);
-        remaining = Math.max(remaining, Math.abs(difference));
-      }
-      attribute.needsUpdate = true;
-      fading.current = remaining > 0.002;
-      if (fading.current) invalidate();
-    }
-    if (motionAllowed && (reveal.current < 1.2 || pulse.current < 3)) {
-      reveal.current = Math.min(1.2, reveal.current + Math.min(delta, 0.05));
-      pulse.current += Math.min(delta, 0.05);
-      invalidate();
-    }
-    if (material.current) { material.current.uniforms.uTime.value = pulse.current; material.current.uniforms.uReveal.value = reveal.current; }
-    if (!moving.current || !targetPositions.current) return;
-    const attribute = geometry.getAttribute('position') as THREE.BufferAttribute;
-    const current = attribute.array as Float32Array;
-    const target = targetPositions.current;
-    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 5.4);
-    let maxDelta = 0;
-    for (let index = 0; index < current.length; index += 1) {
-      const difference = target[index] - current[index];
-      maxDelta = Math.max(maxDelta, Math.abs(difference));
-      current[index] += difference * alpha;
-    }
-    attribute.needsUpdate = true;
-    if (maxDelta < 0.012) {
-      current.set(target);
-      attribute.needsUpdate = true;
-      moving.current = false;
-    } else invalidate();
-  });
-
-  return <lineSegments geometry={geometry}><shaderMaterial ref={material} vertexShader={vertexShader} fragmentShader={fragmentShader} transparent depthWrite={false} vertexColors uniforms={uniforms} /></lineSegments>;
+  return <lineSegments geometry={geometry} raycast={() => null}>
+    <shaderMaterial vertexShader={vertexShader} fragmentShader={synapticPulseShader} uniforms={uniforms} transparent depthWrite={false} toneMapped={false} />
+  </lineSegments>;
 }

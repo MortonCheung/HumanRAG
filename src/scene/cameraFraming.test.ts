@@ -1,50 +1,76 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { framingCorrection } from './cameraFraming';
-import { nodeFocusPose } from './cameraFraming';
-import { PerspectiveCamera, Vector3 } from 'three';
+import CameraControls from 'camera-controls';
+import * as THREE from 'three';
+import { applyCameraPose, freezeCamera, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
+import { usableViewport } from '../features/spatial/SpatialViewport';
+CameraControls.install({ THREE });
 
-describe('camera framing without moving the graph', () => {
-  it('leaves a comfortably visible target untouched', () => {
-    expect(framingCorrection(-0.2, 0.2, 0.8, 1440, 900)).toEqual({ kind: 'visible', x: -0.2, y: 0.2 });
-  });
-  it('minimally shifts a target under the inspector, preserving the other axis', () => {
-    const result = framingCorrection(0.7, 0.1, 0.8, 1440, 900);
-    expect(result.kind).toBe('edge');
-    expect(result.x).toBeCloseTo(1 - 948 / 1440);
-    expect(result.y).toBe(0.1);
-  });
-  it('flies to targets behind the camera', () => {
-    expect(framingCorrection(0.1, 0, 1.1, 1440, 900).kind).toBe('distant');
-  });
-  it('reserves the bottom sheet on a phone', () => {
-    expect(framingCorrection(0, -0.4, 0.8, 390, 844)).toEqual({ kind: 'edge', x: 0, y: 0.08 });
+describe('continuous camera and effective viewport', () => {
+  it.each([179, 181, 401, -401, 721])('takes the shortest route after %s degrees of accumulated rotation', (angle) => {
+    const camera = new THREE.PerspectiveCamera(44, 1.6, 0.1, 420);
+    const controls = new CameraControls(camera);
+    controls.setLookAt(0, 10, 40, 0, 0, 0, false);
+    controls.rotateAzimuthTo(THREE.MathUtils.degToRad(angle), false);
+    controls.update(1 / 60);
+    const target = new THREE.Vector3(3, 2, 1);
+    const pose = nodeFocusPose(camera, target, 0.5, 900);
+    applyCameraPose(controls, pose.position, pose.target, true);
+    const delta = controls.getSpherical(new THREE.Spherical(), true).theta - controls.azimuthAngle;
+    expect(Math.abs(delta)).toBeLessThan(0.001);
+    controls.dispose();
   });
 
-  it.each([[1440, 900], [390, 844]])('centres the selected node exactly at %s × %s', (width, height) => {
-    const camera = new PerspectiveCamera(44, width / height, 0.1, 420);
-    camera.position.set(0, 0, 150);
-    camera.lookAt(0, 0, 0);
-    const point = new Vector3(12, -8, 3);
+  it('crosses the +179 to -179 seam by two degrees, not 358', () => {
+    const camera = new THREE.PerspectiveCamera();
+    const controls = new CameraControls(camera);
+    controls.setLookAt(0, 0, 40, 0, 0, 0, false);
+    controls.rotateAzimuthTo(THREE.MathUtils.degToRad(179), false);
+    const end = new THREE.Vector3().setFromSpherical(new THREE.Spherical(40, Math.PI / 2, THREE.MathUtils.degToRad(-179)));
+    applyCameraPose(controls, end, new THREE.Vector3(), true);
+    const delta = controls.getSpherical(new THREE.Spherical(), true).theta - controls.azimuthAngle;
+    expect(THREE.MathUtils.radToDeg(delta)).toBeCloseTo(2);
+    controls.dispose();
+  });
+
+  it('interrupts at the currently rendered pose, including its focal offset', () => {
+    const camera = new THREE.PerspectiveCamera();
+    const controls = new CameraControls(camera);
+    controls.setLookAt(0, 0, 40, 0, 0, 0, false);
+    controls.setLookAt(30, 20, 20, 12, 3, 1, true);
+    controls.setFocalOffset(4, 2, 0, true);
+    controls.update(0.03);
+    const position = controls.getPosition(new THREE.Vector3(), false);
+    const target = controls.getTarget(new THREE.Vector3(), false);
+    const offset = controls.getFocalOffset(new THREE.Vector3(), false);
+    freezeCamera(controls);
+    controls.update(1);
+    expect(controls.getPosition(new THREE.Vector3(), false).distanceTo(position)).toBeLessThan(1e-8);
+    expect(controls.getTarget(new THREE.Vector3(), false).distanceTo(target)).toBeLessThan(1e-8);
+    expect(controls.getFocalOffset(new THREE.Vector3(), false).distanceTo(offset)).toBeLessThan(1e-8);
+    controls.dispose();
+  });
+
+  it.each([
+    { width: 1440, height: 900, nav: { left: 0, top: 0, width: 1440, height: 64 }, panel: { left: 1006, top: 84, width: 410, height: 700 } },
+    { width: 390, height: 844, nav: { left: 0, top: 0, width: 390, height: 56 }, panel: { left: 12, top: 460, width: 366, height: 372 } },
+  ])('projects the actual orbit node into the measured centre at $width px', ({ width, height, nav, panel }) => {
+    const rect = usableViewport(width, height, nav, panel);
+    const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 420);
+    const controls = new CameraControls(camera);
+    const point = new THREE.Vector3(12, -8, 3);
+    controls.setLookAt(0, 0, 60, 0, 0, 0, false);
+    controls.update(1);
     const pose = nodeFocusPose(camera, point, 0.5, height);
-    expect(pose.target.equals(point)).toBe(true);
-    expect(pose.position.distanceTo(point)).toBeLessThan(50);
-    camera.position.copy(pose.position);
-    camera.lookAt(pose.target);
+    applyCameraPose(controls, pose.position, pose.target, false);
+    const offset = viewportFocalOffset(camera, pose.position.distanceTo(pose.target), width, height, rect);
+    controls.setFocalOffset(offset.x, offset.y, 0, false);
+    controls.update(1);
     camera.updateMatrixWorld();
     const projected = point.clone().project(camera);
-    expect(projected.x).toBeCloseTo(0, 8);
-    expect(projected.y).toBeCloseTo(0, 8);
-    const repeated = nodeFocusPose(camera, point, 0.5, height);
-    expect(repeated.position.distanceTo(camera.position)).toBeLessThan(0.00001);
-  });
-
-  it('also centres an already readable off-centre node without pushing the camera away', () => {
-    const camera = new PerspectiveCamera(44, 1.6, 0.1, 420);
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
-    const point = new Vector3(4, 1, 0);
-    const pose = nodeFocusPose(camera, point, 1.8, 900);
-    expect(pose.target.equals(point)).toBe(true);
-    expect(pose.position.distanceTo(point)).toBeCloseTo(camera.position.distanceTo(point));
+    expect((projected.x + 1) * width / 2).toBeCloseTo(rect.left + rect.width / 2, 5);
+    expect((1 - projected.y) * height / 2).toBeCloseTo(rect.top + rect.height / 2, 5);
+    expect(controls.getTarget(new THREE.Vector3()).distanceTo(point)).toBeLessThan(1e-8);
+    controls.dispose();
   });
 });

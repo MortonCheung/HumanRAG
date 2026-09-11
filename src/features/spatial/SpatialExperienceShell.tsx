@@ -1,13 +1,15 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useReducedMotion } from 'motion/react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { TransitionLink as Link } from '../../app/pageNavigation';
 import { GlobalNav } from '../../components/navigation/GlobalNav';
 import { buildSceneModel } from '../../graph/relevance';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
 import { ROUTES } from '../../app/routes';
 import { SpatialExperienceContext, type SpatialExperiencePhase } from './SpatialExperienceContext';
-import { loadUniversePage } from '../universe/loadUniversePage';
+import { UniversePage } from '../universe/pages/UniversePage';
+import { LandingPage } from '../landing/pages/LandingPage';
+import { SpatialViewportProvider } from './SpatialViewport';
 
 const KnowledgeFieldCanvas = lazy(() => import('../../scene/UniverseCanvas').then((module) => ({ default: module.KnowledgeFieldCanvas })));
 
@@ -20,21 +22,23 @@ class SceneBoundary extends Component<{ children: ReactNode; onError: () => void
 
 /** Route changes replace only the DOM; one camera owns the entire entry shot. */
 export function SpatialExperienceShell() {
+  return <SpatialViewportProvider><SpatialExperience /></SpatialViewportProvider>;
+}
+
+function SpatialExperience() {
   const location = useLocation();
-  const navigate = useNavigate();
   const reducedMotion = Boolean(useReducedMotion());
   const directUniverse = location.pathname === ROUTES.universe;
   const [phase, setPhase] = useState<SpatialExperiencePhase>(directUniverse ? 'universe' : 'landing');
   const [canvasReady, setCanvasReady] = useState(false);
-  const [interfaceReady, setInterfaceReady] = useState(false);
-  const ready = canvasReady && interfaceReady;
+  // UI is eagerly mounted below; readiness now refers to the final rendered scene.
+  const ready = canvasReady;
   const [failed, setFailed] = useState(false);
   const [pendingEntry, setPendingEntry] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [skipVersion, setSkipVersion] = useState(0);
   const mounted = useRef(true);
-  const path = useRef(location.pathname);
-  path.current = location.pathname;
+  const entryFocusPending = useRef(false);
   const graphPhase = useKnowledgeStore((state) => state.phase);
   const selectedGoalId = useKnowledgeStore((state) => state.selectedGoalId);
   const selectedNodeId = useKnowledgeStore((state) => state.selectedNodeId);
@@ -43,42 +47,33 @@ export function SpatialExperienceShell() {
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
-  const prepareUniverseEntry = useKnowledgeStore((state) => state.prepareUniverseEntry);
 
   const model = useMemo(() => {
-    const prelude = phase !== 'universe';
-    return buildSceneModel({ goalId: prelude ? null : selectedGoalId, selectedNodeId: prelude ? null : selectedNodeId,
-      hoveredNodeId: null, learningPath: prelude ? [] : learningPath, focused: !prelude && graphPhase !== 'overview',
-      relationMode: prelude ? 'primary' : relationMode });
-  }, [graphPhase, learningPath, phase, relationMode, selectedGoalId, selectedNodeId]);
-
-  const commitRoute = useCallback(() => {
-    if (!mounted.current || path.current === ROUTES.universe) return;
-    void navigate(ROUTES.universe);
-  }, [navigate]);
+    return buildSceneModel({ goalId: selectedGoalId, selectedNodeId,
+      hoveredNodeId: null, learningPath, focused: graphPhase !== 'overview', relationMode });
+  }, [graphPhase, learningPath, relationMode, selectedGoalId, selectedNodeId]);
   const finishEntry = useCallback(() => {
     if (!mounted.current) return;
+    entryFocusPending.current = true;
     setPhase('universe');
     setPendingEntry(false);
-    commitRoute();
-  }, [commitRoute]);
+  }, []);
   const handleReady = useCallback(() => { setCanvasReady(true); setFailed(false); }, []);
   const handleError = useCallback(() => { setFailed(true); setCanvasReady(false); setPendingEntry(false); }, []);
   const beginUniverseEntry = useCallback(() => {
     if (phase !== 'landing') return;
     if (!ready) { setPendingEntry(true); return; }
-    prepareUniverseEntry();
     setPendingEntry(false);
     if (reducedMotion) finishEntry();
     else setPhase('entering');
-  }, [finishEntry, phase, prepareUniverseEntry, ready, reducedMotion]);
+  }, [finishEntry, phase, ready, reducedMotion]);
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => {
-    let active = true;
-    void loadUniversePage().then(() => { if (active) setInterfaceReady(true); }, () => { if (active) handleError(); });
-    return () => { active = false; };
-  }, [attempt, handleError]);
+    if (phase !== 'universe' || !entryFocusPending.current) return;
+    entryFocusPending.current = false;
+    document.querySelector<HTMLElement>('.spatial-experience > .context-nav')?.focus({ preventScroll: true });
+  }, [phase]);
   useEffect(() => { if (pendingEntry && ready) beginUniverseEntry(); }, [beginUniverseEntry, pendingEntry, ready]);
   useEffect(() => {
     if (ready || failed) return;
@@ -101,7 +96,7 @@ export function SpatialExperienceShell() {
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>
-      <div className={`spatial-experience spatial-experience--${phase}`} style={{ viewTransitionName: 'route-page' }}>
+      <div className={`spatial-experience spatial-experience--${phase}`} aria-busy={!ready && !failed} style={{ viewTransitionName: 'route-page' }}>
         <SceneBoundary key={attempt} onError={handleError}>
           <Suspense fallback={<div className="canvas-fallback" aria-hidden="true" />}>
             <KnowledgeFieldCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
@@ -109,8 +104,9 @@ export function SpatialExperienceShell() {
               onEntryComplete={finishEntry} skipVersion={skipVersion} />
           </Suspense>
         </SceneBoundary>
-        {directUniverse && <GlobalNav />}
-        <Outlet />
+        <GlobalNav concealed={phase !== 'universe'} />
+        <UniversePage />
+        {!directUniverse && <LandingPage />}
         {phase === 'entering' && <button className="entry-skip" onClick={() => setSkipVersion((value) => value + 1)}>跳过动画 <kbd>Esc</kbd></button>}
         {failed && <section className="scene-recovery" role="alert"><p>知识空间未能加载</p><div>
           <button className="text-button" onClick={() => { setFailed(false); setCanvasReady(false); setAttempt((value) => value + 1); }}>重试</button>

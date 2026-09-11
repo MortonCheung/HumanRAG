@@ -233,7 +233,6 @@
 @media (max-width: 1023px) { .grid-12 { grid-template-columns: 1fr; } }
 
 /* ---------- 知识空间页面适配（旧 TopBar 下移） ---------- */
-.universe-page { position: relative; min-height: 100dvh; width: 100%; overflow: hidden; isolation: isolate; background: var(--it-bg-deep); }
 @media (min-width: 768px) {
   .universe-page .node-inspector, .universe-page .side-drawer { top: calc(var(--it-nav-height) + 20px); }
 }

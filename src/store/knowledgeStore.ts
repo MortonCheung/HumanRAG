@@ -155,10 +155,11 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
   closeNodeDetail: () => set((state) => ({
     selectedNodeId: null,
-    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
+    hoveredNodeId: null,
+    phase: 'overview',
     relationMode: 'primary',
-    // 关闭信息面板不改变空间位置；“回到全景”由独立操作明确触发。
-    cameraIntent: state.cameraIntent,
+    // Closing the detail and requesting the overview are one state transition.
+    cameraIntent: { id: `overview:close:${state.selectionEpoch}`, mode: 'overview' },
   })),
   returnOverview: () => set((state) => {
     persist(state.profile, null, state.qualityPreference);

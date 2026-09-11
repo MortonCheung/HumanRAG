@@ -1,18 +1,36 @@
 import * as THREE from 'three';
+import type CameraControls from 'camera-controls';
+import type { ViewportRect } from '../features/spatial/SpatialViewport';
 
-/** Returns the smallest NDC translation that clears navigation and the inspector. */
-export function framingCorrection(x: number, y: number, z: number, width: number, height: number) {
-  const left = -1 + 64 / width;
-  const right = width >= 768 ? 1 - (Math.min(410, width - 48) + 64) * 2 / width : 0.82;
-  const top = 1 - 112 * 2 / height;
-  const bottom = width >= 768 ? -0.82 : 0.08;
-  if (z < -1 || z > 1 || Math.abs(x) > 1.4 || Math.abs(y) > 1.4) return { kind: 'distant' as const, x: (left + right) / 2, y: (top + bottom) / 2 };
-  const nextX = Math.max(left, Math.min(right, x));
-  const nextY = Math.max(bottom, Math.min(top, y));
-  return { kind: nextX === x && nextY === y ? 'visible' as const : 'edge' as const, x: nextX, y: nextY };
+/** Keep orbit ownership on the real node while composing for the measured viewport. */
+export function viewportFocalOffset(camera: THREE.PerspectiveCamera, distance: number, width: number, height: number, rect?: ViewportRect) {
+  if (!rect || width <= 0 || height <= 0) return new THREE.Vector3();
+  const x = (rect.left + rect.width / 2) / width * 2 - 1;
+  const y = 1 - (rect.top + rect.height / 2) / height * 2;
+  const halfHeight = distance * Math.tan(THREE.MathUtils.degToRad(camera.getEffectiveFOV() / 2));
+  return new THREE.Vector3(-x * halfHeight * camera.aspect, y * halfHeight, 0);
 }
 
-/** Selection owns the orbit target: the node must be at the actual screen centre. */
+export function applyCameraPose(controls: CameraControls, position: THREE.Vector3, target: THREE.Vector3, smooth: boolean) {
+  controls.normalizeRotations();
+  const start = controls.azimuthAngle;
+  void controls.setLookAt(position.x, position.y, position.z, target.x, target.y, target.z, smooth);
+  if (smooth) {
+    const end = controls.getSpherical(new THREE.Spherical(), true).theta;
+    // Normalization alone does not cover a destination crossing the ±π seam.
+    void controls.rotateAzimuthTo(start + Math.atan2(Math.sin(end - start), Math.cos(end - start)), true);
+  }
+}
+
+export function freezeCamera(controls: CameraControls) {
+  const position = controls.getPosition(new THREE.Vector3(), false);
+  const target = controls.getTarget(new THREE.Vector3(), false);
+  const offset = controls.getFocalOffset(new THREE.Vector3(), false);
+  applyCameraPose(controls, position, target, false);
+  void controls.setFocalOffset(offset.x, offset.y, offset.z, false);
+}
+
+/** Selection owns the orbit target; the measured focal offset handles screen composition. */
 export function nodeFocusPose(camera: THREE.PerspectiveCamera, point: THREE.Vector3, radius: number, height: number) {
   camera.updateMatrixWorld();
   const distance = camera.position.distanceTo(point);

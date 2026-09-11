@@ -12,7 +12,8 @@ test.describe('评委主流程与一级路由', () => {
     await expect(page.locator('.spatial-canvas-layer canvas')).toBeVisible({ timeout: 12_000 });
 
     await page.getByRole('button', { name: '进入知识空间' }).click();
-    await expect(page).toHaveURL(/\/universe$/);
+    await expect(page.locator('.spatial-experience--universe')).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole('banner')).toBeVisible();
     await expect(page.getByRole('navigation', { name: '应用切换' })).toBeVisible();
 

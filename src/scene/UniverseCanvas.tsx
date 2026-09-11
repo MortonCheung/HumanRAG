@@ -8,7 +8,6 @@ import { CameraController, type CameraLifecycle } from './CameraController';
 import { BatchedKnowledgeEdges } from './BatchedKnowledgeEdges';
 import { NodePointField } from './NodePointField';
 import { NodeHitField } from './NodeHitField';
-import { NeuralSignals } from './NeuralSignals';
 import { QUALITY_CONFIG, readRuntimeQualitySignals, resolveAutoQualityTier, resolveDpr } from '../performance/qualityPolicy';
 import type { RuntimeQualitySignals } from '../performance/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
@@ -83,10 +82,9 @@ export function KnowledgeFieldCanvas({ model, intent, onHover, onSelect, onMisse
         <PerspectiveCamera makeDefault fov={44} near={0.1} far={420} position={[45, 33, 56]} />
         <BatchedKnowledgeEdges model={model} experiencePhase={experiencePhase} motionAllowed={motionAllowed && !runtimeSignals.hidden} />
         <NodePointField model={model} motionAllowed={motionAllowed} experiencePhase={experiencePhase} />
-        <NeuralSignals model={model} motionAllowed={motionAllowed && !runtimeSignals.hidden && !activePanel} />
         <NodeHitField model={model} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel} />
         {anchors.map((node) => <group key={node.id} position={node.displayPosition}>
-          {experiencePhase === 'universe' && <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>}
+          <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
         </group>)}
         <CameraController intent={intent} model={model} experiencePhase={experiencePhase} motionAllowed={motionAllowed}
           onEntryComplete={onEntryComplete} skipVersion={skipVersion} />

@@ -30,23 +30,31 @@ export function NodePointField({ model, experiencePhase, motionAllowed }: {
   useLayoutEffect(() => {
     const positions = geometry.getAttribute('position');
     const colors = geometry.getAttribute('color');
+    const color = new THREE.Color();
+    const white = new THREE.Color('#c8edff');
+    model.nodes.forEach((node, index) => {
+      positions.setXYZ(index, ...node.displayPosition);
+      color.set(node.domainColor).lerp(white, 0.7);
+      colors.setXYZ(index, color.r, color.g, color.b);
+    });
+    positions.needsUpdate = colors.needsUpdate = true;
+    invalidate();
+  }, [geometry, model.nodes, invalidate]);
+
+  useLayoutEffect(() => {
     const sizes = geometry.getAttribute('aSize');
     const strengths = geometry.getAttribute('aStrength');
     model.nodes.forEach((node, index) => {
       const appearance = neuronAppearance(node.type, node.visualState, node.id === hoveredNodeId);
       if (experiencePhase !== 'universe') appearance.strength = Math.max(0.9, appearance.strength);
       targets.current[index] = appearance;
-      positions.setXYZ(index, ...node.displayPosition);
-      // Branch color belongs to the corona; the nucleus stays white in every state.
-      const color = new THREE.Color(node.domainColor).lerp(new THREE.Color('#c8edff'), 0.7);
-      colors.setXYZ(index, color.r, color.g, color.b);
       if (!motionAllowed || sizes.getX(index) === 0) {
         sizes.setX(index, appearance.size);
         strengths.setX(index, appearance.strength);
       }
     });
     targets.current.length = model.nodes.length;
-    [positions, colors, sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
+    [sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
     settling.current = motionAllowed;
     invalidate();
   }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, invalidate]);

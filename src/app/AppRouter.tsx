@@ -4,7 +4,6 @@ import { ROUTES } from './routes';
 import { installRouteTransitionDirection } from './routeTransitions';
 import { SpatialExperienceShell } from '../features/spatial/SpatialExperienceShell';
 import { migrateV9 } from '../domain/knowledge/migration';
-import { loadUniversePage } from '../features/universe/loadUniversePage';
 
 const teachingPage = async () => ({ Component: (await import('../features/teaching/pages/TeachingSessionPage')).TeachingSessionPage });
 const practicePage = async () => ({ Component: (await import('../features/practice/pages/PracticeSessionPage')).PracticeSessionPage });
@@ -22,8 +21,8 @@ migrateV9();
 const router = createBrowserRouter(createRoutesFromElements(
   <>
     <Route element={<SpatialExperienceShell />} hydrateFallbackElement={initialView}>
-      <Route path={ROUTES.root} lazy={async () => ({ Component: (await import('../features/landing/pages/LandingPage')).LandingPage })} />
-      <Route path={ROUTES.universe} lazy={async () => ({ Component: (await loadUniversePage()).default })} />
+      <Route path={ROUTES.root} element={null} />
+      <Route path={ROUTES.universe} element={null} />
     </Route>
     <Route element={<AppShell />} hydrateFallbackElement={initialView}>
       <Route path={ROUTES.library} lazy={async () => ({ Component: (await import('../features/library/pages/LibraryHomePage')).LibraryHomePage })} />
