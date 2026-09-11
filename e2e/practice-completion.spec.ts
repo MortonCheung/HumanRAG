@@ -15,7 +15,7 @@ test.describe('刷题完成规则与结果回写', () => {
     const questions = questionsForSystemNode();
     await page.goto(`/practice/session/node:${SYSTEM_NODE_ID}`);
     const navigation = page.getByRole('navigation', { name: '题目导航' });
-    await navigation.getByRole('button', { name: String(questions.length), exact: true }).click();
+    await navigation.getByRole('button', { name: `第 ${questions.length} 题，未作答`, exact: true }).click();
     await submitPracticeQuestion(page, questions.at(-1)!.id);
     await page.getByRole('button', { name: '完成练习' }).click();
     await expect(page.getByText(new RegExp(`还有 ${questions.length - 1} 道题未作答`))).toBeVisible();

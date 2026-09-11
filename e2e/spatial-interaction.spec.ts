@@ -48,10 +48,10 @@ test.describe('三维知识空间交互', () => {
     await expect(canvas).toBeVisible();
     await expect(page).toHaveURL(/\/universe$/);
 
-    const overview = page.getByRole('button', { name: '回到知识全景' });
+    const overview = page.getByRole('button', { name: '视图复位' });
     await expect(overview).toBeVisible();
     await overview.click();
     await expect(detail).toBeHidden();
-    await expect(overview).toBeHidden();
+    await expect(overview).toBeVisible();
   });
 });

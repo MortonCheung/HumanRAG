@@ -73,7 +73,8 @@ export async function submitTeachingStep(
     await fillQuestionCard(cards.nth(index), question!, mode);
   }
   await page.getByRole('button', { name: '提交答案' }).click();
-  await expect(page.getByText(new RegExp(`本步骤 ${questionIds.length} 道题已全部提交`))).toBeVisible();
+  await expect(page.getByText('本步作答已记录', { exact: true })).toBeVisible();
+  await expect(cards.locator('button:enabled, input:enabled')).toHaveCount(0);
 }
 
 export async function submitPracticeQuestion(
@@ -86,7 +87,7 @@ export async function submitPracticeQuestion(
   const card = page.locator('.practice-stage article');
   await fillQuestionCard(card, question!, mode);
   await page.getByRole('button', { name: '提交答案' }).click();
-  await expect(page.getByText(mode === 'correct' ? '回答正确' : '回答错误', { exact: true })).toBeVisible();
+  await expect(page.getByText(mode === 'correct' ? '本题正确' : '本题未通过', { exact: true })).toBeVisible();
 }
 
 export function systemUnit() {

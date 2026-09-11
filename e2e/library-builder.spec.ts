@@ -25,15 +25,15 @@ test.describe('知识库、知识树与知识点创建', () => {
 
   test('知识树允许稍后补充信息，但拒绝同名树', async ({ page }) => {
     await page.goto('/library/computer/trees/new');
-    await expect(page.getByRole('heading', { name: '新建知识树' })).toBeVisible();
+    await expect(page.locator('.context-nav__title')).toHaveText('新建知识树');
 
     await page.getByLabel('名称').fill('考研408');
-    await page.getByRole('button', { name: '创建知识树' }).click();
+    await page.getByRole('button', { name: '创建', exact: true }).click();
     await expect(page.getByText('这个知识库中已经有同名知识树。')).toBeVisible();
 
     await page.getByLabel('名称').fill('');
-    await page.getByRole('button', { name: '创建知识树' }).click();
-    await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-\d+\/edit\/structure$/);
+    await page.getByRole('button', { name: '创建', exact: true }).click();
+    await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-[\da-f-]+\/edit\/structure$/);
     await expect(page.getByText('暂无知识点')).toBeVisible();
     await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem('iteach:v9:domain')))).toBe(true);
   });
@@ -41,30 +41,28 @@ test.describe('知识库、知识树与知识点创建', () => {
   test('知识卡片经过内容与空间关系两步后进入三维知识树', async ({ page }) => {
     await page.goto('/library/computer/trees/new');
     await page.getByLabel('名称').fill('计算机图形学');
-    await page.getByRole('button', { name: '创建知识树' }).click();
+    await page.getByRole('button', { name: '创建', exact: true }).click();
 
-    await page.getByRole('button', { name: '新增知识点' }).click();
-    await expect(page.getByRole('heading', { name: '新建知识点' })).toBeVisible();
+    await page.getByRole('button', { name: '新增节点' }).click();
+    await expect(page.locator('.context-nav__title')).toHaveText('新建知识点');
     await page.getByLabel('名称').fill('光栅化管线');
     await page.getByLabel('说明').fill('从几何图元生成像素片段的过程。');
-    await page.getByRole('button', { name: '设置位置与关系' }).click();
+    await page.getByRole('button', { name: '下一步' }).click();
 
-    await expect(page.getByRole('heading', { name: '位置与关系' })).toBeVisible();
+    await expect(page.locator('.context-nav__title')).toHaveText('位置与关系');
     await expect(page.locator('.point-placement-page__tree canvas')).toBeVisible();
-    await page.getByRole('button', { name: '加入知识树' }).click();
+    await page.getByRole('button', { name: '创建', exact: true }).click();
 
     await expect(page).toHaveURL(/\/edit\/structure$/);
     await expect(page.getByText('光栅化管线', { exact: true }).first()).toBeVisible();
     await expect(page.locator('.tree-structure-editor-page__canvas canvas')).toBeVisible();
 
     await page.getByRole('button', { name: /光栅化管线/ }).click();
-    await page.getByRole('button', { name: '编辑' }).click();
     await page.getByLabel('学习内容').fill('光栅化、片元处理与深度测试。');
     await page.getByLabel('难度').selectOption('进阶');
     await page.getByRole('button', { name: '保存' }).click();
     await page.reload();
     await page.getByRole('button', { name: /光栅化管线/ }).click();
-    await page.getByRole('button', { name: '编辑' }).click();
     await expect(page.getByLabel('学习内容')).toHaveValue('光栅化、片元处理与深度测试。');
     await expect(page.getByLabel('难度')).toHaveValue('进阶');
   });

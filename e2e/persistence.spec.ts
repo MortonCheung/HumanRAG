@@ -16,12 +16,12 @@ test.describe('V7 本地持久化', () => {
     const firstQuestion = questionsForSystemNode()[0];
     await page.goto(`/practice/session/node:${SYSTEM_NODE_ID}`);
     await submitPracticeQuestion(page, firstQuestion.id);
-    await expect(page.getByText(/题目 1\//)).toBeVisible();
+    await expect(page.locator('.practice-question__type')).toContainText('1 /');
     await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem('iteach:v7:practice-session')))).toBe(true);
 
     await page.reload();
-    await expect(page.getByText(/题目 1\//)).toBeVisible();
-    await expect(page.getByText('回答正确', { exact: true })).toBeVisible();
+    await expect(page.locator('.practice-question__type')).toContainText('1 /');
+    await expect(page.getByText('本题正确', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: '下一题' })).toBeVisible();
   });
 
