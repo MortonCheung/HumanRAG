@@ -12,6 +12,10 @@ export const ROUTES = {
   treeLearn: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/learn`,
   treePractice: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice`,
   treePracticeSession: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice/session`,
+  pointStudy: (libraryId: string, treeId: string, pointId: string) => `/library/${libraryId}/tree/${treeId}/point/${pointId}/study`,
+  pointTeach: (libraryId: string, treeId: string, pointId: string) => `/library/${libraryId}/tree/${treeId}/point/${pointId}/teach`,
+  pointVerify: (libraryId: string, treeId: string, pointId: string) => `/library/${libraryId}/tree/${treeId}/point/${pointId}/verify`,
+  // Compatibility URLs for pre-V11 history.
   pointLearn: (libraryId: string, treeId: string, pointId: string) => `/library/${libraryId}/tree/${treeId}/point/${pointId}/learn`,
   pointPractice: (libraryId: string, treeId: string, pointId: string) => `/library/${libraryId}/tree/${treeId}/point/${pointId}/practice`,
   treeEdit: (libraryId: string, treeId: string, section = 'structure') => `/library/${libraryId}/tree/${treeId}/edit/${section}`,

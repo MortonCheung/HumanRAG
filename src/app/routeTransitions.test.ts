@@ -10,16 +10,18 @@ describe('page layers', () => {
   it.each([
     ['/universe', '/library', 1],
     ['/library', tree, 1],
-    [tree, `${tree}/learn`, 0],
-    [`${tree}/learn`, `${tree}/practice`, 0],
+    [tree, `${tree}/path`, 0],
+    [`${tree}/path`, `${tree}/verify`, 0],
     [tree, `${tree}/edit/structure`, 1],
     [`${tree}/edit/structure`, `${tree}/edit/questions`, 0],
     [`${tree}/edit/structure`, `${tree}/points/new/content`, 1],
     [`${tree}/points/new/content`, `${tree}/points/new/place`, 1],
     [`${tree}/points/new/place`, `${tree}/points/new/content`, -1],
     [`${tree}/edit/structure`, tree, -1],
-    [`${tree}/point/tcp/learn`, `${tree}/learn`, -1],
-    ['/teach/tu-knowledge-tcp', `${tree}/learn`, -1],
+    [`${tree}/point/tcp/study`, `${tree}/path`, -1],
+    [`${tree}/point/tcp/teach`, `${tree}/path`, -1],
+    [`${tree}/point/tcp/verify`, `${tree}/verify`, -1],
+    ['/teach/tu-knowledge-tcp', `${tree}/path`, -1],
     ['/teach/tu-knowledge-tcp', '/progress', 1],
     ['/progress', '/teach/tu-knowledge-tcp', -1],
   ])('uses the product layer from %s to %s', (from, to, direction) => {
@@ -40,7 +42,7 @@ describe('page layers', () => {
     const cleanup = installRouteTransitionDirection(router);
     await router.navigate(tree);
     expect(document.documentElement.dataset.routeDirection).toBe('forward');
-    await router.navigate(`${tree}/learn`);
+    await router.navigate(`${tree}/path`);
     expect(document.documentElement.dataset.routeDirection).toBe('lateral');
     await router.navigate('/library');
     expect(document.documentElement.dataset.routeDirection).toBe('back');

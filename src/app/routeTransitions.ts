@@ -12,7 +12,7 @@ function routeLayer(path: string) {
   if (/\/points\/new\/place\/?$/.test(path)) return 5;
   if (/\/points\/new\/content\/?$/.test(path)) return 4;
   if (/\/edit\/(structure|content|questions|settings)\/?$/.test(path)) return 3;
-  if (/\/point\/[^/]+\/(learn|practice)\/?$/.test(path)) return 3;
+  if (/\/point\/[^/]+\/(study|teach|verify|learn|practice)\/?$/.test(path)) return 3;
   if (/^\/(teach|practice)\//.test(path) || /\/practice\/session\/?$/.test(path)) return 3;
   if (/\/tree\/[^/]+(?:\/(path|verify|learn|practice))?\/?$/.test(path) || /\/trees\/new\/?$/.test(path)) return 2;
   if (/^\/library\/[^/]+\/practice\/?$/.test(path)) return 2;

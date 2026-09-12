@@ -46,7 +46,7 @@ export function PracticeSessionPage() {
     if (!question || !unit || !store.sessionId || !store.retrySave()) return;
     const context: PracticeReturnContext = { learnerId, sessionId: store.sessionId, path: location.pathname + location.search, questionId: question.id, selected, misconceptionId: answer?.misconceptionId };
     const targetTree = treeId ?? (relatedNode ? BRANCH_TO_TREE_ID[relatedNode.branchId] : undefined);
-    navigate(targetTree ? ROUTES.pointLearn(libraryId ?? 'computer', targetTree, unit.nodeId) : ROUTES.legacyTeachUnit(unit.id), { state: { practiceReturn: context } });
+    navigate(targetTree ? ROUTES.pointTeach(libraryId ?? 'computer', targetTree, unit.nodeId) : ROUTES.legacyTeachUnit(unit.id), { state: { practiceReturn: context } });
   };
   const next = () => {
     if (!isLast) { store.next(); return; }

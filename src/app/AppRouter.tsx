@@ -42,6 +42,9 @@ const router = createBrowserRouter(createRoutesFromElements(
       <Route path="/library/:libraryId" element={<Navigate to={ROUTES.library} replace />} />
       <Route path="/library/:libraryId/practice" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/practice/session" lazy={practicePage} />
+      <Route path="/library/:libraryId/tree/:treeId/point/:pointId/study" lazy={teachingPage} />
+      <Route path="/library/:libraryId/tree/:treeId/point/:pointId/teach" lazy={teachingPage} />
+      <Route path="/library/:libraryId/tree/:treeId/point/:pointId/verify" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/learn" lazy={teachingPage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/practice" lazy={practicePage} />
       <Route path="/library/:libraryId/trees/new" lazy={async () => ({ Component: (await import('../features/knowledge-tree-builder/pages/TreeGenesisPage')).TreeGenesisPage })} />

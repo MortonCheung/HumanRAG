@@ -12,6 +12,11 @@ import { PointCreationShell } from '../../knowledge-point-builder/PointCreationS
 import { PointContentPage } from '../../knowledge-point-builder/pages/PointContentPage';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 
+function SelectTcpPoint() {
+  const selectPoint = useSpatialStageStore((state) => state.selectTreePoint);
+  return <button type="button" onClick={() => selectPoint('knowledge-tcp')}>选择 TCP</button>;
+}
+
 // Only the GPU canvas is replaced. Real navigation, portals, storage, draft and
 // editor components prove that the actual creation route remains reachable.
 vi.mock('../../library-builder/components/CustomTreeCanvas', () => ({ CustomTreeCanvas: () => null }));
@@ -61,5 +66,20 @@ describe('knowledge tree node creation entry', () => {
     expect(screen.getByText('只读示例').title).toContain('创建自己的知识树');
     expect(screen.queryByRole('button', { name: '新增节点' })).toBeNull();
     expect(screen.queryByRole('button', { name: '编辑' })).toBeNull();
+  });
+
+  it('offers three equal point intents and uses their canonical routes', async () => {
+    const router = createMemoryRouter([{ element: <AppShell />, children: [
+      { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <SelectTcpPoint /> }] },
+      { path: '/library/:libraryId/tree/:treeId/point/:pointId/study', element: <p>自主学习工作区</p> },
+      { path: '/library/:libraryId/tree/:treeId/point/:pointId/teach', element: <p>带我学工作区</p> },
+      { path: '/library/:libraryId/tree/:treeId/point/:pointId/verify', element: <p>验证掌握工作区</p> },
+    ] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
+    render(<RouterProvider router={router} />);
+    fireEvent.click(await screen.findByRole('button', { name: '选择 TCP' }));
+    expect(screen.getByRole('group', { name: '知识点操作' }).querySelectorAll('button')).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: /自主学习/ }));
+    expect(router.state.location.pathname).toBe(ROUTES.pointStudy('computer', 'tree-408', 'knowledge-tcp'));
+    await screen.findByText('自主学习工作区');
   });
 });

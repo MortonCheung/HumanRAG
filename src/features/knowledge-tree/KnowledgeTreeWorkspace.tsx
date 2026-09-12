@@ -1,4 +1,4 @@
-import { Plus } from '@phosphor-icons/react';
+import { BookOpenText, ChalkboardTeacher, Plus, SealCheck } from '@phosphor-icons/react';
 import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
@@ -54,14 +54,16 @@ export function KnowledgeTreeWorkspace() {
           <p>拖动旋转 · 滚轮缩放 · 选择节点</p>
         </div>
         <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习路径' : '能力验证'}>
-          {selectedPoint ? <TreePointDetailPanel point={selectedPoint} mode={mode} onClose={() => selectPoint(null)} /> : <Outlet />}
+          <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
+          {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} onClose={() => selectPoint(null)} />}
         </aside>
       </div>
     </main>
   );
 }
 
-function TreePointDetailPanel({ point, mode, onClose }: { point: KnowledgePoint; mode: 'path' | 'verify'; onClose: () => void }) {
+function TreePointDetailPanel({ point, mode, libraryId, treeId, onClose }: { point: KnowledgePoint; mode: 'path' | 'verify'; libraryId: string; treeId: string; onClose: () => void }) {
+  const navigate = useNavigate();
   return (
     <section className="tree-point-detail">
       <button type="button" className="tree-workspace-back" onClick={onClose}>返回{mode === 'path' ? '学习路径' : '能力验证'}</button>
@@ -74,6 +76,11 @@ function TreePointDetailPanel({ point, mode, onClose }: { point: KnowledgePoint;
         {point.estimatedMinutes && <div><dt>预计时间</dt><dd>{point.estimatedMinutes} 分钟</dd></div>}
       </dl>
       {point.learningObjectives.length > 0 && <div className="tree-point-detail__section"><h2>学习目标</h2><ul>{point.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ul></div>}
+      <div className="point-actions" role="group" aria-label="知识点操作">
+        <button type="button" aria-label="自主学习" className={mode === 'path' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>自主学习</strong>{mode === 'path' && <small>当前建议</small>}</span></button>
+        <button type="button" aria-label="带我学" onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong><small>HumanRAG 引导</small></span></button>
+        <button type="button" aria-label="验证掌握" className={mode === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>验证掌握</strong>{mode === 'verify' && <small>当前建议</small>}</span></button>
+      </div>
     </section>
   );
 }
