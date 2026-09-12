@@ -126,7 +126,11 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
           : [canonical[0], canonical[1], canonical[2] - 18 * receded] as [number, number, number]
         : positionTargets.current[index];
       if (targetPosition) {
-        const positionAlpha = motionAllowed ? 1 - Math.exp(-Math.min(delta, .05) * 3.5) : 1;
+        // Forming already owns a smooth, phase-based interpolation. Applying a second
+        // spring here makes the camera and new edges arrive before their endpoint nodes.
+        const positionAlpha = extraction && selected
+          ? 1
+          : motionAllowed ? 1 - Math.exp(-Math.min(delta, .05) * 3.5) : 1;
         positions.setXYZ(
           index,
           positions.getX(index) + (targetPosition[0] - positions.getX(index)) * positionAlpha,

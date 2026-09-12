@@ -8,6 +8,7 @@ import { customTreeFrame } from '../../library-builder/customTreeFraming';
 import { viewportFocalOffset } from '../../../scene/cameraFraming';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { useSpatialViewport } from '../../spatial/SpatialViewport';
+import { useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
 import { buildPreviewTreeGraph, PreviewTreeGroup, type PreviewTreeGraph } from './PreviewTreeGroup';
 import { buildTreePreviewAnchors } from './treePreviewLayout';
 
@@ -25,6 +26,7 @@ interface PreviewCameraState {
 /** Every library tree remains mounted; selection changes only the shared camera target. */
 export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: boolean }) {
   const selectedTreeId = useSpatialStageStore((state) => state.selectedTreeId);
+  const handoffTreeId = useGoalTreeTransitionStore((state) => state.phase === 'handoff' ? state.treeId : null);
   const domain = useMemo(() => migrateV9(), []);
   const pointsById = useMemo(() => new Map(domain.points.map((point) => [point.id, point])), [domain.points]);
   const trees = useMemo(() => {
@@ -46,6 +48,7 @@ export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: 
           graph={graph}
           anchor={anchors.get(graph.tree.id) ?? new THREE.Vector3()}
           motionAllowed={motionAllowed}
+          holdRotation={graph.tree.id === handoffTreeId}
         />
       ))}
       <LibraryPreviewCamera
@@ -53,6 +56,7 @@ export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: 
         graphs={graphs}
         anchors={anchors}
         motionAllowed={motionAllowed}
+        handoff={Boolean(handoffTreeId && selectedTreeId === handoffTreeId)}
       />
       <LibraryPreviewClip />
       {motionAllowed && <PreviewAnimationClock />}
@@ -60,11 +64,12 @@ export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: 
   );
 }
 
-function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed }: {
+function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed, handoff }: {
   selectedTreeId: string | null;
   graphs: PreviewTreeGraph[];
   anchors: ReadonlyMap<string, THREE.Vector3>;
   motionAllowed: boolean;
+  handoff: boolean;
 }) {
   const controls = useRef<CameraControlsImpl>(null);
   const tween = useRef<gsap.core.Timeline | null>(null);
@@ -113,6 +118,27 @@ function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed }
     };
     tween.current?.kill();
     gl.domElement.dataset.previewTreeId = graph.tree.id;
+    if (!initialized.current && handoff && motionAllowed) {
+      initialized.current = true;
+      Object.assign(state.current, {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+        tx: anchor.x,
+        ty: anchor.y,
+        tz: anchor.z,
+        fx: 0,
+        fy: 0,
+      });
+      applyCameraState();
+      tween.current = gsap.timeline().to(state.current, {
+        ...target,
+        duration: 0.42,
+        ease: 'power3.out',
+        onUpdate: applyCameraState,
+      });
+      return () => { tween.current?.kill(); };
+    }
     if (!initialized.current || !motionAllowed) {
       initialized.current = true;
       Object.assign(state.current, target);
@@ -126,7 +152,7 @@ function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed }
       onUpdate: applyCameraState,
     });
     return () => { tween.current?.kill(); };
-  }, [selectedTreeId, graphs, anchors, motionAllowed, usable, size.width, size.height, camera, gl.domElement, applyCameraState]);
+  }, [selectedTreeId, graphs, anchors, motionAllowed, handoff, usable, size.width, size.height, camera, gl.domElement, applyCameraState]);
 
   useEffect(() => () => {
     tween.current?.kill();

@@ -121,7 +121,11 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
   const introModel = useMemo(() => buildConstellationScene(model, preset, 'direction-408'), [model, preset]);
   const awakeningModel = useMemo(() => withAwakeningDelays(model, introModel.nodes.map((node) => node.id)), [introModel.nodes, model]);
   const openingOrigins = useMemo(() => new Map(introModel.nodes.map((node) => [node.id, node.displayPosition])), [introModel.nodes]);
-  const extractionLayout = useMemo(() => extractionDraft ? buildGoalTreeExtractionLayout(extractionDraft) : null, [extractionDraft]);
+  const extractionTreeId = useGoalTreeTransitionStore((state) => state.treeId);
+  const extractionLayout = useMemo(
+    () => extractionDraft ? buildGoalTreeExtractionLayout(extractionDraft, extractionTreeId) : null,
+    [extractionDraft, extractionTreeId],
+  );
   const extracting = Boolean(extractionDraft && extractionPhase !== 'idle' && extractionPhase !== 'handoff');
   const extractionActive = Boolean(extractionDraft && extractionPhase !== 'idle');
   const extractionSelectedIds = useMemo(() => new Set(extractionDraft?.pointIds ?? []), [extractionDraft]);

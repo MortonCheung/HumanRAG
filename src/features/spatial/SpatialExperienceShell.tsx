@@ -114,7 +114,7 @@ function SpatialExperience() {
     if (!canStartGoalTreeHandoff(gate) || !extractionTreeId) return;
     startExtractionHandoff();
     selectTree(extractionTreeId);
-    navigate(ROUTES.library, { state: { selectedTreeId: extractionTreeId } });
+    navigate(ROUTES.library, { state: { selectedTreeId: extractionTreeId }, viewTransition: false });
   }, [extractionPhase, extractionTreeId, extractionTreeReady, extractionVisualReady, navigate, selectTree, startExtractionHandoff]);
   useEffect(() => {
     if (extractionPhase !== 'handoff' || !libraryRoute) return;

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 export const TREE_PREVIEW_SPACING = 82;
+export const TREE_PREVIEW_ROTATION_SPEED = 0.075;
 
 /** Library order is persistent, so an appended tree never moves an existing anchor. */
 export function treePreviewAnchor(index: number) {
@@ -15,6 +16,10 @@ export function treeRotationPhase(treeId: string) {
     hash = Math.imul(hash, 16777619);
   }
   return ((hash >>> 0) / 0xffffffff) * Math.PI * 2;
+}
+
+export function treePreviewRotation(treeId: string, elapsedSeconds: number, rotationStartedAt = 0) {
+  return treeRotationPhase(treeId) + Math.max(0, elapsedSeconds - rotationStartedAt) * TREE_PREVIEW_ROTATION_SPEED;
 }
 
 export function buildTreePreviewAnchors(treeIds: readonly string[]) {
