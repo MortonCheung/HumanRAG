@@ -14,6 +14,7 @@ import { NodePointField } from '../../scene/NodePointField';
 import type { SpatialExperiencePhase } from './SpatialExperienceContext';
 import { useSpatialStageStore } from './spatialStageStore';
 import { SpatialTreeScene } from './SpatialTreeScene';
+import { LibraryPreviewUniverseScene } from '../library/scene/LibraryPreviewUniverseScene';
 import { buildConstellationScene, CONSTELLATION_PRESETS, withAwakeningDelays } from '../../scene/intro/constellationPresets';
 import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
 import { useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
@@ -42,10 +43,13 @@ function SceneReadiness({ onReady }: { onReady: () => void }) {
 
 function StageA11y({ model }: { model: SceneModel }) {
   const { gl } = useThree();
+  const mode = useSpatialStageStore((state) => state.mode);
   useEffect(() => {
     gl.domElement.setAttribute('role', 'img');
-    gl.domElement.setAttribute('aria-label', `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
-  }, [gl, model.edges.length, model.nodes.length]);
+    gl.domElement.setAttribute('aria-label', mode === 'library'
+      ? '计算机知识树预览空间'
+      : `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
+  }, [gl, mode, model.edges.length, model.nodes.length]);
   return null;
 }
 
@@ -127,7 +131,8 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
     selectedIds: extractionSelectedIds,
     targetPositions: extractionLayout.worldPositions,
   } : undefined, [extractionDraft, extractionLayout, extractionPhase, extractionSelectedIds, extractionStartedAt]);
-  if (mode === 'library' || mode === 'tree') return <SpatialTreeScene mode={mode} motionAllowed={motionAllowed} />;
+  if (mode === 'library') return <LibraryPreviewUniverseScene motionAllowed={motionAllowed} />;
+  if (mode === 'tree') return <SpatialTreeScene motionAllowed={motionAllowed} />;
   const visibleModel = experiencePhase === 'intro' ? introModel : experiencePhase === 'awakening' || experiencePhase === 'settling' ? awakeningModel : model;
   const anchors = visibleModel.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
   return <>

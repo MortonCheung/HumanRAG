@@ -21,7 +21,8 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   expect(await stageIdentity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
   const selectedTree = page.getByRole('option', { selected: true });
   await expect(selectedTree).toContainText('考研408 · 定向学习');
-  await expect(selectedTree).toContainText(/\d+ 个节点 · 个人/);
+  await expect(selectedTree).toContainText('个人');
+  await expect(selectedTree).not.toContainText(/个节点|系统/);
   const stored = await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem('iteach:v9:domain') ?? '{}') as {
       userTrees?: Array<{ name: string; ownerType: string; pointIds: string[] }>;

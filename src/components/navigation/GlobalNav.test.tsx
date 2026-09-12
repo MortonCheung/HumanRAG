@@ -7,7 +7,6 @@ import { LibraryHomePage } from '../../features/library/pages/LibraryHomePage';
 import { WorkspaceHeader } from '../../features/workspace/WorkspaceHeader';
 import { TopBar } from '../TopBar';
 
-vi.mock('../../features/library/components/SelectedTreeShowcase', () => ({ SelectedTreeShowcase: () => null }));
 vi.mock('../../domain/knowledge/migration', () => ({ migrateV9: () => ({ library: { id: 'computer', name: '计算机科学', treeIds: ['tree-test'] }, trees: [{ id: 'tree-test', name: '测试方向', pointIds: [], ownerType: 'system' }], userTrees: [], points: [], relations: [] }) }));
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
@@ -71,7 +70,7 @@ describe('flat, persistent page actions', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: '切换页面' }));
   });
 
-  it('keeps Create outside the collapsed menu through viewport and route changes', async () => {
+  it('keeps the current tree entry primary while secondary actions use the mobile menu', async () => {
     let wide = true;
     const listeners = new Set<() => void>();
     vi.stubGlobal('matchMedia', vi.fn(() => ({ get matches() { return wide; }, addEventListener: (_: string, fn: () => void) => listeners.add(fn), removeEventListener: (_: string, fn: () => void) => listeners.delete(fn) })));
@@ -82,18 +81,21 @@ describe('flat, persistent page actions', () => {
       { path: '/library/computer/trees/new', element: <WorkspaceHeader title="新建知识树" /> },
     ] }], { initialEntries: ['/library'] });
     render(<RouterProvider router={router} />);
-    const assertCreate = () => expect(screen.getByRole('button', { name: '创建知识树' }).closest('details')).toBeNull();
-    assertCreate();
+    const assertEntry = () => expect(screen.getByRole('button', { name: '进入知识树' }).closest('.context-nav__primary-slot')).not.toBeNull();
+    assertEntry();
     await act(() => { wide = false; listeners.forEach((listener) => listener()); });
-    assertCreate();
+    assertEntry();
+    expect(screen.queryByRole('button', { name: '创建知识树' })).toBeNull();
+    fireEvent.click(screen.getByLabelText('页面操作'));
+    expect(screen.getByRole('button', { name: '创建知识树' })).not.toBeNull();
     await act(() => router.navigate('/universe'));
     expect(screen.queryByRole('button', { name: '创建知识树' })).toBeNull();
     fireEvent.click(screen.getByLabelText('页面操作'));
     expect(document.querySelector('.context-nav__actions-slot details')).toBeNull();
     await act(() => router.navigate('/library'));
-    assertCreate();
+    assertEntry();
     await act(() => { wide = true; listeners.forEach((listener) => listener()); });
-    assertCreate();
+    assertEntry();
     fireEvent.click(screen.getByRole('button', { name: '创建知识树' }));
     await act(async () => {});
     expect(router.state.location.pathname).toBe('/library/computer/trees/new');

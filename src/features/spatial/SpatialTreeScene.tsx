@@ -1,5 +1,5 @@
 import { CameraControls, CameraControlsImpl, Html, QuadraticBezierLine } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { migrateV9 } from '../../domain/knowledge/migration';
@@ -10,10 +10,10 @@ import { toCustomEdges, toCustomNodes } from '../library/treeGraphAdapter';
 import { NeuronStar } from '../../scene/NodePointField';
 import { viewportFocalOffset } from '../../scene/cameraFraming';
 import { useSpatialViewport } from './SpatialViewport';
-import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
+import { useSpatialStageStore } from './spatialStageStore';
 
 /** The use-mode tree lives in the shared stage. Editors keep their isolated canvas. */
-export function SpatialTreeScene({ mode, motionAllowed }: { mode: Extract<SpatialStageMode, 'library' | 'tree'>; motionAllowed: boolean }) {
+export function SpatialTreeScene({ motionAllowed }: { motionAllowed: boolean }) {
   const treeId = useSpatialStageStore((state) => state.selectedTreeId);
   const data = useMemo(() => {
     const domain = migrateV9();
@@ -25,8 +25,7 @@ export function SpatialTreeScene({ mode, motionAllowed }: { mode: Extract<Spatia
     const edges = toCustomEdges(domain.relations, ids);
     return { tree, nodes, edges, positions: layoutCustomTree(nodes, edges) };
   }, [treeId]);
-  const group = useRef<THREE.Group>(null);
-  const modelOffset = useMemo(() => customTreeFrame(data.positions, 1, 1, mode === 'library').offset, [data.positions, mode]);
+  const modelOffset = useMemo(() => customTreeFrame(data.positions, 1, 1, false).offset, [data.positions]);
   const curves = useMemo(() => data.edges.map((edge) => {
     const start = data.positions.get(edge.source);
     const end = data.positions.get(edge.target);
@@ -38,15 +37,10 @@ export function SpatialTreeScene({ mode, motionAllowed }: { mode: Extract<Spatia
     return { edge, start: a, end: b, mid };
   }).filter((item): item is NonNullable<typeof item> => Boolean(item)), [data.edges, data.positions]);
 
-  useFrame((_, delta) => {
-    if (!group.current || mode !== 'library' || !motionAllowed) return;
-    group.current.rotation.y += delta * 0.075;
-  });
-
   if (!data.tree) return null;
   return (
     <>
-      <group ref={group} position={modelOffset}>
+      <group position={modelOffset}>
         {curves.map(({ edge, start, end, mid }) => (
           <QuadraticBezierLine key={edge.id} start={start} end={end} mid={mid}
             color={edge.relationType === 'hierarchy' ? '#a5c9ec' : '#809fc1'} transparent opacity={0.28} lineWidth={0.72} />
@@ -55,18 +49,16 @@ export function SpatialTreeScene({ mode, motionAllowed }: { mode: Extract<Spatia
           const position = data.positions.get(node.id) ?? [node.x, node.y, node.z ?? 0];
           return <group key={node.id} position={position}>
             <NeuronStar color={node.color} />
-            {mode === 'tree' && <Html center position={[0, -0.75, 0]} className="custom-tree-node-label" style={{ pointerEvents: 'none' }}><span>{node.name}</span></Html>}
+            <Html center position={[0, -0.75, 0]} className="custom-tree-node-label" style={{ pointerEvents: 'none' }}><span>{node.name}</span></Html>
           </group>;
         })}
       </group>
-      <SpatialTreeCamera mode={mode} positions={data.positions} motionAllowed={motionAllowed} />
-      {mode === 'library' && motionAllowed && <TreeAnimationClock />}
+      <SpatialTreeCamera positions={data.positions} motionAllowed={motionAllowed} />
     </>
   );
 }
 
-function SpatialTreeCamera({ mode, positions, motionAllowed }: {
-  mode: Extract<SpatialStageMode, 'library' | 'tree'>;
+function SpatialTreeCamera({ positions, motionAllowed }: {
   positions: ReturnType<typeof layoutCustomTree>;
   motionAllowed: boolean;
 }) {
@@ -78,23 +70,14 @@ function SpatialTreeCamera({ mode, positions, motionAllowed }: {
     if (!controls.current) return;
     const width = usable?.width ?? size.width;
     const height = usable?.height ?? size.height;
-    const pose = customTreeFrame(positions, width, height, mode === 'library');
+    const pose = customTreeFrame(positions, width, height, false);
     void controls.current.setLookAt(...pose.position.toArray(), ...pose.target.toArray(), motionAllowed);
     const focal = viewportFocalOffset(camera as THREE.PerspectiveCamera, pose.position.distanceTo(pose.target), size.width, size.height, usable);
     void controls.current.setFocalOffset(focal.x, focal.y, 0, motionAllowed);
     invalidate();
-  }, [treeId, mode, positions, motionAllowed, size.width, size.height, usable, camera, invalidate]);
-  return <CameraControls ref={controls} makeDefault enabled={mode === 'tree'} minDistance={7} maxDistance={320}
+  }, [treeId, positions, motionAllowed, size.width, size.height, usable, camera, invalidate]);
+  return <CameraControls ref={controls} makeDefault enabled minDistance={7} maxDistance={320}
     smoothTime={motionAllowed ? 0.34 : 0} draggingSmoothTime={0.08}
     mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }}
     touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
-}
-
-function TreeAnimationClock() {
-  const { invalidate } = useThree();
-  useEffect(() => {
-    const timer = window.setInterval(invalidate, 1000 / 24);
-    return () => window.clearInterval(timer);
-  }, [invalidate]);
-  return null;
 }

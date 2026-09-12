@@ -34,8 +34,8 @@ export function LibraryHomePage() {
     <main className="page library-manager">
       <WorkspaceHeader
         title="知识库"
-        primaryAction={<button type="button" className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.treeNew(domain.library.id))}><Plus size={16} aria-hidden="true" />创建知识树</button>}
-        actions={<>{selectedTree && <button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.tree(domain.library.id, selectedTree.id))}>进入知识树</button>}<button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.libraryPractice(domain.library.id))}><Exam size={16} aria-hidden="true" />综合题库</button></>}
+        primaryAction={selectedTree ? <button type="button" className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.tree(domain.library.id, selectedTree.id))}>进入知识树</button> : undefined}
+        actions={<><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.treeNew(domain.library.id))}><Plus size={16} aria-hidden="true" />创建知识树</button><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.libraryPractice(domain.library.id))}><Exam size={16} aria-hidden="true" />能力验证</button></>}
       />
       <div className="library-manager__inner">
         <header className="library-manager__header">
@@ -43,7 +43,6 @@ export function LibraryHomePage() {
             <p className="page-kicker">知识库</p>
             <h1>{domain.library.name}</h1>
           </div>
-          <span className="library-manager__count">{trees.length} 棵知识树</span>
         </header>
 
         <div className="library-manager__workspace">
@@ -67,7 +66,7 @@ export function LibraryHomePage() {
                   <span className="library-manager__tree-swatch" style={{ background: tree.color }} />
                   <span className="library-manager__tree-copy">
                     <strong>{tree.name}</strong>
-                    <small>{tree.pointIds.length} 个节点 · {tree.ownerType === 'system' ? '系统' : '个人'}</small>
+                    {tree.ownerType === 'user' && <small>个人</small>}
                   </span>
                 </button>
               ))}
