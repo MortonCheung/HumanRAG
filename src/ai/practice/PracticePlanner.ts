@@ -8,6 +8,7 @@ import { migrateV9 } from '../../domain/knowledge/migration';
 import { getTree } from '../../domain/knowledge/selectors';
 import { getLearningRecommendation, getRecommendationNodes } from '../learningRecommendation';
 import { deriveLearningStatus, isRecordedEvidence } from '../../features/progress/learningStatus';
+import { TCP_NODE_ID, TCP_TASKS } from '../../data/v6/handcrafted/tcpLesson';
 
 /**
  * 刷题规划器（蓝图 §18）：把刷题入口（今日练习 / 按目标 / 按知识点 / 模拟试卷 / 错题复习）
@@ -23,11 +24,11 @@ import { deriveLearningStatus, isRecordedEvidence } from '../../features/progres
  *   mistake         错题复习
  */
 
-export type PracticeMode = 'daily' | 'node' | 'goal' | 'paper' | 'mistake';
+export type PracticeScopeMode = 'daily' | 'node' | 'goal' | 'paper' | 'mistake';
 
 export interface PracticePlan {
   id: string;
-  mode: PracticeMode;
+  mode: PracticeScopeMode;
   title: string;
   description: string;
   sourceLabel: string;
@@ -115,7 +116,9 @@ function buildDailyPlan(learnerId: string): PracticePlan {
 function buildNodePlan(nodeId: string): PracticePlan | null {
   const node = contentRepository.getNode(nodeId);
   if (!node) return null;
-  const questionIds = dedupe(contentRepository.getQuestionsForNode(nodeId).map((question) => question.id)).slice(0, 12);
+  const questionIds = nodeId === TCP_NODE_ID
+    ? TCP_TASKS.filter((task) => task.role === 'predict' || task.role === 'observe').map((task) => task.id)
+    : dedupe(contentRepository.getQuestionsForNode(nodeId).map((question) => question.id)).slice(0, 12);
   if (questionIds.length === 0) return null;
   return {
     id: `node:${nodeId}`,

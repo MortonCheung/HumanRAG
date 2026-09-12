@@ -53,7 +53,7 @@ test.describe('教学复教、重测与终止', () => {
 
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       await expect(page.getByRole('heading', { name: independent.title })).toBeVisible();
-      if (attempt > 1) await expect(page.getByText(`第 ${attempt} 次检查`)).toBeVisible();
+      if (attempt > 1) await expect(page.getByText(`第 ${attempt} 次独立验证`)).toBeVisible();
       await submitTeachingStep(page, independent.questionIds ?? [], 'wrong');
       await page.getByRole('button', { name: /下一步/ }).click();
 

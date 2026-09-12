@@ -1,61 +1,41 @@
+import type { TeachingStepKind } from '../../../data/v6/schemas/teachingSchema';
 import { useTeachingStore } from '../../../store/teachingStore';
 import { contentRepository } from '../../../services/content/ContentRepository';
 
-const STEP_KIND_LABELS: Record<string, string> = {
-  objective: '学习目标',
-  diagnostic: '前置诊断',
-  explanation: '概念讲解',
-  'worked-example': '教师示范',
-  'guided-practice': '引导练习',
-  'independent-check': '独立检查',
-  remediation: '纠错复教',
-  summary: '总结确认',
-};
+const PHASES: Array<{ label: string; kinds: TeachingStepKind[] }> = [
+  { label: '诊断', kinds: ['objective', 'diagnostic'] },
+  { label: '理解', kinds: ['explanation', 'remediation'] },
+  { label: '示范', kinds: ['worked-example'] },
+  { label: '尝试', kinds: ['guided-practice'] },
+  { label: '独立验证', kinds: ['independent-check', 'summary'] },
+];
+
+export function teachingPhaseIndex(kind?: TeachingStepKind): number {
+  return Math.max(0, PHASES.findIndex((phase) => kind && phase.kinds.includes(kind)));
+}
 
 export function TeachingStepRail() {
   const unitId = useTeachingStore((state) => state.unitId);
   const currentStepId = useTeachingStore((state) => state.currentStepId);
   const completedStepIds = useTeachingStore((state) => state.completedStepIds);
-  const goToStep = useTeachingStore((state) => state.goToStep);
   const unit = unitId ? contentRepository.getTeachingUnit(unitId) : undefined;
   if (!unit) return null;
+  const current = currentStepId ? contentRepository.getTeachingStep(currentStepId) : undefined;
+  const currentPhase = teachingPhaseIndex(current?.kind);
 
-  const minutesPerStep = Math.max(1, Math.round(unit.estimatedMinutes / unit.stepIds.length));
-
-  return (
-    <nav className="step-rail" aria-label="教学步骤">
-      <span className="step-rail__line" aria-hidden />
-      {unit.stepIds.map((stepId) => {
+  return <nav className="step-rail" aria-label="带我学的五个阶段">
+    <span className="step-rail__line" aria-hidden />
+    {PHASES.map((phase, index) => {
+      const phaseStepIds = unit.stepIds.filter((stepId) => {
         const step = contentRepository.getTeachingStep(stepId);
-        if (!step) return null;
-        const isCurrent = stepId === currentStepId;
-        const isDone = completedStepIds.includes(stepId);
-        const reachable = isDone || isCurrent;
-        const classes = [
-          'step-rail__item',
-          isCurrent ? 'is-current' : '',
-          isDone ? 'is-done' : '',
-          reachable ? 'is-reachable' : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
-        return (
-          <button
-            key={stepId}
-            type="button"
-            className={classes}
-            disabled={!reachable}
-            onClick={() => goToStep(stepId)}
-            aria-current={isCurrent ? 'step' : undefined}
-          >
-            <span className="step-rail__dot" aria-hidden />
-            <span>
-              <span className="step-rail__label">{STEP_KIND_LABELS[step.kind] ?? step.title}</span>
-              <span className="step-rail__minutes">约 {minutesPerStep} 分钟</span>
-            </span>
-          </button>
-        );
-      })}
-    </nav>
-  );
+        return step ? phase.kinds.includes(step.kind) : false;
+      });
+      const isCurrent = index === currentPhase;
+      const isDone = index < currentPhase || (phaseStepIds.length > 0 && phaseStepIds.every((stepId) => completedStepIds.includes(stepId)));
+      return <div key={phase.label} className={`step-rail__item ${isCurrent ? 'is-current' : ''} ${isDone ? 'is-done' : ''}`} aria-current={isCurrent ? 'step' : undefined}>
+        <span className="step-rail__dot" aria-hidden />
+        <span><span className="step-rail__index">0{index + 1}</span><span className="step-rail__label">{phase.label}</span></span>
+      </div>;
+    })}
+  </nav>;
 }

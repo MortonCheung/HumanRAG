@@ -1,6 +1,6 @@
-import type { PracticeMode } from '../../../ai/practice/PracticePlanner';
+import type { PracticeScopeMode } from '../../../ai/practice/PracticePlanner';
 
-const TABS: Array<{ mode: PracticeMode; label: string }> = [
+const TABS: Array<{ mode: PracticeScopeMode; label: string }> = [
   { mode: 'daily', label: '今日练习' },
   { mode: 'goal', label: '按目标练习' },
   { mode: 'node', label: '按知识点练习' },
@@ -12,8 +12,8 @@ export function PracticeModeTabs({
   active,
   onChange,
 }: {
-  active: PracticeMode;
-  onChange: (mode: PracticeMode) => void;
+  active: PracticeScopeMode;
+  onChange: (mode: PracticeScopeMode) => void;
 }) {
   return (
     <nav className="mode-tabs" aria-label="练习方式">

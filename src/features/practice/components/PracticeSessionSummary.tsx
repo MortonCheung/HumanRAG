@@ -4,6 +4,7 @@ import type { PracticePlan } from '../../../ai/practice/PracticePlanner';
 import { MasteryCelebration } from '../../../components/feedback/MasteryCelebration';
 import { contentRepository } from '../../../services/content/ContentRepository';
 import type { PracticeAnswer } from '../../../store/practiceStore';
+import type { PracticeMode } from '../../../store/practiceStore';
 
 interface PracticeSessionSummaryProps {
   plan: PracticePlan;
@@ -12,13 +13,22 @@ interface PracticeSessionSummaryProps {
   onRestart: () => void;
   returnTo: string;
   returnState?: unknown;
+  mode?: PracticeMode;
+  canRestart?: boolean;
 }
 
 function nodeNameOf(nodeId: string): string {
   return contentRepository.getNode(nodeId)?.name ?? nodeId;
 }
 
-export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState }: PracticeSessionSummaryProps) {
+const MODE_COPY: Record<PracticeMode, { kicker: string; evidence: string; restart: string }> = {
+  train: { kicker: '训练完成', evidence: '训练作答已写回学习记录，用于发现需要巩固的部分。', restart: '再练一遍' },
+  verify: { kicker: '验证完成', evidence: '本轮答案现已统一揭示；完整的新题独立作答将作为本次验证证据。', restart: '换一组新题' },
+  exam: { kicker: '考试完成', evidence: '本轮答案现已统一揭示；各知识点只按完整的新题独立作答写入验证证据。', restart: '开始新一轮' },
+};
+
+export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState, mode = 'train', canRestart = true }: PracticeSessionSummaryProps) {
+  const copy = MODE_COPY[mode];
   const resultRows = questionIds
     .map((questionId) => ({ question: contentRepository.getQuestion(questionId), answer: answers[questionId] }))
     .filter((entry) => entry.question && entry.answer);
@@ -53,9 +63,9 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
       <header className="practice-result__header">
         <MasteryCelebration label={`${plan.title}完成`} compact />
         <div>
-          <p className="panel-kicker">练习完成</p>
+          <p className="panel-kicker">{copy.kicker}</p>
           <h1 className="page-title" id="practice-result-title">{plan.title}</h1>
-          <p className="practice-result__meta">作答证据已写回学习记录，掌握度和误区记录已同步更新。</p>
+          <p className="practice-result__meta">{copy.evidence}</p>
         </div>
       </header>
 
@@ -109,9 +119,9 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
 
       <footer className="practice-result__actions">
         <Link className="text-button text-button--ghost" to={returnTo} state={returnState}>返回上一级</Link>
-        <button className="text-button text-button--ghost" type="button" onClick={onRestart}>
-          <Repeat size={14} /> 再练一遍
-        </button>
+        {canRestart && <button className="text-button text-button--ghost" type="button" onClick={onRestart}>
+          <Repeat size={14} /> {copy.restart}
+        </button>}
       </footer>
     </section>
   );

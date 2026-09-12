@@ -6,6 +6,7 @@ import { SpatialExperienceShell } from '../features/spatial/SpatialExperienceShe
 import { migrateV9 } from '../domain/knowledge/migration';
 
 const teachingPage = async () => ({ Component: (await import('../features/teaching/pages/TeachingSessionPage')).TeachingSessionPage });
+const studyPage = async () => ({ Component: (await import('../features/study/pages/StudyWorkspacePage')).StudyWorkspacePage });
 const practicePage = async () => ({ Component: (await import('../features/practice/pages/PracticeSessionPage')).PracticeSessionPage });
 const initialView = <div role="status" style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', color: 'var(--it-text-soft)', background: 'var(--it-bg)' }}>正在打开…</div>;
 
@@ -42,7 +43,7 @@ const router = createBrowserRouter(createRoutesFromElements(
       <Route path="/library/:libraryId" element={<Navigate to={ROUTES.library} replace />} />
       <Route path="/library/:libraryId/practice" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/practice/session" lazy={practicePage} />
-      <Route path="/library/:libraryId/tree/:treeId/point/:pointId/study" lazy={teachingPage} />
+      <Route path="/library/:libraryId/tree/:treeId/point/:pointId/study" lazy={studyPage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/teach" lazy={teachingPage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/verify" lazy={practicePage} />
       <Route path="/library/:libraryId/tree/:treeId/point/:pointId/learn" lazy={teachingPage} />

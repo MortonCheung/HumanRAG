@@ -39,6 +39,6 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   const verification = page.getByRole('button', { name: /开始能力验证/ });
   await expect(verification).toBeEnabled();
   await verification.click();
-  await expect(page.getByText('本次练习', { exact: false })).toBeVisible();
+  await expect(page.getByText('考试进度', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: '暂无可用题目' })).toHaveCount(0);
 });

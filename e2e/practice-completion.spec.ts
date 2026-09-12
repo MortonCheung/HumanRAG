@@ -17,7 +17,7 @@ test.describe('刷题完成规则与结果回写', () => {
     const navigation = page.getByRole('navigation', { name: '题目导航' });
     await navigation.getByRole('button', { name: `第 ${questions.length} 题，未作答`, exact: true }).click();
     await submitPracticeQuestion(page, questions.at(-1)!.id);
-    await page.getByRole('button', { name: '完成练习' }).click();
+    await page.getByRole('button', { name: '完成训练' }).click();
     await expect(page.getByText(new RegExp(`还有 ${questions.length - 1} 道题未作答`))).toBeVisible();
     await expect(page.getByRole('heading', { name: /练习「/ })).toHaveCount(0);
   });
@@ -28,7 +28,7 @@ test.describe('刷题完成规则与结果回写', () => {
 
     for (let index = 0; index < questions.length; index += 1) {
       await submitPracticeQuestion(page, questions[index].id, index === 0 ? 'wrong' : 'correct');
-      await page.getByRole('button', { name: index === questions.length - 1 ? '完成练习' : '下一题' }).click();
+      await page.getByRole('button', { name: index === questions.length - 1 ? '完成训练' : '下一题' }).click();
     }
 
     await expect(page.getByRole('heading', { name: /练习「/ })).toBeVisible();

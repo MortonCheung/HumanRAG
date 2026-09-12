@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { contentRepository } from '../services/content/ContentRepository';
 import { questionIdsForNode } from '../data/v6/generators/generateQuestionVariants';
 import { usePracticeStore } from './practiceStore';
+import { useProgressStore } from './progressStore';
+import { deriveLearningStatus } from '../features/progress/learningStatus';
+import { useUserStore } from './userStore';
 
 function correctSelection(questionId: string): string {
   const question = contentRepository.getQuestion(questionId);
@@ -15,6 +18,7 @@ function correctSelection(questionId: string): string {
 describe('practiceStore：完成条件', () => {
   beforeEach(() => {
     usePracticeStore.getState().resetSession();
+    useProgressStore.setState({ answerRecords: [], evidenceRecords: [], misconceptionRecords: [], remediationTasks: [], masteryByNode: [], taskExposures: [], storageError: null });
   });
 
   it('题目未全部作答时拒绝结束，并返回缺题数', () => {
@@ -42,5 +46,39 @@ describe('practiceStore：完成条件', () => {
     usePracticeStore.getState().startSession('test-empty', []);
     expect(usePracticeStore.getState().finish()).toEqual({ ok: false, missing: 0 });
     expect(usePracticeStore.getState().status).toBe('active');
+  });
+
+  it('训练只写入练习证据，不生成验证完成清单', () => {
+    const questionIds = questionIdsForNode('knowledge-linear-list').slice(0, 2);
+    usePracticeStore.getState().startSession('test-train-evidence', questionIds, { mode: 'train' });
+    for (const questionId of questionIds) usePracticeStore.getState().submitAnswer(questionId, correctSelection(questionId));
+
+    const evidence = useProgressStore.getState().evidenceRecords;
+    expect(evidence).toHaveLength(2);
+    expect(evidence.every((entry) => entry.source === 'practice' && entry.verificationQuestionIds === undefined)).toBe(true);
+  });
+
+  it('独立验证完成同一知识点的全部新题后写入强证据', () => {
+    const learnerId = useUserStore.getState().activeProfileId;
+    const nodeId = 'knowledge-linear-list';
+    const questionIds = questionIdsForNode(nodeId).slice(0, 2);
+    usePracticeStore.getState().startSession('test-verify-evidence', questionIds, { mode: 'verify' });
+    for (const questionId of questionIds) usePracticeStore.getState().submitAnswer(questionId, correctSelection(questionId));
+
+    const evidence = useProgressStore.getState().evidenceRecords;
+    expect(evidence.every((entry) => entry.source === 'independent-check' && entry.assistance === 'independent')).toBe(true);
+    expect(evidence.at(-1)?.verificationQuestionIds).toEqual(questionIds);
+    expect(deriveLearningStatus(nodeId, learnerId, evidence).status).toBe('verified');
+  });
+
+  it('同一范围的训练与验证会话彼此隔离并可恢复', () => {
+    const questionIds = questionIdsForNode('knowledge-linear-list').slice(0, 2);
+    usePracticeStore.getState().startSession('test-mode-sessions', questionIds, { mode: 'verify' });
+    usePracticeStore.getState().submitAnswer(questionIds[0], correctSelection(questionIds[0]));
+    usePracticeStore.getState().startSession('test-mode-sessions', questionIds, { mode: 'train' });
+    expect(usePracticeStore.getState().answers).toEqual({});
+    usePracticeStore.getState().startSession('test-mode-sessions', questionIds, { mode: 'verify' });
+    expect(usePracticeStore.getState().answers[questionIds[0]]).toBeDefined();
+    expect(usePracticeStore.getState().mode).toBe('verify');
   });
 });

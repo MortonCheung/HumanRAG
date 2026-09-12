@@ -21,6 +21,7 @@ interface PracticeQuestionProps {
   total: number;
   selected: string;
   answer?: PracticeAnswer;
+  revealResult?: boolean;
   onSelectChange: (questionId: string, value: string) => void;
 }
 
@@ -30,6 +31,7 @@ export function PracticeQuestion({
   total,
   selected,
   answer,
+  revealResult = true,
   onSelectChange,
 }: PracticeQuestionProps) {
   const question = contentRepository.getQuestion(questionId);
@@ -79,8 +81,8 @@ export function PracticeQuestion({
             const isSelected =
               answerData.kind === 'ordering' ? selectedIds.includes(option.id) : selectedIds.includes(option.id);
             let stateClass = '';
-            if (locked && isCorrect) stateClass = 'is-correct';
-            else if (locked && isSelected && !isCorrect) stateClass = 'is-wrong';
+            if (locked && revealResult && isCorrect) stateClass = 'is-correct';
+            else if (locked && revealResult && isSelected && !isCorrect) stateClass = 'is-wrong';
             else if (isSelected) stateClass = 'is-selected';
             const orderBadge =
               answerData.kind === 'ordering' && selectedIds.includes(option.id)
@@ -117,7 +119,7 @@ export function PracticeQuestion({
             <button
               key={option.value}
               type="button"
-              className={`question-option ${selected === option.value ? 'is-selected' : ''} ${locked && String(answerData.value) === option.value ? 'is-correct' : ''} ${locked && selected === option.value && String(answerData.value) !== option.value ? 'is-wrong' : ''}`}
+              className={`question-option ${selected === option.value ? 'is-selected' : ''} ${locked && revealResult && String(answerData.value) === option.value ? 'is-correct' : ''} ${locked && revealResult && selected === option.value && String(answerData.value) !== option.value ? 'is-wrong' : ''}`}
               disabled={locked}
               onClick={() => commit(option.value)}
             >

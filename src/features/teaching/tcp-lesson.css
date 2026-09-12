@@ -100,3 +100,8 @@
   white-space: nowrap;
   border: 0;
 }
+.tcp-phases li.is-done { color: var(--it-text-soft); }
+.tcp-phases li.is-done span { color: var(--it-success); }
+.tcp-decision { max-width: 840px; margin: -20px 0 34px; padding: 14px 16px; border-left: 2px solid var(--it-accent); background: color-mix(in srgb, var(--it-accent) 5%, transparent); }
+.tcp-decision span { color: var(--it-accent); font-size: 10px; letter-spacing: .08em; }
+.tcp-decision p { margin: 6px 0 0; color: var(--it-text-soft); font-size: 13px; line-height: 1.75; }
