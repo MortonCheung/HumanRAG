@@ -2,6 +2,7 @@ import { Component, useCallback, useEffect, useMemo, useRef, useState, type Reac
 import { useReducedMotion } from 'motion/react';
 import { matchPath, Outlet, useLocation } from 'react-router-dom';
 import { TransitionLink as Link } from '../../app/pageNavigation';
+import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { GlobalNav } from '../../components/navigation/GlobalNav';
 import { buildSceneModel } from '../../graph/relevance';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
@@ -12,6 +13,7 @@ import { LandingPage } from '../landing/pages/LandingPage';
 import { SpatialViewportProvider } from './SpatialViewport';
 import { SpatialStageCanvas } from './SpatialStageCanvas';
 import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
+import { canStartGoalTreeHandoff, useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -27,6 +29,7 @@ export function SpatialExperienceShell() {
 
 function SpatialExperience() {
   const location = useLocation();
+  const navigate = useNavigate();
   const reducedMotion = Boolean(useReducedMotion());
   const openingRoute = location.pathname === ROUTES.root;
   const directUniverse = location.pathname === ROUTES.universe;
@@ -52,6 +55,12 @@ function SpatialExperience() {
   const selectNode = useKnowledgeStore((state) => state.selectNode);
   const setStageMode = useSpatialStageStore((state) => state.setMode);
   const selectTree = useSpatialStageStore((state) => state.selectTree);
+  const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
+  const extractionTreeId = useGoalTreeTransitionStore((state) => state.treeId);
+  const extractionTreeReady = useGoalTreeTransitionStore((state) => state.treeReady);
+  const extractionVisualReady = useGoalTreeTransitionStore((state) => state.visualReady);
+  const startExtractionHandoff = useGoalTreeTransitionStore((state) => state.startHandoff);
+  const resetExtraction = useGoalTreeTransitionStore((state) => state.reset);
 
   const model = useMemo(() => {
     return buildSceneModel({ goalId: selectedGoalId, selectedNodeId,
@@ -100,6 +109,27 @@ function SpatialExperience() {
   useEffect(() => {
     if (openingRoute && phase !== 'intro') setStageMode('universe');
   }, [openingRoute, phase, setStageMode]);
+  useEffect(() => {
+    const gate = { phase: extractionPhase, treeReady: extractionTreeReady, visualReady: extractionVisualReady, treeId: extractionTreeId };
+    if (!canStartGoalTreeHandoff(gate) || !extractionTreeId) return;
+    startExtractionHandoff();
+    selectTree(extractionTreeId);
+    navigate(ROUTES.library, { state: { selectedTreeId: extractionTreeId } });
+  }, [extractionPhase, extractionTreeId, extractionTreeReady, extractionVisualReady, navigate, selectTree, startExtractionHandoff]);
+  useEffect(() => {
+    if (extractionPhase !== 'handoff' || !libraryRoute) return;
+    const timer = window.setTimeout(resetExtraction, 420);
+    return () => window.clearTimeout(timer);
+  }, [extractionPhase, libraryRoute, resetExtraction]);
+
+  const extractionStatus = {
+    highlighting: '已找到相关知识',
+    detaching: '正在分离原有关系',
+    receding: '正在收拢学习范围',
+    forming: '正在形成知识树',
+    connecting: '正在连接知识关系',
+    ready: '知识树已经就绪',
+  }[extractionPhase as Exclude<typeof extractionPhase, 'idle' | 'handoff'>];
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>
@@ -118,6 +148,7 @@ function SpatialExperience() {
           <Link className="text-button text-button--primary" to={ROUTES.library}>打开知识库</Link>
         </div></section>}
         {pendingEntry && !failed && <div className="entry-pending" role="status">正在准备知识空间 <button onClick={() => setPendingEntry(false)}>取消</button></div>}
+        {extractionStatus && <div className="goal-extraction-status" role="status" aria-live="polite">{extractionStatus}</div>}
       </div>
     </SpatialExperienceContext.Provider>
   );

@@ -26,6 +26,10 @@ describe('synaptic geometry and render clock', () => {
     expect(synapticPulseShader).toContain('head-directed');
     expect(synapticPulseShader).not.toContain('gl_PointCoord');
   });
+  it('breaks old Universe relations from the middle toward both endpoints', () => {
+    expect(synapticPulseShader).toContain('abs(vProgress-0.5)*2.0');
+    expect(synapticPulseShader).toContain('smoothstep(uDetach-0.07,uDetach+0.07,centerDistance)');
+  });
   it.each(['quality', 'balanced', 'performance'] as const)('keeps %s pulse work within its device budget', (tier) => {
     const ids = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[tier].activePulseCount);
     expect(ids.size).toBe(QUALITY_CONFIG[tier].activePulseCount);

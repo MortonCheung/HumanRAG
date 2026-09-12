@@ -4,7 +4,15 @@ import * as THREE from 'three';
 import type { SceneModel } from '../graph/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
+import { extractionProgress, type ExtractionPhase } from '../features/spatial/transitions/goalTreeTransitionStore';
 import { neuronAppearance, neuronFragmentShader, neuronVertexShader } from './neuronAppearance';
+
+export interface NodeExtractionState {
+  phase: ExtractionPhase;
+  phaseStartedAt: number;
+  selectedIds: ReadonlySet<string>;
+  targetPositions: ReadonlyMap<string, [number, number, number]>;
+}
 
 function pointGeometry(count: number) {
   const geometry = new THREE.BufferGeometry();
@@ -15,17 +23,19 @@ function pointGeometry(count: number) {
 }
 
 /** One real node, one emissive point. Its halo never needs lighting or postprocessing. */
-export function NodePointField({ model, experiencePhase, motionAllowed, openingOrigins }: {
+export function NodePointField({ model, experiencePhase, motionAllowed, openingOrigins, extraction }: {
   model: SceneModel;
   experiencePhase: SpatialExperiencePhase;
   motionAllowed: boolean;
   openingOrigins?: ReadonlyMap<string, [number, number, number]>;
+  extraction?: NodeExtractionState;
 }) {
   const hoveredNodeId = useKnowledgeStore((state) => state.hoveredNodeId);
   const { invalidate, viewport } = useThree();
   const geometry = useMemo(() => pointGeometry(model.nodes.length), [model.nodes.length]);
   const targets = useRef<Array<{ size: number; strength: number }>>([]);
   const positionTargets = useRef<Array<[number, number, number]>>([]);
+  const canonicalPositions = useRef<Array<[number, number, number]>>([]);
   const revealTime = useRef(10);
   const settling = useRef(false);
   const uniforms = useMemo(() => ({ uDpr: { value: viewport.dpr } }), [viewport.dpr]);
@@ -39,13 +49,14 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
       const origin = experiencePhase === 'awakening' ? openingOrigins?.get(node.id) : undefined;
       positions.setXYZ(index, ...(origin ?? node.displayPosition));
       positionTargets.current[index] = node.displayPosition;
-      color.set(node.domainColor).lerp(white, 0.7);
+      canonicalPositions.current[index] = node.displayPosition;
+      color.set(node.domainColor).lerp(white, extraction?.selectedIds.has(node.id) ? 0.35 : extraction ? 0.82 : 0.7);
       colors.setXYZ(index, color.r, color.g, color.b);
     });
     positions.needsUpdate = colors.needsUpdate = true;
     invalidate();
     positionTargets.current.length = model.nodes.length;
-  }, [geometry, model.nodes, openingOrigins, experiencePhase, invalidate]);
+  }, [geometry, model.nodes, openingOrigins, experiencePhase, extraction?.selectedIds, invalidate]);
 
   useLayoutEffect(() => {
     const sizes = geometry.getAttribute('aSize');
@@ -67,31 +78,55 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
     [sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
     if (experiencePhase === 'awakening') revealTime.current = 0;
     else if (experiencePhase === 'intro' || experiencePhase === 'universe') revealTime.current = 10;
-    settling.current = motionAllowed;
+    settling.current = motionAllowed || Boolean(extraction);
     invalidate();
-  }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, invalidate]);
+  }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, extraction, invalidate]);
 
   useFrame((_, delta) => {
     if (!settling.current) return;
     const positions = geometry.getAttribute('position');
     const sizes = geometry.getAttribute('aSize');
     const strengths = geometry.getAttribute('aStrength');
-    const alpha = 1 - Math.exp(-Math.min(delta, 0.05) * 14);
+    const alpha = motionAllowed ? 1 - Math.exp(-Math.min(delta, 0.05) * 14) : 1;
     const opening = experiencePhase === 'awakening' || experiencePhase === 'settling';
     if (opening) revealTime.current += Math.min(delta, .05);
     let remaining = 0;
     targets.current.forEach((target, index) => {
       const delay = model.nodes[index]?.propagationDelay ?? 0;
       const reveal = opening ? THREE.MathUtils.smoothstep(revealTime.current, delay, delay + .16) : 1;
-      const desiredSize = target.size * (.68 + .32 * reveal);
-      const desiredStrength = target.strength * reveal;
+      const extractionPhase = extraction?.phase;
+      const selected = Boolean(extraction?.selectedIds.has(model.nodes[index]?.id));
+      const phaseProgress = extractionPhase ? extractionProgress(extractionPhase, extraction.phaseStartedAt, motionAllowed) : 0;
+      const highlighted = extractionPhase
+        ? extractionPhase === 'highlighting' ? phaseProgress : extractionPhase === 'idle' ? 0 : 1
+        : 0;
+      const receded = extractionPhase
+        ? extractionPhase === 'receding' ? phaseProgress : ['forming', 'connecting', 'ready', 'handoff'].includes(extractionPhase) ? 1 : 0
+        : 0;
+      const formed = extractionPhase
+        ? extractionPhase === 'forming' ? phaseProgress : ['connecting', 'ready', 'handoff'].includes(extractionPhase) ? 1 : 0
+        : 0;
+      const relevanceStrength = extraction ? selected ? 1 + highlighted * 0.38 : 1 - receded : 1;
+      const relevanceSize = extraction ? selected ? 1 + highlighted * 0.12 : 1 - receded * 0.32 : 1;
+      const desiredSize = target.size * (.68 + .32 * reveal) * relevanceSize;
+      const desiredStrength = target.strength * reveal * relevanceStrength;
       const sizeDelta = desiredSize - sizes.getX(index);
       const strengthDelta = desiredStrength - strengths.getX(index);
       sizes.setX(index, sizes.getX(index) + sizeDelta * alpha);
       strengths.setX(index, strengths.getX(index) + strengthDelta * alpha);
-      const targetPosition = positionTargets.current[index];
+      const canonical = canonicalPositions.current[index];
+      const extractionTarget = selected ? extraction?.targetPositions.get(model.nodes[index]?.id) : undefined;
+      const targetPosition = extraction && canonical
+        ? selected && extractionTarget
+          ? [
+              THREE.MathUtils.lerp(canonical[0], extractionTarget[0], formed),
+              THREE.MathUtils.lerp(canonical[1], extractionTarget[1], formed),
+              THREE.MathUtils.lerp(canonical[2], extractionTarget[2], formed),
+            ] as [number, number, number]
+          : [canonical[0], canonical[1], canonical[2] - 18 * receded] as [number, number, number]
+        : positionTargets.current[index];
       if (targetPosition) {
-        const positionAlpha = 1 - Math.exp(-Math.min(delta, .05) * 3.5);
+        const positionAlpha = motionAllowed ? 1 - Math.exp(-Math.min(delta, .05) * 3.5) : 1;
         positions.setXYZ(
           index,
           positions.getX(index) + (targetPosition[0] - positions.getX(index)) * positionAlpha,
@@ -103,7 +138,7 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
       remaining = Math.max(remaining, Math.abs(sizeDelta), Math.abs(strengthDelta));
     });
     positions.needsUpdate = sizes.needsUpdate = strengths.needsUpdate = true;
-    settling.current = remaining > 0.002;
+    settling.current = Boolean(extraction) || remaining > 0.002;
     if (settling.current) invalidate();
   });
 

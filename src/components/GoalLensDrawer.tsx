@@ -1,16 +1,17 @@
 import { Target, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type FormEvent } from 'react';
-import { usePageNavigate as useNavigate } from '../app/pageNavigation';
-import { ROUTES } from '../app/routes';
 import { composeGoalTree } from '../ai/knowledge-tree/GoalTreeComposer';
 import { createTree, migrateV9 } from '../domain/knowledge/migration';
+import { useGoalTreeTransitionStore } from '../features/spatial/transitions/goalTreeTransitionStore';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 
 export function GoalLensDrawer() {
   const activePanel = useKnowledgeStore((state) => state.activePanel);
   const closePanel = useKnowledgeStore((state) => state.closePanel);
-  const navigate = useNavigate();
+  const beginExtraction = useGoalTreeTransitionStore((state) => state.begin);
+  const markTreeReady = useGoalTreeTransitionStore((state) => state.markTreeReady);
+  const failExtraction = useGoalTreeTransitionStore((state) => state.fail);
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
@@ -24,14 +25,17 @@ export function GoalLensDrawer() {
     try {
       const domain = migrateV9();
       const draft = composeGoalTree(prompt);
+      beginExtraction(draft);
       const tree = createTree(domain.library.id, {
         identity: { name: draft.name, description: draft.description, color: '#b1d8ca' },
         pointIds: draft.pointIds,
       });
+      markTreeReady(tree.id);
       closePanel();
-      navigate(ROUTES.library, { state: { selectedTreeId: tree.id } });
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : '未能整理知识，请稍后重试。');
+      const message = failure instanceof Error ? failure.message : '未能整理知识，请稍后重试。';
+      failExtraction(message);
+      setError(message);
       setComposing(false);
     }
   };

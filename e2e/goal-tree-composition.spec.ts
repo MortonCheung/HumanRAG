@@ -4,13 +4,21 @@ import { resetDemoState } from './helpers';
 test('自然语言目标整理为一棵可学习、可练习的普通知识树', async ({ page }) => {
   await resetDemoState(page);
   await page.goto('/universe');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const stage = page.locator('[data-spatial-stage] canvas');
+  await expect(stage).toBeVisible({ timeout: 12_000 });
+  const stageIdentity = await stage.evaluateHandle((canvas) => canvas);
   await page.getByRole('button', { name: '选择目标' }).click();
 
   const prompt = '我要准备 408，网络基础比较弱，数据结构还可以，也对 AI 感兴趣。';
   await page.getByLabel('你现在想做什么？').fill(prompt);
   await page.getByRole('button', { name: '整理相关知识' }).click();
 
+  await expect(page.getByRole('status')).toContainText(/已找到相关知识|正在分离原有关系/);
+  await expect(page).toHaveURL(/\/universe$/);
+
   await expect(page).toHaveURL(/\/library$/);
+  expect(await stageIdentity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
   const selectedTree = page.getByRole('option', { selected: true });
   await expect(selectedTree).toContainText('考研408 · 定向学习');
   await expect(selectedTree).toContainText(/\d+ 个节点 · 个人/);

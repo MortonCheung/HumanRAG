@@ -15,6 +15,8 @@ import type { SpatialExperiencePhase } from './SpatialExperienceContext';
 import { useSpatialStageStore } from './spatialStageStore';
 import { SpatialTreeScene } from './SpatialTreeScene';
 import { buildConstellationScene, CONSTELLATION_PRESETS, withAwakeningDelays } from '../../scene/intro/constellationPresets';
+import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
+import { useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
 
 function ContextHealth({ onError }: { onError: () => void }) {
   const { gl } = useThree();
@@ -108,20 +110,36 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
 }) {
   const mode = useSpatialStageStore((state) => state.mode);
   const activePanel = useKnowledgeStore((state) => state.activePanel);
+  const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
+  const extractionStartedAt = useGoalTreeTransitionStore((state) => state.phaseStartedAt);
+  const extractionDraft = useGoalTreeTransitionStore((state) => state.draft);
   const preset = useRef(CONSTELLATION_PRESETS[Math.floor(Math.random() * CONSTELLATION_PRESETS.length)]).current;
   const introModel = useMemo(() => buildConstellationScene(model, preset, 'direction-408'), [model, preset]);
   const awakeningModel = useMemo(() => withAwakeningDelays(model, introModel.nodes.map((node) => node.id)), [introModel.nodes, model]);
   const openingOrigins = useMemo(() => new Map(introModel.nodes.map((node) => [node.id, node.displayPosition])), [introModel.nodes]);
+  const extractionLayout = useMemo(() => extractionDraft ? buildGoalTreeExtractionLayout(extractionDraft) : null, [extractionDraft]);
+  const extracting = Boolean(extractionDraft && extractionPhase !== 'idle' && extractionPhase !== 'handoff');
+  const extractionActive = Boolean(extractionDraft && extractionPhase !== 'idle');
+  const extractionSelectedIds = useMemo(() => new Set(extractionDraft?.pointIds ?? []), [extractionDraft]);
+  const extractionState = useMemo(() => extractionDraft && extractionLayout ? {
+    phase: extractionPhase,
+    phaseStartedAt: extractionStartedAt,
+    selectedIds: extractionSelectedIds,
+    targetPositions: extractionLayout.worldPositions,
+  } : undefined, [extractionDraft, extractionLayout, extractionPhase, extractionSelectedIds, extractionStartedAt]);
   if (mode === 'library' || mode === 'tree') return <SpatialTreeScene mode={mode} motionAllowed={motionAllowed} />;
   const visibleModel = experiencePhase === 'intro' ? introModel : experiencePhase === 'awakening' || experiencePhase === 'settling' ? awakeningModel : model;
   const anchors = visibleModel.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
   return <>
-    <BatchedKnowledgeEdges model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} />
-    <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} openingOrigins={openingOrigins} />
-    <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel} />
-    {anchors.map((node) => <group key={node.id} position={node.displayPosition}>
+    {(!extractionActive || extractionPhase === 'highlighting' || extractionPhase === 'detaching') && <BatchedKnowledgeEdges
+      model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed}
+      extraction={extracting ? { phase: extractionPhase, phaseStartedAt: extractionStartedAt } : undefined} />}
+    <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} openingOrigins={openingOrigins} extraction={extractionState} />
+    <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel && !extractionActive} />
+    {!extractionActive && anchors.map((node) => <group key={node.id} position={node.displayPosition}>
       <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
     </group>)}
-    <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} />
+    {extractionActive && extractionLayout && <GoalTreeExtraction model={visibleModel} layout={extractionLayout} motionAllowed={motionAllowed} />}
+    {!extractionActive && <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} />}
   </>;
 }

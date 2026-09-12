@@ -6,6 +6,7 @@ import { buildEdgeCurve } from '../graph/curves';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
+import { extractionProgress, type ExtractionPhase } from '../features/spatial/transitions/goalTreeTransitionStore';
 
 const ACTIVE = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
 const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0, 7) % 997 / 997;
@@ -58,7 +59,7 @@ const vertexShader = `
   }
 `;
 export const synapticPulseShader = `
-  uniform float uTime, uMotion, uRevealTime, uOpening;
+  uniform float uTime, uMotion, uRevealTime, uOpening, uDetach, uUniverseExit;
   varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
@@ -72,12 +73,19 @@ export const synapticPulseShader = `
     float travel=clamp((uRevealTime-vDelay)/0.14,0.0,1.0);
     float grown=1.0-smoothstep(travel-0.025,travel+0.025,vProgress);
     float reveal=mix(1.0,grown,uOpening);
-    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.54)*reveal);
+    float centerDistance=abs(vProgress-0.5)*2.0;
+    float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);
+    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.54)*reveal*keep*uUniverseExit);
   }
 `;
 
 /** One path batch and one render clock. Camera gestures never stop synaptic transmission. */
-export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }: { model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean }) {
+export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, extraction }: {
+  model: SceneModel;
+  experiencePhase: SpatialExperiencePhase;
+  motionAllowed: boolean;
+  extraction?: { phase: ExtractionPhase; phaseStartedAt: number };
+}) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const segments = QUALITY_CONFIG[quality].curveSegments;
   const { invalidate } = useThree();
@@ -85,7 +93,7 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }:
   // Appearance changes leave positions, topology and material identity untouched.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 } }), []);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
   useLayoutEffect(() => {
     const pulsing = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[quality].activePulseCount);
     let vertex = 0;
@@ -122,6 +130,20 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed }:
   }, [experiencePhase, invalidate, uniforms]);
   useFrame(({ clock }, delta) => {
     if (motionAllowed) uniforms.uTime.value = clock.elapsedTime;
+    if (!extraction || extraction.phase === 'idle') {
+      uniforms.uDetach.value = -1;
+      uniforms.uUniverseExit.value = 1;
+    } else if (extraction.phase === 'highlighting') {
+      uniforms.uDetach.value = -0.05;
+      uniforms.uUniverseExit.value = 1;
+    } else if (extraction.phase === 'detaching') {
+      const progress = extractionProgress(extraction.phase, extraction.phaseStartedAt, motionAllowed);
+      uniforms.uDetach.value = THREE.MathUtils.lerp(-0.05, 1.05, progress);
+      uniforms.uUniverseExit.value = 1 - progress;
+    } else {
+      uniforms.uDetach.value = 1.05;
+      uniforms.uUniverseExit.value = 0;
+    }
     if ((experiencePhase === 'awakening' || experiencePhase === 'settling') && uniforms.uRevealTime.value < 3) {
       uniforms.uRevealTime.value += Math.min(delta, .05);
     }

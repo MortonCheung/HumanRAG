@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { ExplorerInterface } from '../../../components/ExplorerInterface';
 import { useKnowledgeStore } from '../../../store/knowledgeStore';
 import { useSpatialExperience } from '../../spatial/SpatialExperienceContext';
+import { useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
 
 /** 三维知识空间页面（蓝图 §5）。从原 App.tsx 迁移，功能不回退。 */
 export function UniversePage() {
@@ -15,6 +16,8 @@ export function UniversePage() {
   const closePanel = useKnowledgeStore((state) => state.closePanel);
   const openPanel = useKnowledgeStore((state) => state.openPanel);
   const returnOverview = useKnowledgeStore((state) => state.returnOverview);
+  const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
+  const extracting = extractionPhase !== 'idle' && extractionPhase !== 'handoff';
 
   useEffect(() => {
     if (experiencePhase !== 'universe') return;
@@ -39,7 +42,7 @@ export function UniversePage() {
   useEffect(() => () => hoverNode(null), [hoverNode]);
 
   return (
-    <main id="knowledge-field-app" className={`app-shell universe-page app-shell--${phase}`} inert={experiencePhase !== 'universe'} aria-hidden={experiencePhase !== 'universe'}>
+    <main id="knowledge-field-app" className={`app-shell universe-page app-shell--${phase}`} inert={experiencePhase !== 'universe' || extracting} aria-hidden={experiencePhase !== 'universe' || extracting}>
       <div className="field-light" aria-hidden="true" />
       <motion.div
         className="dom-layer"
