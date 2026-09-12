@@ -34,11 +34,11 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   expect(stored?.pointIds).toContain('knowledge-tcp');
 
   await page.getByRole('button', { name: '进入知识树' }).click();
-  await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-/);
-  await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '题库' }).click();
-  const wholeTreePractice = page.getByRole('button', { name: '整树练习' });
-  await expect(wholeTreePractice).toBeEnabled();
-  await wholeTreePractice.click();
+  await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-.*\/path$/);
+  await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '能力验证' }).click();
+  const verification = page.getByRole('button', { name: /开始能力验证/ });
+  await expect(verification).toBeEnabled();
+  await verification.click();
   await expect(page.getByText('本次练习', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: '暂无可用题目' })).toHaveCount(0);
 });

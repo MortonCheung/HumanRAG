@@ -5,11 +5,12 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { AppShell } from '../../../app/AppShell';
 import { ROUTES } from '../../../app/routes';
 import { createTree, migrateV9 } from '../../../domain/knowledge/migration';
+import { KnowledgeTreeWorkspace } from '../KnowledgeTreeWorkspace';
 import { TreeStructureEditorPage } from '../../knowledge-tree-editor/pages/TreeStructureEditorPage';
 import { TreeEditorShell } from '../../knowledge-tree-editor/TreeEditorShell';
 import { PointCreationShell } from '../../knowledge-point-builder/PointCreationShell';
 import { PointContentPage } from '../../knowledge-point-builder/pages/PointContentPage';
-import { KnowledgeTreeShell } from './KnowledgeTreeShell';
+import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 
 // Only the GPU canvas is replaced. Real navigation, portals, storage, draft and
 // editor components prove that the actual creation route remains reachable.
@@ -17,6 +18,7 @@ vi.mock('../../library-builder/components/CustomTreeCanvas', () => ({ CustomTree
 beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
+  useSpatialStageStore.setState({ selectedTreePointId: null, hoveredTreePointId: null });
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
 });
@@ -27,10 +29,10 @@ describe('knowledge tree node creation entry', () => {
     const { library } = migrateV9();
     const tree = createTree(library.id, { identity: { name: '导航创建回归', description: '', color: '#b1d8ca' } });
     const router = createMemoryRouter([{ element: <AppShell />, children: [
-      { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeShell treeName={tree.name} ownerType="user" /> },
+      { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <p>学习路径</p> }] },
       { path: '/library/:libraryId/tree/:treeId/edit', element: <TreeEditorShell />, children: [{ path: 'structure', element: <TreeStructureEditorPage /> }] },
       { path: '/library/:libraryId/tree/:treeId/points/new', element: <PointCreationShell />, children: [{ path: 'content', element: <PointContentPage /> }] },
-    ] }], { initialEntries: [ROUTES.tree(library.id, tree.id)] });
+    ] }], { initialEntries: [ROUTES.treePath(library.id, tree.id)] });
     render(<RouterProvider router={router} />);
     const assertAdd = () => {
       const add = screen.getByRole('button', { name: '新增节点' });
@@ -46,14 +48,14 @@ describe('knowledge tree node creation entry', () => {
     expect(router.state.location.pathname).toBe(ROUTES.treeEdit(library.id, tree.id));
     assertAdd();
     expect(screen.queryByRole('button', { name: '保存' })).toBeNull();
-    await act(() => router.navigate(ROUTES.tree(library.id, tree.id)));
+    await act(() => router.navigate(ROUTES.treePath(library.id, tree.id)));
     assertAdd();
   });
 
   it('makes the system example read-only state explicit without adding write controls', () => {
     const router = createMemoryRouter([{ element: <AppShell />, children: [
-      { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeShell treeName="考研408" ownerType="system" /> },
-    ] }], { initialEntries: [ROUTES.tree('computer', 'tree-408')] });
+      { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <p>学习路径</p> }] },
+    ] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
     render(<RouterProvider router={router} />);
     fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
     expect(screen.getByText('只读示例').title).toContain('创建自己的知识树');

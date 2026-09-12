@@ -15,6 +15,12 @@ function TreeContentRedirect() {
   return <Navigate to={ROUTES.treeEdit(libraryId, treeId, 'structure')} replace />;
 }
 
+function TreeModeRedirect({ mode }: { mode: 'path' | 'verify' }) {
+  const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
+  if (!libraryId || !treeId) return <Navigate to={ROUTES.library} replace />;
+  return <Navigate to={mode === 'path' ? ROUTES.treePath(libraryId, treeId) : ROUTES.treeVerify(libraryId, treeId)} replace />;
+}
+
 migrateV9();
 // Resolve page modules before committing a view, so snapshots contain the
 // complete destination instead of a blank Suspense fallback.
@@ -24,10 +30,12 @@ const router = createBrowserRouter(createRoutesFromElements(
       <Route path={ROUTES.root} element={null} />
       <Route path={ROUTES.universe} element={null} />
       <Route path={ROUTES.library} lazy={async () => ({ Component: (await import('../features/library/pages/LibraryHomePage')).LibraryHomePage })} />
-      <Route path="/library/:libraryId/tree/:treeId" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/KnowledgeTreePage')).KnowledgeTreePage })}>
-        <Route index lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeOverviewPage')).TreeOverviewPage })} />
-        <Route path="learn" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeLearningPage')).TreeLearningPage })} />
-        <Route path="practice" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreePracticePage')).TreePracticePage })} />
+      <Route path="/library/:libraryId/tree/:treeId" lazy={async () => ({ Component: (await import('../features/knowledge-tree/KnowledgeTreeWorkspace')).KnowledgeTreeWorkspace })}>
+        <Route index element={<TreeModeRedirect mode="path" />} />
+        <Route path="path" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeLearningPathPanel')).TreeLearningPathPanel })} />
+        <Route path="verify" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeVerificationPanel')).TreeVerificationPanel })} />
+        <Route path="learn" element={<TreeModeRedirect mode="path" />} />
+        <Route path="practice" element={<TreeModeRedirect mode="verify" />} />
       </Route>
     </Route>
     <Route element={<AppShell />} hydrateFallbackElement={initialView}>

@@ -18,6 +18,8 @@ test.describe('知识库、知识树与知识点创建', () => {
 
     const canvas = page.locator('[data-spatial-stage] canvas');
     const canvasIdentity = await canvas.evaluateHandle((element) => element);
+    await expect(canvas).toHaveAttribute('data-tree-universe-instance', /^tree-universe-/);
+    const treeUniverseIdentity = await canvas.getAttribute('data-tree-universe-instance');
     const cameraBefore = await canvas.getAttribute('data-preview-camera');
     await page.getByRole('option', { name: /AI工程/ }).click();
     await expect(page.getByLabel('AI工程三维预览')).toBeVisible();
@@ -27,8 +29,11 @@ test.describe('知识库、知识树与知识点创建', () => {
     await expect(page.getByText(/棵知识树|个节点|系统/)).toHaveCount(0);
     await expect(page).toHaveURL(/\/library$/);
     await page.getByRole('button', { name: /进入知识树/ }).click();
-    await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-ai$/);
-    await expect(page.getByRole('heading', { name: '选择知识点' })).toBeVisible();
+    await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-ai\/path$/);
+    await expect(page.getByRole('heading', { name: '沿知识关系前进' })).toBeVisible();
+    await expect(canvas).toHaveAttribute('data-tree-scene-mode', 'tree');
+    await expect(canvas).toHaveAttribute('data-tree-universe-instance', treeUniverseIdentity!);
+    expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
   });
 
   test('知识树允许稍后补充信息，但拒绝同名树', async ({ page }) => {

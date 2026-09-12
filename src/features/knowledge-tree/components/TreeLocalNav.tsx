@@ -8,9 +8,8 @@ export function TreeLocalNav() {
 
   return (
     <NavigationModes label="知识树模式" items={[
-      { to: ROUTES.tree(libraryId, treeId), label: '总览' },
-      { to: ROUTES.treeLearn(libraryId, treeId), label: '学习' },
-      { to: ROUTES.treePractice(libraryId, treeId), label: '题库' },
+      { to: ROUTES.treePath(libraryId, treeId), label: '学习路径' },
+      { to: ROUTES.treeVerify(libraryId, treeId), label: '能力验证' },
     ]} />
   );
 }

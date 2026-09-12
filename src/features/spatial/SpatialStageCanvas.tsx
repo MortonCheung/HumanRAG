@@ -13,7 +13,6 @@ import { NodeHitField } from '../../scene/NodeHitField';
 import { NodePointField } from '../../scene/NodePointField';
 import type { SpatialExperiencePhase } from './SpatialExperienceContext';
 import { useSpatialStageStore } from './spatialStageStore';
-import { SpatialTreeScene } from './SpatialTreeScene';
 import { LibraryPreviewUniverseScene } from '../library/scene/LibraryPreviewUniverseScene';
 import { buildConstellationScene, CONSTELLATION_PRESETS, withAwakeningDelays } from '../../scene/intro/constellationPresets';
 import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
@@ -48,7 +47,9 @@ function StageA11y({ model }: { model: SceneModel }) {
     gl.domElement.setAttribute('role', 'img');
     gl.domElement.setAttribute('aria-label', mode === 'library'
       ? '计算机知识树预览空间'
-      : `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
+      : mode === 'tree'
+        ? '可交互知识树空间'
+        : `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
   }, [gl, mode, model.edges.length, model.nodes.length]);
   return null;
 }
@@ -65,6 +66,8 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const qualityPreference = useKnowledgeStore((state) => state.qualityPreference);
   const setResolvedQualityTier = useKnowledgeStore((state) => state.setResolvedQualityTier);
+  const mode = useSpatialStageStore((state) => state.mode);
+  const selectTreePoint = useSpatialStageStore((state) => state.selectTreePoint);
   const [viewport, setViewport] = useState(() => ({ width: window.innerWidth, height: window.innerHeight }));
   const [runtimeSignals, setRuntimeSignals] = useState<RuntimeQualitySignals>(() => readRuntimeQualitySignals());
   useEffect(() => {
@@ -88,7 +91,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
       <Canvas dpr={dpr} frameloop="demand"
         fallback={<div className="scene-recovery"><p>此设备暂不支持三维显示</p><a href="/library">打开知识库</a></div>}
         gl={{ antialias: quality === 'quality', alpha: false, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping }}
-        onPointerMissed={onMissed}
+        onPointerMissed={() => mode === 'tree' ? selectTreePoint(null) : onMissed()}
         onCreated={({ gl }) => { gl.domElement.setAttribute('role', 'img'); }}>
         <color attach="background" args={['#080a10']} />
         <PerspectiveCamera makeDefault fov={44} near={0.1} far={420} position={[45, 33, 56]} />
@@ -135,8 +138,7 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
     selectedIds: extractionSelectedIds,
     targetPositions: extractionLayout.worldPositions,
   } : undefined, [extractionDraft, extractionLayout, extractionPhase, extractionSelectedIds, extractionStartedAt]);
-  if (mode === 'library') return <LibraryPreviewUniverseScene motionAllowed={motionAllowed} />;
-  if (mode === 'tree') return <SpatialTreeScene motionAllowed={motionAllowed} />;
+  if (mode === 'library' || mode === 'tree') return <LibraryPreviewUniverseScene mode={mode} motionAllowed={motionAllowed} />;
   const visibleModel = experiencePhase === 'intro' ? introModel : experiencePhase === 'awakening' || experiencePhase === 'settling' ? awakeningModel : model;
   const anchors = visibleModel.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
   return <>

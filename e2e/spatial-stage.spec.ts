@@ -14,11 +14,12 @@ test('Universe、Library 与知识树复用同一个 Canvas', async ({ page }) =
   expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
 
   await page.getByRole('button', { name: '进入知识树' }).click();
-  await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-408$/);
+  await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-408\/path$/);
   await expect(stage).toHaveCount(1);
+  await expect(stage).toHaveAttribute('data-tree-scene-mode', 'tree');
   expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
 
-  await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '学习' }).click();
-  await expect(page).toHaveURL(/\/tree-408\/learn$/);
+  await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '能力验证' }).click();
+  await expect(page).toHaveURL(/\/tree-408\/verify$/);
   expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
 });

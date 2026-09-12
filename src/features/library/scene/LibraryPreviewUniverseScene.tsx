@@ -1,7 +1,7 @@
 import { CameraControls, CameraControlsImpl } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import gsap from 'gsap';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { migrateV9 } from '../../../domain/knowledge/migration';
 import { customTreeFrame } from '../../library-builder/customTreeFraming';
@@ -23,9 +23,15 @@ interface PreviewCameraState {
   fy: number;
 }
 
-/** Every library tree remains mounted; selection changes only the shared camera target. */
-export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: boolean }) {
+let previewUniverseInstance = 0;
+
+/** Every tree remains mounted while Library preview becomes the formal workspace. */
+export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'library' | 'tree'; motionAllowed: boolean }) {
   const selectedTreeId = useSpatialStageStore((state) => state.selectedTreeId);
+  const selectedPointId = useSpatialStageStore((state) => state.selectedTreePointId);
+  const hoveredPointId = useSpatialStageStore((state) => state.hoveredTreePointId);
+  const selectPoint = useSpatialStageStore((state) => state.selectTreePoint);
+  const hoverPoint = useSpatialStageStore((state) => state.hoverTreePoint);
   const handoffTreeId = useGoalTreeTransitionStore((state) => state.phase === 'handoff' ? state.treeId : null);
   const domain = useMemo(() => migrateV9(), []);
   const pointsById = useMemo(() => new Map(domain.points.map((point) => [point.id, point])), [domain.points]);
@@ -39,6 +45,12 @@ export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: 
     domain.relations,
   )), [domain.relations, pointsById, trees]);
   const anchors = useMemo(() => buildTreePreviewAnchors(trees.map((tree) => tree.id)), [trees]);
+  const [instanceId] = useState(() => `tree-universe-${++previewUniverseInstance}`);
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.domElement.dataset.treeUniverseInstance = instanceId;
+    return () => { delete gl.domElement.dataset.treeUniverseInstance; };
+  }, [gl.domElement, instanceId]);
 
   return (
     <>
@@ -49,22 +61,31 @@ export function LibraryPreviewUniverseScene({ motionAllowed }: { motionAllowed: 
           anchor={anchors.get(graph.tree.id) ?? new THREE.Vector3()}
           motionAllowed={motionAllowed}
           holdRotation={graph.tree.id === handoffTreeId}
+          autoRotate={mode === 'library'}
+          interactive={mode === 'tree' && graph.tree.id === selectedTreeId}
+          reportRotation={graph.tree.id === selectedTreeId}
+          selectedPointId={graph.tree.id === selectedTreeId ? selectedPointId : null}
+          hoveredPointId={graph.tree.id === selectedTreeId ? hoveredPointId : null}
+          onSelectPoint={selectPoint}
+          onHoverPoint={hoverPoint}
         />
       ))}
       <LibraryPreviewCamera
+        mode={mode}
         selectedTreeId={selectedTreeId}
         graphs={graphs}
         anchors={anchors}
         motionAllowed={motionAllowed}
-        handoff={Boolean(handoffTreeId && selectedTreeId === handoffTreeId)}
+        handoff={mode === 'library' && Boolean(handoffTreeId && selectedTreeId === handoffTreeId)}
       />
       <LibraryPreviewClip />
-      {motionAllowed && <PreviewAnimationClock />}
+      {mode === 'library' && motionAllowed && <PreviewAnimationClock />}
     </>
   );
 }
 
-function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed, handoff }: {
+function LibraryPreviewCamera({ mode, selectedTreeId, graphs, anchors, motionAllowed, handoff }: {
+  mode: 'library' | 'tree';
   selectedTreeId: string | null;
   graphs: PreviewTreeGraph[];
   anchors: ReadonlyMap<string, THREE.Vector3>;
@@ -93,9 +114,12 @@ function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed, 
     const anchor = anchors.get(graph.tree.id) ?? new THREE.Vector3();
     const width = usable?.width ?? size.width;
     const height = usable?.height ?? size.height;
-    const pose = customTreeFrame(graph.positions, width, height, true);
-    if (width < 520) {
+    const pose = customTreeFrame(graph.positions, width, height, mode === 'library');
+    if (mode === 'library' && width < 520) {
       pose.position.sub(pose.target).multiplyScalar(1.28).add(pose.target);
+    } else if (mode === 'tree') {
+      // The formal workspace gives the tree the whole left stage; use that space.
+      pose.position.sub(pose.target).multiplyScalar(0.72).add(pose.target);
     }
     pose.position.add(anchor);
     pose.target.add(anchor);
@@ -117,6 +141,7 @@ function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed, 
       fy: focal.y,
     };
     tween.current?.kill();
+    gl.domElement.dataset.treeSceneMode = mode;
     gl.domElement.dataset.previewTreeId = graph.tree.id;
     if (!initialized.current && handoff && motionAllowed) {
       initialized.current = true;
@@ -147,27 +172,31 @@ function LibraryPreviewCamera({ selectedTreeId, graphs, anchors, motionAllowed, 
     }
     tween.current = gsap.timeline().to(state.current, {
       ...target,
-      duration: 0.78,
+      duration: mode === 'tree' ? 0.62 : 0.78,
       ease: 'power3.out',
       onUpdate: applyCameraState,
     });
     return () => { tween.current?.kill(); };
-  }, [selectedTreeId, graphs, anchors, motionAllowed, handoff, usable, size.width, size.height, camera, gl.domElement, applyCameraState]);
+  }, [mode, selectedTreeId, graphs, anchors, motionAllowed, handoff, usable, size.width, size.height, camera, gl.domElement, applyCameraState]);
 
   useEffect(() => () => {
     tween.current?.kill();
     delete gl.domElement.dataset.previewCamera;
     delete gl.domElement.dataset.previewTreeId;
+    delete gl.domElement.dataset.treeSceneMode;
   }, [gl.domElement]);
 
   return (
     <CameraControls
       ref={controls}
       makeDefault
-      enabled={false}
+      enabled={mode === 'tree'}
       minDistance={7}
       maxDistance={320}
-      smoothTime={0}
+      smoothTime={mode === 'tree' && motionAllowed ? 0.34 : 0}
+      draggingSmoothTime={0.08}
+      mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }}
+      touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }}
     />
   );
 }

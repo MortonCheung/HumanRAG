@@ -6,6 +6,9 @@ export const ROUTES = {
   libraryPractice: (libraryId: string) => `/library/${libraryId}/practice`,
   treeNew: (libraryId: string) => `/library/${libraryId}/trees/new`,
   tree: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}`,
+  treePath: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/path`,
+  treeVerify: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/verify`,
+  // Compatibility URLs. Product navigation uses path / verify.
   treeLearn: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/learn`,
   treePractice: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice`,
   treePracticeSession: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice/session`,
