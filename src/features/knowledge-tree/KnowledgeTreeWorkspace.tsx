@@ -3,11 +3,16 @@ import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { ROUTES } from '../../app/routes';
+import { getLearningRecommendation } from '../../ai/learningRecommendation';
+import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS, type LearningState } from '../../domain/learning/deriveLearningState';
 import { migrateV9 } from '../../domain/knowledge/migration';
 import { getPointsForTree, getTree } from '../../domain/knowledge/selectors';
 import type { KnowledgePoint } from '../../domain/knowledge/types';
 import { useSpatialOccluder } from '../spatial/SpatialViewport';
 import { useSpatialStageStore } from '../spatial/spatialStageStore';
+import type { LearningRecommendation } from '../progress/learningRecommendation';
+import { useProgressStore } from '../../store/progressStore';
+import { useUserStore } from '../../store/userStore';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 import { TreeLocalNav } from './components/TreeLocalNav';
 import './knowledge-tree-workspace.css';
@@ -20,6 +25,9 @@ export function KnowledgeTreeWorkspace() {
   const panelViewport = useSpatialOccluder('inspector');
   const selectedPointId = useSpatialStageStore((state) => state.selectedTreePointId);
   const selectPoint = useSpatialStageStore((state) => state.selectTreePoint);
+  const learnerId = useUserStore((state) => state.activeProfileId);
+  const evidence = useProgressStore((state) => state.evidenceRecords);
+  const remediationTasks = useProgressStore((state) => state.remediationTasks);
   const data = useMemo(() => {
     migrateV9();
     const tree = treeId ? getTree(treeId) : undefined;
@@ -27,6 +35,10 @@ export function KnowledgeTreeWorkspace() {
   }, [treeId]);
   const selectedPoint = data.points.find((point) => point.id === selectedPointId);
   const mode = location.pathname.endsWith('/verify') ? 'verify' : 'path';
+  const recommendation = useMemo(
+    () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
+    [data.points, evidence, learnerId, remediationTasks],
+  );
 
   useEffect(() => {
     const focusedPointId = (location.state as { focusedPointId?: string } | null)?.focusedPointId;
@@ -55,21 +67,36 @@ export function KnowledgeTreeWorkspace() {
         </div>
         <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习路径' : '能力验证'}>
           <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
-          {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} onClose={() => selectPoint(null)} />}
+          {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
         </aside>
       </div>
     </main>
   );
 }
 
-function TreePointDetailPanel({ point, mode, libraryId, treeId, onClose }: { point: KnowledgePoint; mode: 'path' | 'verify'; libraryId: string; treeId: string; onClose: () => void }) {
+function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evidence, recommendation, onClose }: {
+  point: KnowledgePoint;
+  mode: 'path' | 'verify';
+  libraryId: string;
+  treeId: string;
+  learnerId: string;
+  evidence: ReturnType<typeof useProgressStore.getState>['evidenceRecords'];
+  recommendation: LearningRecommendation | null;
+  onClose: () => void;
+}) {
   const navigate = useNavigate();
+  const learningState = deriveLearningStateFromEvidence(point.id, learnerId, evidence);
+  const recommendedAction: 'study' | 'teach' | 'verify' | null = recommendation?.pointId !== point.id
+    ? null
+    : recommendedActionFor(learningState);
   return (
     <section className="tree-point-detail">
       <button type="button" className="tree-workspace-back" onClick={onClose}>返回{mode === 'path' ? '学习路径' : '能力验证'}</button>
       <p className="tree-panel-kicker">知识点</p>
       <h1>{point.name}</h1>
       <p className="tree-point-detail__description">{point.description || '这个知识点还没有补充说明。'}</p>
+      <p className={`tree-point-detail__state tree-point-detail__state--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</p>
+      {recommendation?.pointId === point.id && <section className="tree-point-detail__recommendation"><h2>为什么建议从这里继续</h2><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
       <dl className="tree-point-detail__facts">
         <div><dt>类型</dt><dd>{point.kind === 'course' ? '课程' : point.kind === 'practice' ? '实践' : '知识点'}</dd></div>
         {point.difficulty && <div><dt>难度</dt><dd>{point.difficulty}</dd></div>}
@@ -77,10 +104,17 @@ function TreePointDetailPanel({ point, mode, libraryId, treeId, onClose }: { poi
       </dl>
       {point.learningObjectives.length > 0 && <div className="tree-point-detail__section"><h2>学习目标</h2><ul>{point.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ul></div>}
       <div className="point-actions" role="group" aria-label="知识点操作">
-        <button type="button" aria-label="自主学习" className={mode === 'path' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>自主学习</strong>{mode === 'path' && <small>当前建议</small>}</span></button>
-        <button type="button" aria-label="带我学" onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong><small>HumanRAG 引导</small></span></button>
-        <button type="button" aria-label="验证掌握" className={mode === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>验证掌握</strong>{mode === 'verify' && <small>当前建议</small>}</span></button>
+        <button type="button" aria-label="自主学习" className={recommendedAction === 'study' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>自主学习</strong>{recommendedAction === 'study' && <small>当前建议</small>}</span></button>
+        <button type="button" aria-label="带我学" className={recommendedAction === 'teach' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong>{recommendedAction === 'teach' ? <small>当前建议</small> : <small>HumanRAG 引导</small>}</span></button>
+        <button type="button" aria-label="验证掌握" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>验证掌握</strong>{recommendedAction === 'verify' && <small>当前建议</small>}</span></button>
       </div>
     </section>
   );
+}
+
+function recommendedActionFor(state: LearningState): 'study' | 'teach' | 'verify' | null {
+  if (state === 'needs-reinforcement') return 'teach';
+  if (state === 'needs-verification') return 'verify';
+  if (state === 'verified') return null;
+  return 'study';
 }

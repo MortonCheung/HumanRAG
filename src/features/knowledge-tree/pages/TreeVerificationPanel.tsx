@@ -48,7 +48,7 @@ export function TreeVerificationPanel() {
       </header>
       <div className="tree-panel__groups">
         {data.groups.map((group) => <PointGroup key={group.id} group={group}
-          defaultOpen={group.points.some((point) => point.id === recommendation?.nodeId)}
+          defaultOpen={group.points.some((point) => point.id === recommendation?.pointId)}
           forceOpen={Boolean(query.trim()) || group.points.some((point) => point.id === selectedPointId)}
         >{(point) => {
             const count = contentRepository.getQuestionsForNode(point.id).length;

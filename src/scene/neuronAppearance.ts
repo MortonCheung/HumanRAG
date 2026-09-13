@@ -1,4 +1,5 @@
 import type { NodeType, VisualState } from '../graph/types';
+import type { LearningState } from '../domain/learning/deriveLearningState';
 
 const SIZE: Record<NodeType, number> = { goal: 42, direction: 34, course: 30, skill: 28, knowledge: 23, practice: 20 };
 const STRENGTH: Record<VisualState, number> = {
@@ -6,10 +7,27 @@ const STRENGTH: Record<VisualState, number> = {
   downstream: 1.05, lateral: 0.9, selected: 1.3, recommendedPath: 1.1, searchMatch: 1.2,
 };
 
-export function neuronAppearance(type: NodeType, state: VisualState, hovered = false) {
+const LEARNING_EMPHASIS: Record<LearningState, { size: number; strength: number }> = {
+  unknown: { size: 1, strength: 1 },
+  learning: { size: 1.03, strength: 1.04 },
+  'needs-reinforcement': { size: 1.14, strength: 1.2 },
+  'needs-verification': { size: 1.09, strength: 1.14 },
+  verified: { size: 1.05, strength: 1.1 },
+};
+
+export const LEARNING_STATE_COLORS: Record<LearningState, string> = {
+  unknown: '#c8edff',
+  learning: '#b9eafa',
+  'needs-reinforcement': '#e3a097',
+  'needs-verification': '#d7c68a',
+  verified: '#a6dec1',
+};
+
+export function neuronAppearance(type: NodeType, state: VisualState, hovered = false, learningState: LearningState = 'unknown') {
+  const learning = LEARNING_EMPHASIS[learningState];
   return {
-    size: SIZE[type] * (state === 'selected' ? 1.35 : hovered ? 1.2 : 1),
-    strength: Math.max(STRENGTH[state], hovered ? 1.2 : 0),
+    size: SIZE[type] * (state === 'selected' ? 1.35 : hovered ? 1.2 : 1) * learning.size,
+    strength: Math.max(STRENGTH[state], hovered ? 1.2 : 0) * learning.strength,
   };
 }
 

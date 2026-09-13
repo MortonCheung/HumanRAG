@@ -23,7 +23,7 @@ function nodeOf(nodeId: string) {
 
 export function recommendNextTeaching(learnerId: string): TeachingRecommendation | null {
   const recommendation = getLearningRecommendation(learnerId);
-  const node = recommendation ? nodeOf(recommendation.nodeId) : undefined;
+  const node = recommendation ? nodeOf(recommendation.pointId) : undefined;
   const unit = node ? contentRepository.getTeachingUnitForNode(node.id) : undefined;
   if (!recommendation || !node || !unit) return null;
   return { unitId: unit.id, nodeId: node.id, nodeName: node.name, branchId: node.branchId, reason: recommendation.reasons.join(' '), estimatedMinutes: unit.estimatedMinutes };

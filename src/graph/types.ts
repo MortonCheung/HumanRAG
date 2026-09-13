@@ -61,6 +61,7 @@ export interface SceneNode extends KnowledgeNode {
   coreRadius: number;
   haloRadius: number;
   propagationDelay: number;
+  learningState: LearningState;
 }
 
 export interface SceneEdge extends KnowledgeEdge {
@@ -79,3 +80,4 @@ export interface SceneModel {
   downstreamNodeIds: Set<string>;
   lateralNodeIds: Set<string>;
 }
+import type { LearningState } from '../domain/learning/deriveLearningState';

@@ -15,6 +15,11 @@
 .tree-panel__header h1, .tree-point-detail h1 { margin: 0; font-size: clamp(28px, 2.8vw, 43px); font-weight: 500; letter-spacing: -.055em; line-height: 1.1; }
 .tree-panel__header > p:not(.tree-panel-kicker), .tree-point-detail__description { margin: 17px 0 0; color: var(--it-text-soft); font-size: 13px; line-height: 1.75; }
 .tree-panel__header > span { display: block; margin-top: 15px; color: var(--it-text-faint); font: 10px/1.5 var(--it-mono); }
+.tree-recommendation { width: 100%; min-height: 72px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 5px 12px; margin-top: 22px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--it-accent) 36%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--it-accent) 5%, transparent); color: var(--it-text); text-align: left; }
+.tree-recommendation > span { color: var(--it-accent); font: 9px/1 var(--it-mono); letter-spacing: .08em; }
+.tree-recommendation > strong { grid-column: 1; font-size: 14px; font-weight: 560; }
+.tree-recommendation > small { grid-column: 1; color: var(--it-text-soft); font-size: 10px; line-height: 1.55; }
+.tree-recommendation > svg { grid-column: 2; grid-row: 1 / 4; align-self: center; color: var(--it-text-faint); }
 .tree-panel-search { min-height: 42px; display: flex; align-items: center; gap: 9px; margin-top: 22px; padding: 0 11px; border: 1px solid var(--it-rule); border-radius: 7px; color: var(--it-text-faint); }
 .tree-panel-search:focus-within { border-color: var(--it-accent); color: var(--it-text-soft); }
 .tree-panel-search input { min-width: 0; width: 100%; height: 40px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--it-text); font-size: 12px; }
@@ -42,6 +47,13 @@
 .tree-point-detail { position: absolute; inset: 0; overflow-y: auto; background: rgb(10 13 19 / .99); }
 .tree-workspace-back { margin: 0 0 34px; padding: 7px 0; background: transparent; color: var(--it-text-soft); font-size: 11px; }
 .tree-workspace-back:hover { color: var(--it-text); }
+.tree-point-detail__state { display: inline-flex; min-height: 28px; align-items: center; margin: 20px 0 0; padding: 0 9px; border: 1px solid var(--it-rule); border-radius: 999px; color: var(--it-text-soft); font: 9px/1 var(--it-mono); }
+.tree-point-detail__state--needs-reinforcement { border-color: rgb(227 160 151 / .36); color: #e3a097; }
+.tree-point-detail__state--needs-verification { border-color: rgb(215 198 138 / .36); color: #d7c68a; }
+.tree-point-detail__state--verified { border-color: rgb(166 222 193 / .32); color: #a6dec1; }
+.tree-point-detail__recommendation { margin-top: 26px; padding: 18px 0; border-block: 1px solid var(--it-rule); }
+.tree-point-detail__recommendation h2 { margin: 0 0 10px; font-size: 12px; font-weight: 560; }
+.tree-point-detail__recommendation ul { margin: 0; padding-left: 18px; color: var(--it-text-soft); font-size: 11px; line-height: 1.7; }
 .tree-point-detail__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 30px 0 0; padding: 1px; background: var(--it-rule); }
 .tree-point-detail__facts > div { display: grid; gap: 8px; padding: 15px; background: var(--it-bg); }
 .tree-point-detail__facts dt { color: var(--it-text-faint); font-size: 9px; }

@@ -19,7 +19,7 @@ describe('flat, persistent page actions', () => {
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     const router = createMemoryRouter([{ element: <AppShell />, children: [
       { path: '/library', element: <WorkspaceHeader title="知识库" actions={<button onClick={action}>当前操作</button>} /> },
-      { path: '/progress', element: <WorkspaceHeader title="学习记录" /> },
+      { path: '/progress', element: <WorkspaceHeader title="学习证据" /> },
     ] }], { initialEntries: ['/library'] });
     render(<RouterProvider router={router} />);
     const resize = async (next: boolean) => act(() => { wide = next; listeners.forEach((listener) => listener()); });

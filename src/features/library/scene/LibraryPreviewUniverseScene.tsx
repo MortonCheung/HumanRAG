@@ -11,6 +11,9 @@ import { useSpatialViewport } from '../../spatial/SpatialViewport';
 import { useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
 import { buildPreviewTreeGraph, PreviewTreeGroup, type PreviewTreeGraph } from './PreviewTreeGroup';
 import { buildTreePreviewAnchors } from './treePreviewLayout';
+import { deriveLearningStateFromEvidence } from '../../../domain/learning/deriveLearningState';
+import { useProgressStore } from '../../../store/progressStore';
+import { useUserStore } from '../../../store/userStore';
 
 interface PreviewCameraState {
   x: number;
@@ -33,6 +36,8 @@ export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'li
   const selectPoint = useSpatialStageStore((state) => state.selectTreePoint);
   const hoverPoint = useSpatialStageStore((state) => state.hoverTreePoint);
   const handoffTreeId = useGoalTreeTransitionStore((state) => state.phase === 'handoff' ? state.treeId : null);
+  const learnerId = useUserStore((state) => state.activeProfileId);
+  const evidence = useProgressStore((state) => state.evidenceRecords);
   const domain = useMemo(() => migrateV9(), []);
   const pointsById = useMemo(() => new Map(domain.points.map((point) => [point.id, point])), [domain.points]);
   const trees = useMemo(() => {
@@ -44,6 +49,7 @@ export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'li
     tree.pointIds.map((pointId) => pointsById.get(pointId)).filter((point): point is NonNullable<typeof point> => Boolean(point)),
     domain.relations,
   )), [domain.relations, pointsById, trees]);
+  const learningStates = useMemo(() => new Map(domain.points.map((point) => [point.id, deriveLearningStateFromEvidence(point.id, learnerId, evidence)] as const)), [domain.points, evidence, learnerId]);
   const anchors = useMemo(() => buildTreePreviewAnchors(trees.map((tree) => tree.id)), [trees]);
   const [instanceId] = useState(() => `tree-universe-${++previewUniverseInstance}`);
   const { gl } = useThree();
@@ -68,6 +74,7 @@ export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'li
           hoveredPointId={graph.tree.id === selectedTreeId ? hoveredPointId : null}
           onSelectPoint={selectPoint}
           onHoverPoint={hoverPoint}
+          learningStates={learningStates}
         />
       ))}
       <LibraryPreviewCamera

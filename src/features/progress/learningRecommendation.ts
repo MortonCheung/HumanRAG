@@ -9,7 +9,8 @@ export interface RecommendationNode {
 }
 
 export interface LearningRecommendation {
-  nodeId: string;
+  pointId: string;
+  score: number;
   reasons: string[];
 }
 
@@ -22,6 +23,14 @@ export interface RecommendationInput {
 
 const PRIORITY: Record<LearningStatus, number> = {
   'needs-reinforcement': 1, 'needs-verification': 2, learning: 3, unknown: 4, verified: 5,
+};
+
+const PRIORITY_SCORE: Record<LearningStatus, number> = {
+  'needs-reinforcement': 90,
+  'needs-verification': 72,
+  learning: 54,
+  unknown: 36,
+  verified: 0,
 };
 
 /** One deterministic decision for the path, Inspector, welcome and practice planner. */
@@ -64,6 +73,13 @@ export function recommendLearningNode({ learnerId, nodes, evidence, remediationT
     events.add(entry.eventId!);
     misconceptions.set(entry.misconceptionId, events);
   }
-  if ([...misconceptions.values()].some((events) => events.size >= 2)) reasons.push('同一误区在实际作答中出现了不止一次。');
-  return { nodeId: selected.id, reasons };
+  const repeatedMisconception = [...misconceptions.values()].some((events) => events.size >= 2);
+  if (repeatedMisconception) reasons.push('同一误区在实际作答中出现了不止一次。');
+  // A transparent priority value, not a mastery probability. It lets every
+  // surface order the same recommendation without reimplementing the policy.
+  const score = PRIORITY_SCORE[status]
+    + (hasRemediation(selected) ? 20 : 0)
+    + (repeatedMisconception ? 8 : 0)
+    + (selected.id !== requested.id ? 6 : 0);
+  return { pointId: selected.id, score, reasons };
 }

@@ -19,4 +19,13 @@ describe('emissive neuron appearance', () => {
     expect(neuronAppearance('knowledge', 'selected').strength).toBeGreaterThan(idle.strength);
     expect(neuronAppearance('knowledge', 'contextual')).toEqual(idle);
   });
+  it('combines learning evidence with spatial relevance without erasing either signal', () => {
+    const baseline = neuronAppearance('knowledge', 'contextual', false, 'unknown');
+    const reinforcement = neuronAppearance('knowledge', 'contextual', false, 'needs-reinforcement');
+    const selected = neuronAppearance('knowledge', 'selected', false, 'needs-reinforcement');
+    expect(reinforcement.size).toBeGreaterThan(baseline.size);
+    expect(reinforcement.strength).toBeGreaterThan(baseline.strength);
+    expect(selected.strength).toBeGreaterThan(reinforcement.strength);
+    expect(selected.size).toBeLessThan(60);
+  });
 });

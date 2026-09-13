@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { TransitionLink as Link, usePageNavigate } from '../../../app/pageNavigation';
 import { useLocation } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useUserStore } from '../../../store/userStore';
-import { useProgressStore, learningStatusFromEvidence } from '../../../store/progressStore';
+import { useProgressStore } from '../../../store/progressStore';
 import { contentRepository } from '../../../services/content/ContentRepository';
 import { TCP_FRAGMENTS, TCP_REASONS, TCP_VERSION } from '../../../data/v6/handcrafted/tcpLesson';
 import { MISCONCEPTIONS_BY_ID } from '../../../data/v6/catalogs/misconceptionCatalog';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import type { EvidenceRecord } from '../../../data/v6/schemas/progressSchema';
+import { deriveLearningStateFromEvidence, type LearningState } from '../../../domain/learning/deriveLearningState';
+import { BRANCH_TO_TREE_ID } from '../../../domain/knowledge/catalog';
+import { ROUTES } from '../../../app/routes';
+import { getLearningRecommendation } from '../../../ai/learningRecommendation';
 import '../progress.css';
 
 const SOURCE = { diagnostic: '尝试', 'guided-practice': '引导练习', 'independent-check': '独立验证', practice: '练习' };
@@ -22,9 +26,22 @@ function EvidenceEntry({ record }: { record: EvidenceRecord }) {
   const fragment = Object.values(TCP_FRAGMENTS).find((item) => item.id === record.fragmentId);
   return <article className="learning-record">
     <div className="learning-record__heading"><div><strong>{contentRepository.getNode(record.nodeId)?.name ?? record.nodeId}</strong><span>{SOURCE[record.source]} · {record.result === 'correct' ? '正确' : record.result === 'partial' ? '部分正确' : '需巩固'} · {HELP[record.assistance ?? 'unknown']}{record.firstExposure === false ? ' · 已曝光任务' : record.firstExposure === true ? ' · 首次任务' : ''}</span></div><time dateTime={record.createdAt}>{new Date(record.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time></div>
-    {record.snapshot ? <details><summary>查看作答与依据</summary><div className="learning-record__snapshot"><p>{record.snapshot.stem}</p><dl><dt>你的作答</dt><dd>{formatResponse(record.snapshot.selected)}</dd><dt>当时的判断依据</dt><dd>{record.snapshot.explanation}</dd>{fragment && <><dt>所用片段</dt><dd>{fragment.title}</dd></>}{record.decisionReason && <><dt>下一步选择依据</dt><dd>{record.decisionReason}</dd></>}</dl><span className="learning-record__version">{record.contentVersion ?? '版本未知'}{record.attempt ? ` · 第 ${record.attempt} 轮` : ''}</span>{record.contentVersion === TCP_VERSION && <a href="https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1" target="_blank" rel="noreferrer">RFC 5681 §3.1 · 逐 RTT 简化教学模型</a>}</div></details> : <p className="learning-record__legacy">旧记录缺少内容版本、帮助与曝光信息，不计为独立验证通过。</p>}
+    {record.snapshot && <details><summary>查看作答与依据</summary><div className="learning-record__snapshot"><p>{record.snapshot.stem}</p><dl><dt>你的作答</dt><dd>{formatResponse(record.snapshot.selected)}</dd><dt>当时的判断依据</dt><dd>{record.snapshot.explanation}</dd>{fragment && <><dt>所用片段</dt><dd>{fragment.title}</dd></>}{record.decisionReason && <><dt>下一步选择依据</dt><dd>{record.decisionReason}</dd></>}</dl><span className="learning-record__version">{record.contentVersion ?? '版本未知'}{record.attempt ? ` · 第 ${record.attempt} 轮` : ''}</span>{record.contentVersion === TCP_VERSION && <a href="https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1" target="_blank" rel="noreferrer">RFC 5681 §3.1 · 逐 RTT 简化教学模型</a>}</div></details>}
   </article>;
 }
+
+interface PointEvidenceState {
+  pointId: string;
+  state: LearningState;
+  assisted: boolean;
+}
+
+const STATUS_GROUPS: Array<{ title: string; matches: (item: PointEvidenceState) => boolean }> = [
+  { title: '已独立验证', matches: (item) => item.state === 'verified' },
+  { title: '需要巩固', matches: (item) => item.state === 'needs-reinforcement' },
+  { title: '辅助下完成', matches: (item) => item.state === 'needs-verification' && item.assisted },
+  { title: '待重新验证', matches: (item) => (item.state === 'needs-verification' && !item.assisted) || item.state === 'learning' },
+];
 
 export function ProgressPage() {
   const navigate = usePageNavigate();
@@ -35,21 +52,60 @@ export function ProgressPage() {
   const records = useProgressStore((state) => state.evidenceRecords);
   const tasks = useProgressStore((state) => state.remediationTasks);
   const storageError = useProgressStore((state) => state.storageError);
-  const [showLegacy, setShowLegacy] = useState(false);
-  const own = useMemo(() => records.filter((record) => record.learnerId === learnerId), [records, learnerId]);
-  const live = own.filter((record) => record.eventId && record.snapshot);
-  const visible = (showLegacy ? own : live).slice().reverse();
-  const nodeIds = [...new Set(live.slice().reverse().map((record) => record.nodeId))];
-  const pending = tasks.filter((task) => task.learnerId === learnerId && task.status !== 'done' && live.some((record) => record.misconceptionId === task.misconceptionId));
+  const own = useMemo(() => records.filter((record) => record.learnerId === learnerId && record.eventId && record.snapshot), [records, learnerId]);
+  const visible = useMemo(() => own.slice().reverse(), [own]);
+  const pointStates = useMemo(() => [...new Set(visible.map((record) => record.nodeId))].map((pointId) => {
+    const latest = visible.find((record) => record.nodeId === pointId);
+    return {
+      pointId,
+      state: deriveLearningStateFromEvidence(pointId, learnerId, records),
+      assisted: Boolean(latest?.result === 'correct' && (latest.assistance === 'hint' || latest.assistance === 'demonstration' || latest.firstExposure === false)),
+    } satisfies PointEvidenceState;
+  }), [learnerId, records, visible]);
+  const pending = tasks.filter((task) => task.learnerId === learnerId && task.status !== 'done'
+    && own.some((record) => record.misconceptionId === task.misconceptionId && task.unitId === `tu-${record.nodeId}`));
+  const recommendation = useMemo(() => getLearningRecommendation(learnerId), [learnerId, records, tasks]);
+  const recommendationAction = recommendation
+    ? actionForState(deriveLearningStateFromEvidence(recommendation.pointId, learnerId, records))
+    : 'study';
   return <div className="page">
-    <WorkspaceHeader title="学习记录" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} actions={<label className="record-source-filter"><input type="checkbox" checked={showLegacy} onChange={(event) => setShowLegacy(event.target.checked)} />包含旧记录与演示数据</label>} />
-    <main className="learning-records"><header className="learning-records__intro"><h1>学习记录</h1><span>{live.length} 条实际作答 · {nodeIds.length} 个知识点</span></header>
+    <WorkspaceHeader title="学习证据" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
+    <main className="learning-records">
+      <header className="learning-records__intro"><p className="tree-panel-kicker">学习证据</p><h1>提示后做对，不等于独立掌握。</h1><p>这里只保留可核验的作答、帮助情况、任务曝光和下一步依据。</p></header>
       {storageError && <p className="lesson-save-error" role="alert">{storageError}</p>}
-      <div className="learning-records__body"><section aria-label="作答记录"><h2>最近作答</h2>{visible.length ? visible.slice(0, 80).map((record) => <EvidenceEntry key={record.id} record={record} />) : <div className="learning-records__empty"><p>还没有实际作答。</p><Link className="text-button" to="/library">选择知识点 <ArrowRight size={16} /></Link></div>}{visible.length > 80 && <p className="learning-record__legacy">展示最近 80 条；更早的记录仍保留在本地。</p>}</section>
-        <aside className="learning-records__next"><h2>当前状态</h2>{nodeIds.length ? nodeIds.map((nodeId) => { const status = learningStatusFromEvidence(records, nodeId, learnerId); return <div className="record-node-status" key={nodeId}><strong>{contentRepository.getNode(nodeId)?.name ?? nodeId}</strong><span className={`record-node-status--${status.status}`}>{status.label}</span><small>{status.updatedAt ? new Date(status.updatedAt).toLocaleDateString('zh-CN') : ''}</small></div>; }) : <p className="progress-empty">尚未验证</p>}
-          {pending.length > 0 && <section className="record-next-steps"><h2>接下来</h2>{pending.slice(0, 5).map((task) => { const unit = contentRepository.getTeachingUnit(task.unitId); const label = MISCONCEPTIONS_BY_ID.get(task.misconceptionId)?.name ?? TCP_FRAGMENTS[task.misconceptionId.replace('tcp-', '') as keyof typeof TCP_FRAGMENTS]?.label; return <div key={task.id}><strong>{label ?? '待巩固的步骤'}</strong><p>{task.reason}</p>{unit && <Link className="text-button" to={`/teach/${unit.id}`}>继续学习 <ArrowRight size={16} /></Link>}</div>; })}</section>}
-        </aside>
+      <section className="evidence-status" aria-labelledby="evidence-status-title"><h2 id="evidence-status-title">当前学习状态</h2><div className="evidence-status__groups">
+        {STATUS_GROUPS.map((group) => { const items = pointStates.filter(group.matches); return <section key={group.title}><h3>{group.title}</h3>{items.length ? items.map((item) => <EvidenceStatusRow key={item.pointId} item={item} />) : <p>暂无</p>}</section>; })}
+      </div></section>
+      <div className="learning-records__body">
+        <div className="learning-records__actions">
+          <section className="evidence-misconceptions"><h2>当前待解决误区</h2>{pending.length ? pending.slice(0, 5).map((task) => {
+            const label = MISCONCEPTIONS_BY_ID.get(task.misconceptionId)?.name ?? TCP_FRAGMENTS[task.misconceptionId.replace('tcp-', '') as keyof typeof TCP_FRAGMENTS]?.label ?? '待巩固的判断';
+            const pointId = task.unitId.replace(/^tu-/, '');
+            return <article key={task.id}><strong>{label}</strong><p>{task.reason}</p><Link className="text-button" to={actionPath(pointId, 'teach')}>带我学 <ArrowRight size={16} /></Link></article>;
+          }) : <p className="progress-empty">当前没有待处理误区。</p>}</section>
+          <section className="evidence-next"><h2>下一步</h2>{recommendation ? <><strong>{contentRepository.getNode(recommendation.pointId)?.name ?? recommendation.pointId}</strong><p>{recommendation.reasons.join(' ')}</p><Link className="text-button text-button--primary" to={actionPath(recommendation.pointId, recommendationAction)}>{recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '重新验证' : '从这里继续'} <ArrowRight size={16} /></Link></> : <p className="progress-empty">当前范围已完成独立验证，可从知识树选择新的方向。</p>}</section>
+        </div>
+        <section className="recent-evidence" aria-labelledby="recent-evidence-title"><h2 id="recent-evidence-title">最近形成的证据</h2>{visible.length ? visible.slice(0, 80).map((record) => <EvidenceEntry key={record.id} record={record} />) : <div className="learning-records__empty"><p>还没有可核验的作答证据。</p><Link className="text-button" to="/library">选择知识点 <ArrowRight size={16} /></Link></div>}{visible.length > 80 && <p className="learning-record__legacy">展示最近 80 条；更早的证据仍保留在本地。</p>}</section>
       </div>
     </main>
   </div>;
+}
+
+function EvidenceStatusRow({ item }: { item: PointEvidenceState }) {
+  const action = actionForState(item.state);
+  const label = action === 'teach' ? '巩固' : action === 'verify' ? '重新验证' : item.state === 'verified' ? '查看' : '继续学习';
+  return <Link to={actionPath(item.pointId, action)}><span>{contentRepository.getNode(item.pointId)?.name ?? item.pointId}</span><small>{label}</small><ArrowRight size={14} aria-hidden="true" /></Link>;
+}
+
+function actionForState(state: LearningState): 'study' | 'teach' | 'verify' {
+  return state === 'needs-reinforcement' ? 'teach' : state === 'verified' || state === 'unknown' || state === 'learning' ? 'study' : 'verify';
+}
+
+function actionPath(pointId: string, action: 'study' | 'teach' | 'verify') {
+  const node = contentRepository.getNode(pointId);
+  if (!node) return ROUTES.library;
+  const treeId = BRANCH_TO_TREE_ID[node.branchId];
+  return action === 'teach' ? ROUTES.pointTeach('computer', treeId, pointId)
+    : action === 'verify' ? ROUTES.pointVerify('computer', treeId, pointId)
+      : ROUTES.pointStudy('computer', treeId, pointId);
 }

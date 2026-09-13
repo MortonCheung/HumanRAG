@@ -92,7 +92,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     };
   }, [wide, appOpen, actionsOpen]);
 
-  const fallbackTitle = pathname === ROUTES.library ? '计算机科学' : pathname === ROUTES.progress ? '学习记录' : pathname === ROUTES.universe ? '知识空间' : '';
+  const fallbackTitle = pathname === ROUTES.library ? '计算机科学' : pathname === ROUTES.progress ? '学习证据' : pathname === ROUTES.universe ? '知识空间' : '';
 
   return (
     <motion.header

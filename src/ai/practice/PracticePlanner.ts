@@ -50,8 +50,8 @@ export function weakNodes(learnerId: string, limit = 6): string[] {
   while (remaining.length && result.length < limit) {
     const recommendation = getLearningRecommendation(learnerId, remaining);
     if (!recommendation) break;
-    result.push(recommendation.nodeId);
-    remaining = remaining.filter((id) => id !== recommendation.nodeId);
+    result.push(recommendation.pointId);
+    remaining = remaining.filter((id) => id !== recommendation.pointId);
   }
   return result;
 }
@@ -93,7 +93,7 @@ function buildDailyPlan(learnerId: string): PracticePlan {
   const rng = new SeededRandom(`daily-${learnerId}`);
   const pickedWeak = rng.pickMany(weakQuestionIds, 8);
   const pickedGoal = rng.pickMany(goalQuestionIds, 12);
-  const recommendedQuestions = recommendation ? contentRepository.getQuestionsForNode(recommendation.nodeId).map((question) => question.id).slice(0, 4) : [];
+  const recommendedQuestions = recommendation ? contentRepository.getQuestionsForNode(recommendation.pointId).map((question) => question.id).slice(0, 4) : [];
   const questionIds = dedupe([...recommendedQuestions, ...pickedWeak, ...pickedGoal]).slice(0, 20);
 
   const weakNames = weak

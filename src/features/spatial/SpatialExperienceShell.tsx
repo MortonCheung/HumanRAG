@@ -14,6 +14,10 @@ import { SpatialViewportProvider } from './SpatialViewport';
 import { SpatialStageCanvas } from './SpatialStageCanvas';
 import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
 import { canStartGoalTreeHandoff, useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
+import { useProgressStore } from '../../store/progressStore';
+import { useUserStore } from '../../store/userStore';
+import { deriveLearningStateFromEvidence } from '../../domain/learning/deriveLearningState';
+import { knowledgeGraph } from '../../data/knowledgeGraph';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -50,6 +54,8 @@ function SpatialExperience() {
   const selectedNodeId = useKnowledgeStore((state) => state.selectedNodeId);
   const learningPath = useKnowledgeStore((state) => state.learningPath);
   const relationMode = useKnowledgeStore((state) => state.relationMode);
+  const learnerId = useUserStore((state) => state.activeProfileId);
+  const evidence = useProgressStore((state) => state.evidenceRecords);
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
@@ -63,9 +69,10 @@ function SpatialExperience() {
   const resetExtraction = useGoalTreeTransitionStore((state) => state.reset);
 
   const model = useMemo(() => {
+    const learningStates = new Map(knowledgeGraph.nodes.map((node) => [node.id, deriveLearningStateFromEvidence(node.id, learnerId, evidence)] as const));
     return buildSceneModel({ goalId: selectedGoalId, selectedNodeId,
-      hoveredNodeId: null, learningPath, focused: graphPhase !== 'overview', relationMode });
-  }, [graphPhase, learningPath, relationMode, selectedGoalId, selectedNodeId]);
+      hoveredNodeId: null, learningPath, focused: graphPhase !== 'overview', relationMode, learningStates });
+  }, [evidence, graphPhase, learnerId, learningPath, relationMode, selectedGoalId, selectedNodeId]);
   const finishEntry = useCallback(() => {
     if (!mounted.current) return;
     entryFocusPending.current = true;

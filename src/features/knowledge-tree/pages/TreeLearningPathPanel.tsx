@@ -2,9 +2,10 @@ import { ArrowRight, MagnifyingGlass } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getLearningRecommendation } from '../../../ai/learningRecommendation';
+import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS } from '../../../domain/learning/deriveLearningState';
 import { getPointsForTree, getRegistry, isPointActionable } from '../../../domain/knowledge/selectors';
 import { contentRepository } from '../../../services/content/ContentRepository';
-import { learningStatusFromEvidence, useProgressStore } from '../../../store/progressStore';
+import { useProgressStore } from '../../../store/progressStore';
 import { useUserStore } from '../../../store/userStore';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { PointGroup } from '../components/PointGroup';
@@ -28,7 +29,7 @@ export function TreeLearningPathPanel() {
     () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
     [data.points, evidence, learnerId, remediationTasks],
   );
-  const readyCount = data.points.filter((point) => contentRepository.getTeachingUnitForNode(point.id)).length;
+  const recommendedPoint = data.points.find((point) => point.id === recommendation?.pointId);
 
   return (
     <section className="tree-panel tree-path-panel">
@@ -36,20 +37,22 @@ export function TreeLearningPathPanel() {
         <p className="tree-panel-kicker">学习路径</p>
         <h1>沿知识关系前进</h1>
         <p>从课程脉络中选择一个节点，查看它在知识树中的位置与下一步。</p>
-        <span>{readyCount} 个节点已有教学内容</span>
+        {recommendation && recommendedPoint && <button className="tree-recommendation" type="button" onClick={() => selectPoint(recommendation.pointId)}>
+          <span>当前建议</span><strong>{recommendedPoint.name}</strong><small>{recommendation.reasons.slice(0, 2).join(' ')}</small><ArrowRight size={17} aria-hidden="true" />
+        </button>}
         <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索学习路径" placeholder="搜索知识点" /></label>
       </header>
       <div className="tree-panel__groups">
         {data.groups.map((group) => <PointGroup key={group.id} group={group}
-          defaultOpen={group.points.some((point) => point.id === recommendation?.nodeId)}
+          defaultOpen={group.points.some((point) => point.id === recommendation?.pointId)}
           forceOpen={Boolean(query.trim()) || group.points.some((point) => point.id === selectedPointId)}
         >{(point) => {
             const available = Boolean(contentRepository.getTeachingUnitForNode(point.id));
-            const status = learningStatusFromEvidence(evidence, point.id, learnerId);
+            const state = deriveLearningStateFromEvidence(point.id, learnerId, evidence);
             return <li key={point.id}>
               <button type="button" onClick={() => selectPoint(point.id)}>
                 <i style={{ background: point.color }} aria-hidden="true" />
-                <span><strong>{point.name}</strong><small>{available ? status.label : '教学内容待补充'}</small></span>
+                <span><strong>{point.name}</strong><small>{available ? LEARNING_STATE_LABELS[state] : '教学内容待补充'}</small></span>
                 <ArrowRight size={17} aria-hidden="true" />
               </button>
             </li>;

@@ -10,6 +10,7 @@ import { NeuronStar } from '../../../scene/NodePointField';
 import { toCustomEdges, toCustomNodes } from '../treeGraphAdapter';
 import { TreePreviewEdges } from './TreePreviewEdges';
 import { TREE_PREVIEW_ROTATION_SPEED, treePreviewRotation, treeRotationPhase } from './treePreviewLayout';
+import type { LearningState } from '../../../domain/learning/deriveLearningState';
 
 export interface PreviewTreeGraph {
   tree: KnowledgeTree;
@@ -28,7 +29,7 @@ export function buildPreviewTreeGraph(tree: KnowledgeTree, points: KnowledgePoin
 }
 
 export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = false, autoRotate = true, interactive = false,
-  reportRotation = false, selectedPointId = null, hoveredPointId = null, onSelectPoint, onHoverPoint }: {
+  reportRotation = false, selectedPointId = null, hoveredPointId = null, onSelectPoint, onHoverPoint, learningStates }: {
   graph: PreviewTreeGraph;
   anchor: THREE.Vector3;
   motionAllowed: boolean;
@@ -40,6 +41,7 @@ export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = 
   hoveredPointId?: string | null;
   onSelectPoint?: (pointId: string) => void;
   onHoverPoint?: (pointId: string | null) => void;
+  learningStates?: ReadonlyMap<string, LearningState>;
 }) {
   const rotation = useRef<THREE.Group>(null);
   const wasHeld = useRef(holdRotation);
@@ -99,7 +101,7 @@ export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = 
           <TreePreviewEdges edges={graph.edges} positions={graph.positions} />
           {graph.nodes.map((node) => (
             <group key={node.id} position={graph.positions.get(node.id) ?? [node.x, node.y, node.z ?? 0]}>
-              <NeuronStar color={node.color} selected={node.id === selectedPointId || node.id === hoveredPointId} />
+              <NeuronStar color={node.color} selected={node.id === selectedPointId || node.id === hoveredPointId} learningState={learningStates?.get(node.id)} />
               {interactive && <mesh
                 onPointerOver={(event) => { event.stopPropagation(); onHoverPoint?.(node.id); }}
                 onPointerOut={(event) => { event.stopPropagation(); onHoverPoint?.(null); }}

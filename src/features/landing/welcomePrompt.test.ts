@@ -9,7 +9,7 @@ const task: RemediationTask = { id: 't', learnerId: 'a', unitId: 'tu-p', misconc
 const input = { learnerId: 'a', evidence: [], tasks: [], variant: 0 };
 describe('手工欢迎文案', () => {
   it('优先补救，其次最近学习，再其次推荐', () => {
-    const recommendation = { nodeId: 'p', reasons: ['实际原因'] };
+    const recommendation = { pointId: 'p', score: 36, reasons: ['实际原因'] };
     expect(welcomePrompt({ ...input, evidence: [record], tasks: [task], recommendation }).kind).toBe('remediation');
     expect(welcomePrompt({ ...input, evidence: [record], recommendation }).kind).toBe('recent');
     expect(welcomePrompt({ ...input, recommendation }).kind).toBe('recommended');

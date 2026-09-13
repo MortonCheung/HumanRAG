@@ -4,14 +4,18 @@ import { ArrowRight, BookOpenText, NotePencil, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion, type HTMLMotionProps } from 'motion/react';
 import { usePageNavigate as useNavigate } from '../app/pageNavigation';
 import { buildCausalCorridor } from '../graph/causalCorridor';
-import { nodesById } from '../data/knowledgeGraph';
+import { knowledgeGraph, nodesById } from '../data/knowledgeGraph';
 import { getPathToNode } from '../graph/relevance';
 import type { KnowledgeNode } from '../graph/types';
 import { colorForBranch } from '../design/domainPalette';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { ROUTES } from '../app/routes';
 import { BRANCH_TO_TREE_ID } from '../domain/knowledge/catalog';
+import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS } from '../domain/learning/deriveLearningState';
+import { getLearningRecommendation } from '../ai/learningRecommendation';
 import { useSpatialOccluder } from '../features/spatial/SpatialViewport';
+import { useProgressStore } from '../store/progressStore';
+import { useUserStore } from '../store/userStore';
 
 const PANEL_EASE = MOTION.ease.out;
 
@@ -34,6 +38,9 @@ export function NodeInspector() {
   const [previewNodeId, setPreviewNodeId] = useState<string | null>(hoveredNodeId);
   const close = useKnowledgeStore((state) => state.closeNodeDetail);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
+  const learnerId = useUserStore((state) => state.activeProfileId);
+  const evidence = useProgressStore((state) => state.evidenceRecords);
+  const remediationTasks = useProgressStore((state) => state.remediationTasks);
 
   useEffect(() => {
     if (selectedNodeId) return undefined;
@@ -51,6 +58,12 @@ export function NodeInspector() {
   const viewport = useSpatialOccluder('inspector', expanded);
   const treeId = node ? BRANCH_TO_TREE_ID[node.branchId] : undefined;
   const actionable = node?.type === 'knowledge' || node?.type === 'practice';
+  const learningState = node && actionable ? deriveLearningStateFromEvidence(node.id, learnerId, evidence) : null;
+  const recommendation = useMemo(() => {
+    if (!node || !actionable) return null;
+    const pointIds = knowledgeGraphPoints(node.branchId);
+    return getLearningRecommendation(learnerId, pointIds);
+  }, [actionable, evidence, learnerId, node, remediationTasks]);
 
   const relations = useMemo(() => {
     if (!node || !expanded) return null;
@@ -114,15 +127,17 @@ export function NodeInspector() {
                   <button
                     className="inspector-primary-action"
                     type="button"
-                    onClick={() => navigate(ROUTES.pointLearn('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}
+                    onClick={() => navigate(ROUTES.pointStudy('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}
                   >
-                    <BookOpenText size={15} weight="regular" /> 开始学习
+                    <BookOpenText size={15} weight="regular" /> 自主学习
                   </button>
-                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(ROUTES.pointPractice('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}>
-                    <NotePencil size={15} weight="regular" /> 练习这个知识点
+                  <button className="inspector-secondary-action" type="button" onClick={() => navigate(learningState === 'needs-reinforcement' ? ROUTES.pointTeach('computer', treeId, node.id) : ROUTES.pointVerify('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}>
+                    <NotePencil size={15} weight="regular" /> {learningState === 'needs-reinforcement' ? '带我学' : '验证掌握'}
                   </button>
                 </div>}
                 <div className="node-inspector__scroll">
+                  {learningState && <section className="inspector-section inspector-learning-state"><h3>学习状态</h3><strong>{LEARNING_STATE_LABELS[learningState]}</strong></section>}
+                  {recommendation?.pointId === node.id && <section className="inspector-section inspector-recommendation"><h3>为什么建议从这里继续</h3><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
                   {hasEditorialDescription(node.description) && <section className="inspector-section"><h3>概念</h3><p>{node.description}</p></section>}
                   <RelationSection title={`前置知识 ${relations.upstream.length}`} nodes={relations.upstream.slice(0, 6)} onSelect={selectNode} empty="这是当前路径的起点。" />
                   <RelationSection title={`后续知识 ${relations.downstream.length}`} nodes={relations.downstream.slice(0, 6)} onSelect={selectNode} empty="可以从这里延伸到新的技能或练习。" />
@@ -136,6 +151,12 @@ export function NodeInspector() {
       )}
     </AnimatePresence>
   );
+}
+
+function knowledgeGraphPoints(branchId: KnowledgeNode['branchId']) {
+  return knowledgeGraph.nodes
+    .filter((candidate) => candidate.branchId === branchId && (candidate.type === 'knowledge' || candidate.type === 'practice'))
+    .map((candidate) => candidate.id);
 }
 
 function RelationSection({ title, nodes, onSelect, empty }: { title: string; nodes: KnowledgeNode[]; onSelect: (id: string) => void; empty: string }) {

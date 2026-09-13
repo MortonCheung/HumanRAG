@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { buildCausalCorridor } from './causalCorridor';
 import { colorForBranch } from '../design/domainPalette';
+import type { LearningState } from '../domain/learning/deriveLearningState';
 
 const SPACE_SCALE: [number, number, number] = [1.22, 1.08, 1.22];
 const descendantsCache = new Map<string, Map<string, number>>();
@@ -33,6 +34,7 @@ export interface SceneModelInput {
   learningPath: string[];
   focused: boolean;
   relationMode?: 'primary' | 'all' | 'upstream' | 'downstream';
+  learningStates?: ReadonlyMap<string, LearningState>;
 }
 
 function descendants(seedId: string) {
@@ -146,7 +148,7 @@ function realPathEdgeIds(path: string[]) {
 }
 
 export function buildSceneModel(input: SceneModelInput): SceneModel {
-  const { goalId, selectedNodeId, hoveredNodeId, learningPath, focused, relationMode = 'primary' } = input;
+  const { goalId, selectedNodeId, hoveredNodeId, learningPath, focused, relationMode = 'primary', learningStates } = input;
   const activeDepth = goalId ? descendants(goalId) : new Map<string, number>();
   const corridor = selectedNodeId ? buildCausalCorridor(selectedNodeId) : null;
   const allUpstreamNodeIds = new Set(corridor?.upstreamNodeDepth.keys() ?? []);
@@ -200,6 +202,7 @@ export function buildSceneModel(input: SceneModelInput): SceneModel {
       coreRadius,
       haloRadius: Math.min(0.66, 0.2 + luminance * 0.4),
       propagationDelay,
+      learningState: learningStates?.get(node.id) ?? 'unknown',
     };
   });
 

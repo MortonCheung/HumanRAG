@@ -21,7 +21,8 @@ describe('统一可解释推荐', () => {
     const input = { learnerId: 'student', nodes, evidence, remediationTasks: [task] };
     const result = recommendLearningNode(input);
     expect(result).toEqual(recommendLearningNode({ ...input, nodes: [...nodes].reverse() }));
-    expect(result?.nodeId).toBe('target');
+    expect(result?.pointId).toBe('target');
+    expect(result?.score).toBe(110);
     expect(result?.reasons).toContain('前置知识已有独立验证记录。');
     expect(result?.reasons).toContain('已有与实际错答对应的补救任务。');
     expect(result?.reasons).toContain('最近作答尚未通过，需要巩固。');
@@ -29,7 +30,7 @@ describe('统一可解释推荐', () => {
 
   it('前置没有通过时，先推荐范围内的前置节点，不声称基础已满足', () => {
     const result = recommendLearningNode({ learnerId: 'student', nodes, evidence: [failure], remediationTasks: [task] });
-    expect(result?.nodeId).toBe('base');
+    expect(result?.pointId).toBe('base');
     expect(result?.reasons).toContain('先补「目标」所需的前置知识。');
     expect(result?.reasons.join('')).not.toContain('前置知识已有独立验证记录');
   });
@@ -47,7 +48,7 @@ describe('统一可解释推荐', () => {
 
   it('只在指定范围中推荐；范围外未验证前置只能如实说明', () => {
     const result = recommendLearningNode({ learnerId: 'student', nodes: [nodes[1]], evidence: [failure] });
-    expect(result?.nodeId).toBe('target');
+    expect(result?.pointId).toBe('target');
     expect(result?.reasons).toContain('部分前置知识尚未验证，建议先确认基础。');
   });
 
@@ -60,7 +61,7 @@ describe('统一可解释推荐', () => {
   it('循环关系不造成推荐死循环，且不声称前置已满足', () => {
     const cyclic = [{ ...nodes[0], prerequisiteIds: ['target'] }, nodes[1]];
     const result = recommendLearningNode({ learnerId: 'student', nodes: cyclic, evidence: [] });
-    expect(result?.nodeId).toBeDefined();
+    expect(result?.pointId).toBeDefined();
     expect(result?.reasons.join('')).toContain('尚未验证');
   });
 });

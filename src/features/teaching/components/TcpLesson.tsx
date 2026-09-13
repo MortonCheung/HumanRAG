@@ -5,7 +5,8 @@ import { ArrowRight, CaretLeft, CaretRight, Pause, Play } from '@phosphor-icons/
 import { useReducedMotion } from 'motion/react';
 import { TCP_FRAGMENTS, TCP_NODE_ID, TCP_RULES, TCP_VERSION, getTcpQuestion, getTcpTask, tcpResultKey, tcpWindows, type TcpDifficulty } from '../../../data/v6/handcrafted/tcpLesson';
 import { currentTcpTaskId, tcpEventId, useTeachingStore, type PracticeReturnContext } from '../../../store/teachingStore';
-import { useProgressStore, learningStatusFromEvidence } from '../../../store/progressStore';
+import { useProgressStore } from '../../../store/progressStore';
+import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS } from '../../../domain/learning/deriveLearningState';
 import { useUserStore } from '../../../store/userStore';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { ROUTES } from '../../../app/routes';
@@ -29,7 +30,7 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
   const question = getTcpQuestion(taskId ?? '');
   const eventId = session && task ? tcpEventId(session, task.id) : '';
   const hintShown = session?.hints.includes(eventId) ?? false;
-  const status = learningStatusFromEvidence(records, TCP_NODE_ID, learnerId);
+  const learningState = deriveLearningStateFromEvidence(TCP_NODE_ID, learnerId, records);
 
   useEffect(() => { useTeachingStore.getState().ensureTcpSession(practiceReturn); }, [learnerId, practiceReturn]);
   useEffect(() => { if (taskId) useTeachingStore.getState().presentTcpTask(); }, [taskId, session?.id, session?.attempt]);
@@ -43,7 +44,7 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
   const exit = () => navigate(parent.to, { state: parent.state });
   return (
     <div className="page tcp-page">
-      <WorkspaceHeader title="TCP 慢启动 · 带我学" backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} primaryAction={returnContext ? <Link className="context-nav__button context-nav__button--primary" to={returnContext.path}>继续原练习</Link> : undefined} />
+      <WorkspaceHeader title="TCP 慢启动 · 带我学" backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习证据</Link>} primaryAction={returnContext ? <Link className="context-nav__button context-nav__button--primary" to={returnContext.path}>继续原练习</Link> : undefined} />
       <main className="tcp-lesson">
         <header className="tcp-lesson__heading"><div><p className="tcp-eyebrow">计算机网络 <span aria-hidden="true">/</span> 约 8 分钟</p><h1 ref={lessonHeading} tabIndex={-1}>{session?.stage === 'teaching' ? TCP_FRAGMENTS[session.difficulty].title : session?.stage === 'independent' ? '换个条件，独立判断。' : session?.stage === 'complete' ? '本轮验证完成。' : session?.stage === 'paused' ? '先停在这里。' : '窗口，怎样一步步变大？'}</h1></div><span className="tcp-lesson__edition" aria-hidden="true">TCP<br />01</span></header>
         {session && <><ol className="tcp-phases" aria-label="本轮教学阶段">{PHASES.map((label, index) => <li key={label} className={index < PHASE_INDEX[session.stage] ? 'is-done' : ''} aria-current={index === PHASE_INDEX[session.stage] ? 'step' : undefined}><span aria-hidden="true">0{index + 1}</span>{label}</li>)}</ol><div className="tcp-decision" role="note"><span>为什么现在做这一步</span><p>{session.stage === 'ready' ? '先用一个具体窗口过程定位你的当前理解，再决定是否需要讲解。' : session.stage === 'independent' ? '讲解和提示已经收起；现在用两项新任务确认能否独立运用。' : session.stage === 'complete' ? '本轮两项新任务均独立完成，现在只汇总可核验的结果。' : session.stage === 'paused' ? session.pauseReason : session.decision}</p></div></>}
@@ -60,7 +61,7 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
             {session.feedback ? <div className="tcp-feedback" role="status"><strong>{session.feedback.correct ? hintShown ? '辅助下完成' : '本题正确' : '还需要调整'}</strong><p>{session.feedback.text}</p>{!session.feedback.correct && <p>{session.feedback.difficulty === 'unknown' ? '这个答案尚不足以确定原因。' : TCP_FRAGMENTS[session.feedback.difficulty].title}</p>}</div> : null}
             <div className="tcp-task__actions">{session.feedback ? <button className="text-button text-button--primary" onClick={store.advanceTcp} type="button">{session.stage === 'independent' && session.feedback.correct && session.feedback.independent ? session.taskIndex === 0 ? '下一项任务' : '查看本轮结果' : session.feedback.correct ? '继续' : '看关键一步'} <ArrowRight size={18} /></button> : <><button className="text-button text-button--primary" type="button" onClick={store.submitTcp}>提交判断 <ArrowRight size={18} /></button><button className="text-button text-button--ghost" type="button" disabled={hintShown} onClick={store.requestTcpHint}>{hintShown ? '已使用提示' : '需要提示'}</button></>}</div>
           </div><aside className="tcp-task__aside"><dl className="tcp-task__conditions"><div><dt>初始窗口</dt><dd>{task.initial}<small>MSS</small></dd></div><div><dt>慢启动门限</dt><dd>{task.threshold}<small>MSS</small></dd></div></dl><p className="tcp-eyebrow">任务边界</p><p>{session.stage === 'independent' ? '正向预测与观测判断，须在同一轮无帮助完成。' : '只处理无丢包、按 RTT 离散变化的简化情形。'}</p><details><summary>本例的范围</summary><p>第 0 轮为初始状态；每轮代表一个 RTT。题目给定初始窗口和门限。这里只验证无丢包情形。</p></details></aside>
-        </section> : <section className="tcp-complete"><span className={`tcp-status tcp-status--${status.status}`}>{status.label}</span><p>{session.stage === 'paused' ? session.pauseReason : '本轮的正向预测与观测判断均无帮助通过。这个结果只说明本次验证，不代表长期掌握。'}</p><div className="tcp-complete__facts">{session.answers.slice(-6).map((answer) => <div key={answer.eventId}><span>第 {answer.attempt} 轮 · {getTcpTask(answer.questionId)?.role === 'observe' ? '观测判断' : getTcpTask(answer.questionId)?.role === 'predict' ? '窗口预测' : '过程作答'}</span><strong>{answer.correct ? answer.independent ? '独立正确' : '正确 · 非独立验证' : '需巩固'}</strong></div>)}</div><button className="text-button text-button--primary" onClick={exit} type="button">返回知识树 <ArrowRight size={18} /></button></section>}
+        </section> : <section className="tcp-complete"><span className={`tcp-status tcp-status--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</span><p>{session.stage === 'paused' ? session.pauseReason : '本轮的正向预测与观测判断均无帮助通过。这个结果只说明本次验证，不代表长期掌握。'}</p><div className="tcp-complete__facts">{session.answers.slice(-6).map((answer) => <div key={answer.eventId}><span>第 {answer.attempt} 轮 · {getTcpTask(answer.questionId)?.role === 'observe' ? '观测判断' : getTcpTask(answer.questionId)?.role === 'predict' ? '窗口预测' : '过程作答'}</span><strong>{answer.correct ? answer.independent ? '独立正确' : '正确 · 非独立验证' : '需巩固'}</strong></div>)}</div><button className="text-button text-button--primary" onClick={exit} type="button">返回知识树 <ArrowRight size={18} /></button></section>}
       </main>
     </div>
   );

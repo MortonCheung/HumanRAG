@@ -50,6 +50,17 @@ describe('knowledge universe graph', () => {
     for (const edgeId of model.learningPathEdgeIds) expect(knowledgeGraph.edges.some((edge) => edge.id === edgeId)).toBe(true);
   });
 
+  it('carries the same learning state into the spatial model without changing relevance', () => {
+    const baseline = buildSceneModel({ goalId: 'direction-408', selectedNodeId: null, hoveredNodeId: null, learningPath: [], focused: true });
+    const learningStates = new Map([['knowledge-tcp', 'needs-verification' as const]]);
+    const withEvidence = buildSceneModel({ goalId: 'direction-408', selectedNodeId: null, hoveredNodeId: null, learningPath: [], focused: true, learningStates });
+    const before = baseline.nodes.find((node) => node.id === 'knowledge-tcp');
+    const after = withEvidence.nodes.find((node) => node.id === 'knowledge-tcp');
+    expect(after?.learningState).toBe('needs-verification');
+    expect(after?.relevance).toBe(before?.relevance);
+    expect(after?.displayPosition).toEqual(before?.displayPosition);
+  });
+
   it('traces prerequisite ancestors and unlocked practice descendants', () => {
     const corridor = buildCausalCorridor('knowledge-linear-list');
     expect(corridor.upstreamNodeDepth.has('course-data-structures')).toBe(true);

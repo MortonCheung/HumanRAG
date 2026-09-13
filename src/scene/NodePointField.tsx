@@ -5,7 +5,8 @@ import type { SceneModel } from '../graph/types';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 import { extractionProgress, type ExtractionPhase } from '../features/spatial/transitions/goalTreeTransitionStore';
-import { neuronAppearance, neuronFragmentShader, neuronVertexShader } from './neuronAppearance';
+import { LEARNING_STATE_COLORS, neuronAppearance, neuronFragmentShader, neuronVertexShader } from './neuronAppearance';
+import type { LearningState } from '../domain/learning/deriveLearningState';
 
 export interface NodeExtractionState {
   phase: ExtractionPhase;
@@ -45,12 +46,15 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
     const colors = geometry.getAttribute('color');
     const color = new THREE.Color();
     const white = new THREE.Color('#c8edff');
+    const learningColor = new THREE.Color();
     model.nodes.forEach((node, index) => {
       const origin = experiencePhase === 'awakening' ? openingOrigins?.get(node.id) : undefined;
       positions.setXYZ(index, ...(origin ?? node.displayPosition));
       positionTargets.current[index] = node.displayPosition;
       canonicalPositions.current[index] = node.displayPosition;
-      color.set(node.domainColor).lerp(white, extraction?.selectedIds.has(node.id) ? 0.35 : extraction ? 0.82 : 0.7);
+      color.set(node.domainColor);
+      if (node.learningState !== 'unknown') color.lerp(learningColor.set(LEARNING_STATE_COLORS[node.learningState]), 0.44);
+      color.lerp(white, extraction?.selectedIds.has(node.id) ? 0.35 : extraction ? 0.82 : 0.62);
       colors.setXYZ(index, color.r, color.g, color.b);
     });
     positions.needsUpdate = colors.needsUpdate = true;
@@ -62,7 +66,7 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
     const sizes = geometry.getAttribute('aSize');
     const strengths = geometry.getAttribute('aStrength');
     model.nodes.forEach((node, index) => {
-      const appearance = neuronAppearance(node.type, node.visualState, node.id === hoveredNodeId);
+      const appearance = neuronAppearance(node.type, node.visualState, node.id === hoveredNodeId, node.learningState);
       if (experiencePhase === 'intro') appearance.strength = Math.max(0.9, appearance.strength);
       targets.current[index] = appearance;
       if (experiencePhase === 'awakening') {
@@ -154,16 +158,19 @@ export function NodePointField({ model, experiencePhase, motionAllowed, openingO
 }
 
 /** Reuse the same nucleus in tree previews/editors; their invisible hit targets stay separate. */
-export function NeuronStar({ color = '#c8edff', selected = false, size = 26 }: { color?: string; selected?: boolean; size?: number }) {
+export function NeuronStar({ color = '#c8edff', selected = false, size = 26, learningState = 'unknown' }: { color?: string; selected?: boolean; size?: number; learningState?: LearningState }) {
   const dpr = useThree((state) => state.viewport.dpr);
   const geometry = useMemo(() => {
     const next = pointGeometry(1);
-    const tint = new THREE.Color(color).lerp(new THREE.Color('#c8edff'), 0.7);
+    const appearance = neuronAppearance('knowledge', selected ? 'selected' : 'contextual', false, learningState);
+    const tint = new THREE.Color(color);
+    if (learningState !== 'unknown') tint.lerp(new THREE.Color(LEARNING_STATE_COLORS[learningState]), 0.5);
+    tint.lerp(new THREE.Color('#c8edff'), 0.58);
     next.getAttribute('color').setXYZ(0, tint.r, tint.g, tint.b);
-    next.getAttribute('aSize').setX(0, selected ? size * 1.4 : size);
-    next.getAttribute('aStrength').setX(0, selected ? 1.25 : 1);
+    next.getAttribute('aSize').setX(0, appearance.size / 23 * size);
+    next.getAttribute('aStrength').setX(0, appearance.strength);
     return next;
-  }, [color, selected, size]);
+  }, [color, learningState, selected, size]);
   const uniforms = useMemo(() => ({ uDpr: { value: dpr } }), [dpr]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <points geometry={geometry} raycast={() => null} frustumCulled={false}>

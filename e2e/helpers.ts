@@ -90,6 +90,18 @@ export async function submitPracticeQuestion(
   await expect(page.getByText(mode === 'correct' ? '本题正确' : '本题未通过', { exact: true })).toBeVisible();
 }
 
+export async function submitVerificationQuestion(
+  page: Page,
+  questionId: string,
+  mode: 'correct' | 'wrong' = 'correct',
+) {
+  const question = contentRepository.getQuestion(questionId);
+  expect(question, `验证题目 ${questionId} 应存在`).toBeDefined();
+  await fillQuestionCard(page.locator('.practice-stage article'), question!, mode);
+  await page.getByRole('button', { name: '提交答案' }).click();
+  await expect(page.getByText('已记录', { exact: true })).toBeVisible();
+}
+
 export function systemUnit() {
   const unit = contentRepository.getTeachingUnit(SYSTEM_UNIT_ID);
   expect(unit, `系统教学单元 ${SYSTEM_UNIT_ID} 应存在`).toBeDefined();

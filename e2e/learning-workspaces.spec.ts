@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, resetDemoState, SYSTEM_NODE_ID } from './helpers';
+import { expectNoHorizontalOverflow, questionsForSystemNode, resetDemoState, submitVerificationQuestion, SYSTEM_NODE_ID } from './helpers';
 
 const pointPath = (action: 'study' | 'teach' | 'verify', pointId = SYSTEM_NODE_ID) => `/library/computer/tree/tree-408/point/${pointId}/${action}`;
 
@@ -53,5 +53,27 @@ test.describe('自主学习、带我学与能力验证分工', () => {
     await expectNoHorizontalOverflow(page);
     const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('iteach:v7:practice-session') ?? '{}') as { data?: { mode?: string } });
     expect(persisted.data?.mode).toBe('exam');
+  });
+
+  test('一次独立验证错答会同时改变学习证据、知识树和 Universe 的下一步', async ({ page }) => {
+    const question = questionsForSystemNode()[0];
+    await page.goto(pointPath('verify'));
+    await submitVerificationQuestion(page, question.id, 'wrong');
+
+    await page.getByRole('link', { name: '学习证据' }).click();
+    await expect(page.getByRole('heading', { name: '提示后做对，不等于独立掌握。' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '线性表 巩固' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '带我巩固' })).toHaveAttribute('href', pointPath('teach'));
+
+    await page.goto('/library/computer/tree/tree-408/path');
+    await expect(page.getByRole('button', { name: /当前建议 线性表.*需要巩固/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: '线性表 需要巩固' })).toBeVisible();
+
+    await page.goto('/universe');
+    await page.getByRole('button', { name: '搜索' }).click();
+    await page.getByRole('textbox', { name: '搜索输入' }).fill('线性表');
+    await page.getByRole('button', { name: '线性表 概念' }).click();
+    await expect(page.getByRole('heading', { name: '学习状态' }).locator('..')).toContainText('需要巩固');
+    await expect(page.getByRole('heading', { name: '为什么建议从这里继续' }).locator('..')).toContainText('最近作答尚未通过');
   });
 });
