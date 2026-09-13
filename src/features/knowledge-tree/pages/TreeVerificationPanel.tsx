@@ -10,6 +10,7 @@ import { useProgressStore } from '../../../store/progressStore';
 import { useUserStore } from '../../../store/userStore';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { PointGroup } from '../components/PointGroup';
+import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
 import { filterTreePoints, groupTreePoints } from '../treePointGroups';
 
 export function TreeVerificationPanel() {
@@ -21,6 +22,7 @@ export function TreeVerificationPanel() {
   const learnerId = useUserStore((state) => state.activeProfileId);
   const evidence = useProgressStore((state) => state.evidenceRecords);
   const remediationTasks = useProgressStore((state) => state.remediationTasks);
+  const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const [query, setQuery] = useState('');
   const data = useMemo(() => {
     const points = treeId ? getPointsForTree(treeId).filter(isPointActionable) : [];
@@ -31,7 +33,7 @@ export function TreeVerificationPanel() {
   }, [query, treeId]);
   const recommendation = useMemo(
     () => getLearningRecommendation(learnerId, data.testable.map((point) => point.id)),
-    [data.testable, evidence, learnerId, remediationTasks],
+    [data.testable, evidence, learnerId, learningQuestions, remediationTasks],
   );
   const questionCount = new Set(data.testable.flatMap((point) => contentRepository.getQuestionsForNode(point.id).map((question) => question.id))).size;
 
@@ -43,7 +45,7 @@ export function TreeVerificationPanel() {
         <p>题目按知识点聚合，只覆盖已有题目的节点。</p>
         <button className="tree-verify-panel__start" type="button" disabled={questionCount === 0} onClick={() => {
           if (libraryId && treeId) navigate(ROUTES.treePracticeSession(libraryId, treeId), { state: { origin: { kind: 'tree', libraryId, treeId }, returnTo: location.pathname } });
-        }}><Exam size={18} aria-hidden="true" />开始能力验证<span>{questionCount} 道题</span></button>
+        }}><Exam size={18} aria-hidden="true" />开始能力验证</button>
         <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索验证范围" placeholder="搜索有题目的知识点" /></label>
       </header>
       <div className="tree-panel__groups">
@@ -51,10 +53,9 @@ export function TreeVerificationPanel() {
           defaultOpen={group.points.some((point) => point.id === recommendation?.pointId)}
           forceOpen={Boolean(query.trim()) || group.points.some((point) => point.id === selectedPointId)}
         >{(point) => {
-            const count = contentRepository.getQuestionsForNode(point.id).length;
             return <li key={point.id}><button type="button" onClick={() => selectPoint(point.id)}>
               <i style={{ background: point.color }} aria-hidden="true" />
-              <span><strong>{point.name}</strong><small>{count} 道题</small></span>
+              <span><strong>{point.name}</strong><small>可独立验证</small></span>
               <ArrowRight size={17} aria-hidden="true" />
             </button></li>;
           }}</PointGroup>)}

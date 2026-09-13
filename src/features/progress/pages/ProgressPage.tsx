@@ -13,6 +13,7 @@ import { deriveLearningStateFromEvidence, type LearningState } from '../../../do
 import { BRANCH_TO_TREE_ID } from '../../../domain/knowledge/catalog';
 import { ROUTES } from '../../../app/routes';
 import { getLearningRecommendation } from '../../../ai/learningRecommendation';
+import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
 import '../progress.css';
 
 const SOURCE = { diagnostic: '尝试', 'guided-practice': '引导练习', 'independent-check': '独立验证', practice: '练习' };
@@ -52,6 +53,7 @@ export function ProgressPage() {
   const records = useProgressStore((state) => state.evidenceRecords);
   const tasks = useProgressStore((state) => state.remediationTasks);
   const storageError = useProgressStore((state) => state.storageError);
+  const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const own = useMemo(() => records.filter((record) => record.learnerId === learnerId && record.eventId && record.snapshot), [records, learnerId]);
   const visible = useMemo(() => own.slice().reverse(), [own]);
   const pointStates = useMemo(() => [...new Set(visible.map((record) => record.nodeId))].map((pointId) => {
@@ -64,7 +66,7 @@ export function ProgressPage() {
   }), [learnerId, records, visible]);
   const pending = tasks.filter((task) => task.learnerId === learnerId && task.status !== 'done'
     && own.some((record) => record.misconceptionId === task.misconceptionId && task.unitId === `tu-${record.nodeId}`));
-  const recommendation = useMemo(() => getLearningRecommendation(learnerId), [learnerId, records, tasks]);
+  const recommendation = useMemo(() => getLearningRecommendation(learnerId), [learnerId, learningQuestions, records, tasks]);
   const recommendationAction = recommendation
     ? actionForState(deriveLearningStateFromEvidence(recommendation.pointId, learnerId, records))
     : 'study';

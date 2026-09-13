@@ -4,6 +4,7 @@ import { getRegistry } from '../domain/knowledge/selectors';
 import { recommendLearningNode, type RecommendationNode } from '../features/progress/learningRecommendation';
 import { contentRepository } from '../services/content/ContentRepository';
 import { useProgressStore } from '../store/progressStore';
+import { useLearningQuestionStore } from '../domain/learning/learningQuestions';
 
 /** Read adapter only: never initialize/migrate storage while deriving a recommendation. */
 export function getRecommendationNodes(learnerId: string, pointIds?: readonly string[]): RecommendationNode[] {
@@ -31,10 +32,12 @@ export function getRecommendationNodes(learnerId: string, pointIds?: readonly st
 
 export function getLearningRecommendation(learnerId: string, pointIds?: readonly string[]) {
   const progress = useProgressStore.getState();
+  const learningQuestions = useLearningQuestionStore.getState().questions;
   return recommendLearningNode({
     learnerId,
     nodes: getRecommendationNodes(learnerId, pointIds),
     evidence: progress.evidenceRecords,
     remediationTasks: progress.remediationTasks,
+    learningQuestions,
   });
 }

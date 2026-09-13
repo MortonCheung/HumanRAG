@@ -8,7 +8,7 @@ test.describe('三维知识空间交互', () => {
 
   test('任意可见光点可悬停并由同一面板展开详情', async ({ page }) => {
     await page.goto('/universe');
-    await expect(page.locator('canvas[aria-label*="336 个知识节点"]')).toBeVisible();
+    await expect(page.locator('canvas[aria-label="计算机知识关系图"]')).toBeVisible();
     await page.waitForTimeout(1_200);
 
     let hit: { x: number; y: number } | null = null;
@@ -37,7 +37,7 @@ test.describe('三维知识空间交互', () => {
     expect(await detail.evaluate((element) => (window as typeof window & { __iteachPanel?: Element }).__iteachPanel === element)).toBe(true);
     await expect(detail.getByRole('heading', { level: 2 })).toBeVisible();
 
-    const canvas = page.locator('canvas[aria-label*="336 个知识节点"]');
+    const canvas = page.locator('canvas[aria-label="计算机知识关系图"]');
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
     await page.mouse.move(box!.x + 160, box!.y + box!.height * 0.62);

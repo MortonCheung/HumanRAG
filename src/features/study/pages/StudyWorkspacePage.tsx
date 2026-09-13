@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { ArrowRight, CaretLeft, CaretRight, Check, Question } from '@phosphor-icons/react';
 import { TransitionLink as Link, usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
 import { TCP_NODE_ID, TCP_RULES, TCP_VERSION } from '../../../data/v6/handcrafted/tcpLesson';
@@ -11,6 +11,8 @@ import { ContentBlockView } from '../../teaching/components/ContentBlockView';
 import { TcpDemonstration } from '../../teaching/components/TcpLesson';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { getWorkspaceParent } from '../../workspace/parentNavigation';
+import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
+import type { LearningReference, LearningResource } from '../../../domain/learning/resources';
 import '../../teaching/teaching.css';
 import '../../teaching/tcp-lesson.css';
 import '../study.css';
@@ -32,6 +34,11 @@ export function StudyWorkspacePage() {
   const navigate = useNavigate();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const [scratchpad, setScratchpad] = useState('');
+  const [questionDraft, setQuestionDraft] = useState('');
+  const questions = useLearningQuestionStore((state) => state.questions);
+  const questionStorageError = useLearningQuestionStore((state) => state.storageError);
+  const addQuestion = useLearningQuestionStore((state) => state.addQuestion);
+  const resolveQuestion = useLearningQuestionStore((state) => state.resolveQuestion);
   const point = pointId ? getPoint(pointId) : undefined;
   const node = pointId ? contentRepository.getNode(pointId) : undefined;
   const unit = pointId ? contentRepository.getTeachingUnitForNode(pointId) : undefined;
@@ -44,6 +51,9 @@ export function StudyWorkspacePage() {
   const concepts = Array.from(new Set([...(point?.recommendedContent ?? []), ...(point?.tags ?? [])])).slice(0, 5);
   const usefulConcepts = concepts.length > 0 ? concepts : [`${point?.name ?? node?.name ?? '本知识点'}的核心概念`, '适用条件', '常见边界'];
   const sourceLabels = Array.from(new Set((pointId ? contentRepository.getQuestionsForNode(pointId) : []).map((question) => question.sourceLabel))).slice(0, 3);
+  const references: LearningReference[] = pointId === TCP_NODE_ID ? [{ title: 'RFC 5681 · §3.1', source: 'RFC Editor', url: 'https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1', note: `${TCP_RULES} 本页使用逐 RTT 离散模型，内容版本 ${TCP_VERSION}。` }] : [];
+  const resources: LearningResource[] = Array.from(new Set([...point?.recommendedContent ?? [], ...sourceLabels])).map((title) => ({ type: 'reading', title }));
+  const openQuestions = questions.filter((question) => question.learnerId === learnerId && question.pointId === pointId && question.status === 'open');
   const parent = getWorkspaceParent({ kind: 'learn', libraryId, treeId, pointId });
   const exit = () => navigate(parent.to, { state: parent.state });
 
@@ -61,12 +71,12 @@ export function StudyWorkspacePage() {
 
         <section className="study-section" aria-labelledby="study-examples"><p className="study-section__kicker">典型示例</p><h2 id="study-examples">看一次完整推演</h2><div className="study-content-blocks">{exampleBlocks.length ? exampleBlocks.map((block, index) => <ContentBlockView key={`example-${index}`} block={block} />) : <div className="worked-example"><h4 className="worked-example__title">从条件到结论</h4><p className="worked-example__prompt">用「{point.name}」解释一个具体情境。</p><ol className="worked-example__steps"><li>写出已知条件与目标。</li><li>选择适用的核心概念，并说明理由。</li><li>检查结论是否超出适用边界。</li></ol></div>}</div></section>
 
-        <section className="study-section study-try" aria-labelledby="study-try"><p className="study-section__kicker">自己试试</p><h2 id="study-try">先用自己的话解释</h2><label htmlFor="study-scratchpad">回答核心问题，并写下一个仍不确定的地方。</label><textarea id="study-scratchpad" value={scratchpad} onChange={(event) => setScratchpad(event.target.value)} placeholder="这里是临时推演区，不计入掌握证据。" /><div className="study-try__actions"><Link className="text-button text-button--primary" to={ROUTES.pointVerify(libraryId, treeId, pointId)}>用新题验证 <ArrowRight size={16} /></Link><Link className="text-button text-button--ghost" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>需要引导</Link></div></section>
+        <section className="study-section study-try" aria-labelledby="study-try"><p className="study-section__kicker">自己试试</p><h2 id="study-try">先用自己的话解释</h2><label htmlFor="study-scratchpad">回答核心问题，并写下一个仍不确定的地方。</label><textarea id="study-scratchpad" value={scratchpad} onChange={(event) => setScratchpad(event.target.value)} placeholder="这里是临时推演区，不计入掌握证据。" /><div className="study-try__actions"><Link className="text-button text-button--primary" to={ROUTES.pointVerify(libraryId, treeId, pointId)}>用新题验证 <ArrowRight size={16} /></Link><Link className="text-button text-button--ghost" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>需要引导</Link></div><div className="study-question-capture"><label htmlFor="study-question">仍然没想通什么？</label><textarea id="study-question" value={questionDraft} onChange={(event) => setQuestionDraft(event.target.value)} placeholder="写下一个具体问题，之后可以回来解决。" /><button className="text-button" type="button" disabled={!questionDraft.trim()} onClick={() => { if (addQuestion({ learnerId, pointId, text: questionDraft })) setQuestionDraft(''); }}><Question size={16} />留下一个问题</button>{questionStorageError && <p role="alert">{questionStorageError}</p>}</div></section>
 
-        <section className="study-section" aria-labelledby="study-sources"><p className="study-section__kicker">延伸与来源</p><h2 id="study-sources">继续查证</h2>{point.id === TCP_NODE_ID && <div className="study-source"><strong>RFC 5681 · §3.1</strong><p>{TCP_RULES} 本页使用逐 RTT 离散模型，内容版本 {TCP_VERSION}。</p><a href="https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1" target="_blank" rel="noreferrer">打开原始规范</a></div>}<ul className="study-resource-list">{Array.from(new Set([...point.recommendedContent, ...sourceLabels])).map((source) => <li key={source}>{source}</li>)}</ul></section>
+        <section className="study-section" aria-labelledby="study-sources"><p className="study-section__kicker">延伸与来源</p><h2 id="study-sources">继续查证</h2>{references.map((reference) => <div className="study-source" key={reference.title}><strong>{reference.title}</strong>{reference.note && <p>{reference.note}</p>}{reference.url && <a href={reference.url} target="_blank" rel="noreferrer">打开{reference.source}原始来源</a>}</div>)}<ul className="study-resource-list">{resources.map((resource) => <li key={`${resource.type}-${resource.title}`}>{resource.url ? <a href={resource.url} target="_blank" rel="noreferrer">{resource.title}</a> : resource.title}</li>)}</ul></section>
       </main>
 
-      <aside className="study-context" aria-label="知识点上下文"><section><p className="study-section__kicker">当前位置</p><strong>{point.name}</strong><span>{point.difficulty ?? '基础'} · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</span></section><section><p className="study-section__kicker">前置知识</p>{prerequisites.length ? prerequisites.map((entry) => <Link key={entry.id} to={ROUTES.pointStudy(libraryId, treeId, entry.id)}>{entry.name}<ArrowRight size={14} /></Link>) : <span>没有额外前置</span>}</section><section><p className="study-section__kicker">相关知识</p>{related.length ? related.map((entry) => <Link key={entry.id} to={ROUTES.pointStudy(libraryId, treeId, entry.id)}>{entry.name}<ArrowRight size={14} /></Link>) : <span>暂无关联知识点</span>}</section></aside>
+      <aside className="study-context" aria-label="知识点上下文"><section><p className="study-section__kicker">当前位置</p><strong>{point.name}</strong><span>{point.difficulty ?? '基础'} · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</span></section><section><p className="study-section__kicker">前置知识</p>{prerequisites.length ? prerequisites.map((entry) => <Link key={entry.id} to={ROUTES.pointStudy(libraryId, treeId, entry.id)}>{entry.name}<ArrowRight size={14} /></Link>) : <span>没有额外前置</span>}</section><section><p className="study-section__kicker">相关知识</p>{related.length ? related.map((entry) => <Link key={entry.id} to={ROUTES.pointStudy(libraryId, treeId, entry.id)}>{entry.name}<ArrowRight size={14} /></Link>) : <span>暂无关联知识点</span>}</section><section className="study-open-questions"><p className="study-section__kicker">我的待解决问题</p>{openQuestions.length ? openQuestions.map((question) => <div key={question.id}><span>{question.text}</span><button type="button" onClick={() => resolveQuestion(question.id)}><Check size={13} />标记已解决</button></div>) : <span>当前没有待解决问题</span>}</section></aside>
     </div>}
   </div>;
 }

@@ -16,6 +16,7 @@ import { getLearningRecommendation } from '../ai/learningRecommendation';
 import { useSpatialOccluder } from '../features/spatial/SpatialViewport';
 import { useProgressStore } from '../store/progressStore';
 import { useUserStore } from '../store/userStore';
+import { useLearningQuestionStore } from '../domain/learning/learningQuestions';
 
 const PANEL_EASE = MOTION.ease.out;
 
@@ -41,6 +42,7 @@ export function NodeInspector() {
   const learnerId = useUserStore((state) => state.activeProfileId);
   const evidence = useProgressStore((state) => state.evidenceRecords);
   const remediationTasks = useProgressStore((state) => state.remediationTasks);
+  const learningQuestions = useLearningQuestionStore((state) => state.questions);
 
   useEffect(() => {
     if (selectedNodeId) return undefined;
@@ -63,7 +65,7 @@ export function NodeInspector() {
     if (!node || !actionable) return null;
     const pointIds = knowledgeGraphPoints(node.branchId);
     return getLearningRecommendation(learnerId, pointIds);
-  }, [actionable, evidence, learnerId, node, remediationTasks]);
+  }, [actionable, evidence, learnerId, learningQuestions, node, remediationTasks]);
 
   const relations = useMemo(() => {
     if (!node || !expanded) return null;
@@ -105,15 +107,15 @@ export function NodeInspector() {
             )}
           </motion.header>
 
-          <AnimatePresence initial={false} mode="popLayout">
+          <AnimatePresence initial={false} mode="wait">
             {expanded && relations && (
               <InspectorDetail
                 key={node.id}
                 className="node-inspector__detail"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: reducedMotion ? 0 : MOTION.duration.micro, ease: PANEL_EASE }}
+                initial={{ opacity: 0, y: 6, filter: 'blur(3px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -4, filter: 'blur(2px)' }}
+                transition={{ duration: reducedMotion ? 0 : 0.22, ease: PANEL_EASE }}
               >
                 <nav className="breadcrumb" aria-label="所属路径">
                   {relations.path.map((item, index) => (

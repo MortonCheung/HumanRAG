@@ -3,8 +3,13 @@ import './route-transitions.css';
 
 export type RouteDirection = -1 | 0 | 1;
 
+function isSpatialRoute(path: string) {
+  return path === '/' || path === '/universe' || path === '/library'
+    || /^\/library\/[^/]+\/tree\/[^/]+(?:\/(?:path|verify))?\/?$/.test(path);
+}
+
 export function isSpatialEntry(from: string, to: string) {
-  return (from === '/' && to === '/universe') || (from === '/universe' && to === '/');
+  return isSpatialRoute(from) && isSpatialRoute(to);
 }
 
 function routeLayer(path: string) {

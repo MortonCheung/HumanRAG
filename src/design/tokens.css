@@ -5,10 +5,13 @@
   --it-surface: #11151d;
   --it-surface-raised: #191e28;
   --it-surface-hover: #232b37;
+  --it-surface-1: rgb(255 255 255 / 0.025);
+  --it-surface-2: rgb(255 255 255 / 0.045);
   --it-text: #f2f5fa;
-  --it-text-soft: #b0bac8;
-  --it-text-faint: #8a96a8;
-  --it-rule: rgb(219 231 255 / 0.10);
+  --it-text-soft: #aeb7c4;
+  --it-text-faint: #747f8e;
+  --it-rule: rgb(226 234 244 / 0.10);
+  --it-rule-soft: rgb(226 234 244 / 0.055);
   --it-rule-strong: rgb(219 231 255 / 0.22);
   --it-control-border: #606e82;
   --it-accent: #c5efff;
@@ -19,7 +22,8 @@
 
   --it-radius-button: 8px;
   --it-radius-input: 8px;
-  --it-radius-panel: 12px;
+  --it-radius-control: 8px;
+  --it-radius-panel: 10px;
   --it-nav-height: 64px;
   --it-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --it-mono: "SFMono-Regular", Consolas, "Geist Mono", monospace;

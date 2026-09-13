@@ -8,6 +8,7 @@ import { contentRepository } from '../../../services/content/ContentRepository';
 import { useProgressStore } from '../../../store/progressStore';
 import { useUserStore } from '../../../store/userStore';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
+import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
 import { PointGroup } from '../components/PointGroup';
 import { filterTreePoints, groupTreePoints } from '../treePointGroups';
 
@@ -18,6 +19,7 @@ export function TreeLearningPathPanel() {
   const learnerId = useUserStore((state) => state.activeProfileId);
   const evidence = useProgressStore((state) => state.evidenceRecords);
   const remediationTasks = useProgressStore((state) => state.remediationTasks);
+  const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const [query, setQuery] = useState('');
   const data = useMemo(() => {
     const points = treeId ? getPointsForTree(treeId).filter(isPointActionable) : [];
@@ -27,7 +29,7 @@ export function TreeLearningPathPanel() {
   }, [query, treeId]);
   const recommendation = useMemo(
     () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
-    [data.points, evidence, learnerId, remediationTasks],
+    [data.points, evidence, learnerId, learningQuestions, remediationTasks],
   );
   const recommendedPoint = data.points.find((point) => point.id === recommendation?.pointId);
 

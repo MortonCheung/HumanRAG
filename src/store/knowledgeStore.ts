@@ -156,10 +156,14 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   closeNodeDetail: () => set((state) => ({
     selectedNodeId: null,
     hoveredNodeId: null,
-    phase: 'overview',
+    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
     relationMode: 'primary',
-    // Closing the detail and requesting the overview are one state transition.
-    cameraIntent: { id: `overview:close:${state.selectionEpoch}`, mode: 'overview' },
+    // Return to the user's current goal context; only a root session uses the full overview.
+    cameraIntent: {
+      id: `overview:close:${state.selectionEpoch}:${Date.now()}`,
+      mode: state.selectedGoalId ? 'goal' : 'overview',
+      nodeId: state.selectedGoalId ?? undefined,
+    },
   })),
   returnOverview: () => set((state) => {
     persist(state.profile, null, state.qualityPreference);

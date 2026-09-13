@@ -47,7 +47,7 @@ export function CustomTreeCanvas({
   const allNodes = useMemo(() => previewNode && !nodes.some((node) => node.id === previewNode.id) ? [...nodes, previewNode] : nodes, [nodes, previewNode]);
   const allEdges = useMemo(() => [...edges, ...previewEdges], [edges, previewEdges]);
   return (
-    <div className="custom-tree-canvas" aria-label={`个人三维知识树，共 ${allNodes.length} 个节点`}>
+    <div className="custom-tree-canvas" aria-label="个人三维知识树">
       <Canvas frameloop="demand" dpr={[0.65, 1.25]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false }}>
         <PerspectiveCamera makeDefault fov={46} near={0.1} far={420} position={[22, 18, 28]} />
         <color attach="background" args={['#080a10']} />

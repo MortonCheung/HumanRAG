@@ -1,5 +1,6 @@
 import type { EvidenceRecord, RemediationTask } from '../../data/v6/schemas/progressSchema';
 import { deriveLearningStatus, isRecordedEvidence, type LearningStatus } from './learningStatus';
+import type { LearningQuestion } from '../../domain/learning/learningQuestions';
 
 export interface RecommendationNode {
   id: string;
@@ -19,6 +20,7 @@ export interface RecommendationInput {
   nodes: readonly RecommendationNode[];
   evidence: readonly EvidenceRecord[];
   remediationTasks?: readonly RemediationTask[];
+  learningQuestions?: readonly LearningQuestion[];
 }
 
 const PRIORITY: Record<LearningStatus, number> = {
@@ -34,15 +36,16 @@ const PRIORITY_SCORE: Record<LearningStatus, number> = {
 };
 
 /** One deterministic decision for the path, Inspector, welcome and practice planner. */
-export function recommendLearningNode({ learnerId, nodes, evidence, remediationTasks = [] }: RecommendationInput): LearningRecommendation | null {
+export function recommendLearningNode({ learnerId, nodes, evidence, remediationTasks = [], learningQuestions = [] }: RecommendationInput): LearningRecommendation | null {
   const own = evidence.filter((entry) => entry.learnerId === learnerId && isRecordedEvidence(entry));
   const statuses = new Map(nodes.map((node) => [node.id, deriveLearningStatus(node.id, learnerId, evidence).status]));
   const statusOf = (id: string) => statuses.get(id) ?? deriveLearningStatus(id, learnerId, evidence).status;
   const hasRemediation = (node: RecommendationNode) => remediationTasks.some((task) => task.learnerId === learnerId
     && task.status !== 'done' && task.unitId === (node.unitId ?? `tu-${node.id}`)
     && own.some((entry) => entry.nodeId === node.id && entry.result !== 'correct' && entry.misconceptionId === task.misconceptionId));
+  const hasOpenQuestion = (node: RecommendationNode) => learningQuestions.some((question) => question.learnerId === learnerId && question.pointId === node.id && question.status === 'open');
   const candidates = nodes.filter((node) => statusOf(node.id) !== 'verified').slice().sort((a, b) =>
-    (hasRemediation(a) ? 0 : PRIORITY[statusOf(a.id)]) - (hasRemediation(b) ? 0 : PRIORITY[statusOf(b.id)])
+    (hasRemediation(a) ? 0 : hasOpenQuestion(a) ? 0.5 : PRIORITY[statusOf(a.id)]) - (hasRemediation(b) ? 0 : hasOpenQuestion(b) ? 0.5 : PRIORITY[statusOf(b.id)])
     || a.id.localeCompare(b.id));
   const requested = candidates[0];
   if (!requested) return null;
@@ -63,6 +66,7 @@ export function recommendLearningNode({ learnerId, nodes, evidence, remediationT
   if (missing.length) reasons.push('部分前置知识尚未验证，建议先确认基础。');
   else if (selected.prerequisiteIds.length) reasons.push('前置知识已有独立验证记录。');
   if (hasRemediation(selected)) reasons.push('已有与实际错答对应的补救任务。');
+  if (hasOpenQuestion(selected)) reasons.push('你在这个知识点留下了尚未解决的问题。');
   if (status === 'needs-reinforcement') reasons.push('最近作答尚未通过，需要巩固。');
   if (status === 'needs-verification') reasons.push('还需要用新任务完成无提示验证。');
   if (status === 'learning') reasons.push('已经开始学习，还没有完成独立验证。');
@@ -79,6 +83,7 @@ export function recommendLearningNode({ learnerId, nodes, evidence, remediationT
   // surface order the same recommendation without reimplementing the policy.
   const score = PRIORITY_SCORE[status]
     + (hasRemediation(selected) ? 20 : 0)
+    + (hasOpenQuestion(selected) ? 12 : 0)
     + (repeatedMisconception ? 8 : 0)
     + (selected.id !== requested.id ? 6 : 0);
   return { pointId: selected.id, score, reasons };

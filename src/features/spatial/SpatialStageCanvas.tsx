@@ -49,8 +49,8 @@ function StageA11y({ model }: { model: SceneModel }) {
       ? '计算机知识树预览空间'
       : mode === 'tree'
         ? '可交互知识树空间'
-        : `计算机知识关系图，包含 ${model.nodes.length} 个知识节点和 ${model.edges.length} 条关系`);
-  }, [gl, mode, model.edges.length, model.nodes.length]);
+        : '计算机知识关系图');
+  }, [gl, mode]);
   return null;
 }
 

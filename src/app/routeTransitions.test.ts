@@ -8,8 +8,8 @@ afterEach(() => { delete document.documentElement.dataset.routeDirection; });
 describe('page layers', () => {
   const tree = '/library/computer/tree/my-tree';
   it.each([
-    ['/universe', '/library', 1],
-    ['/library', tree, 1],
+    ['/universe', '/library', 0],
+    ['/library', tree, 0],
     [tree, `${tree}/path`, 0],
     [`${tree}/path`, `${tree}/verify`, 0],
     [tree, `${tree}/edit/structure`, 1],
@@ -31,7 +31,8 @@ describe('page layers', () => {
   it('leaves the shared opening shot to its camera timeline', () => {
     expect(isSpatialEntry('/', '/universe')).toBe(true);
     expect(isSpatialEntry('/universe', '/')).toBe(true);
-    expect(isSpatialEntry('/universe', '/library')).toBe(false);
+    expect(isSpatialEntry('/universe', '/library')).toBe(true);
+    expect(isSpatialEntry('/library', `${tree}/path`)).toBe(true);
     expect(getRouteDirection('/', '/universe')).toBe(0);
   });
 
@@ -41,13 +42,13 @@ describe('page layers', () => {
     const subscribe = router.subscribe;
     const cleanup = installRouteTransitionDirection(router);
     await router.navigate(tree);
-    expect(document.documentElement.dataset.routeDirection).toBe('forward');
+    expect(document.documentElement.dataset.routeDirection).toBe('lateral');
     await router.navigate(`${tree}/path`);
     expect(document.documentElement.dataset.routeDirection).toBe('lateral');
     await router.navigate('/library');
-    expect(document.documentElement.dataset.routeDirection).toBe('back');
+    expect(document.documentElement.dataset.routeDirection).toBe('lateral');
     await router.navigate(-1);
-    expect(document.documentElement.dataset.routeDirection).toBe('forward');
+    expect(document.documentElement.dataset.routeDirection).toBe('lateral');
     expect(router.navigate).toBe(navigate);
     expect(router.subscribe).toBe(subscribe);
     cleanup();

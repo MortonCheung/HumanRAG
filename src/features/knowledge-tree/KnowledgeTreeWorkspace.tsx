@@ -13,6 +13,7 @@ import { useSpatialStageStore } from '../spatial/spatialStageStore';
 import type { LearningRecommendation } from '../progress/learningRecommendation';
 import { useProgressStore } from '../../store/progressStore';
 import { useUserStore } from '../../store/userStore';
+import { useLearningQuestionStore } from '../../domain/learning/learningQuestions';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 import { TreeLocalNav } from './components/TreeLocalNav';
 import './knowledge-tree-workspace.css';
@@ -28,6 +29,7 @@ export function KnowledgeTreeWorkspace() {
   const learnerId = useUserStore((state) => state.activeProfileId);
   const evidence = useProgressStore((state) => state.evidenceRecords);
   const remediationTasks = useProgressStore((state) => state.remediationTasks);
+  const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const data = useMemo(() => {
     migrateV9();
     const tree = treeId ? getTree(treeId) : undefined;
@@ -37,7 +39,7 @@ export function KnowledgeTreeWorkspace() {
   const mode = location.pathname.endsWith('/verify') ? 'verify' : 'path';
   const recommendation = useMemo(
     () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
-    [data.points, evidence, learnerId, remediationTasks],
+    [data.points, evidence, learnerId, learningQuestions, remediationTasks],
   );
 
   useEffect(() => {
@@ -62,9 +64,7 @@ export function KnowledgeTreeWorkspace() {
           : <span className="context-nav__read-only" title="系统示例只读。可在知识库创建自己的知识树，新增和编辑节点。">只读示例</span>}
       />
       <div className="knowledge-tree-workspace__body">
-        <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`}>
-          <p>拖动旋转 · 滚轮缩放 · 选择节点</p>
-        </div>
+        <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`} />
         <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习路径' : '能力验证'}>
           <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
           {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}

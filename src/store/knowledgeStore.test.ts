@@ -43,13 +43,22 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
   });
 
-  it('closes detail and requests overview in the same state transition', () => {
+  it('closes detail and returns the camera to the current goal in the same transition', () => {
     useKnowledgeStore.getState().selectNode('goal-frontend-engineer');
     const focusedIntent = useKnowledgeStore.getState().cameraIntent;
     useKnowledgeStore.getState().closeNodeDetail();
     expect(useKnowledgeStore.getState().cameraIntent).not.toBe(focusedIntent);
-    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('goal');
+    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBe('goal-frontend-engineer');
+    expect(useKnowledgeStore.getState().phase).toBe('goalFocused');
     expect(useKnowledgeStore.getState().selectedNodeId).toBeNull();
     expect(useKnowledgeStore.getState().hoveredNodeId).toBeNull();
+  });
+
+  it('closes detail to the full overview when no goal is active', () => {
+    useKnowledgeStore.setState({ selectedGoalId: null, selectedNodeId: 'knowledge-tcp', phase: 'nodeFocused' });
+    useKnowledgeStore.getState().closeNodeDetail();
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
+    expect(useKnowledgeStore.getState().phase).toBe('overview');
   });
 });

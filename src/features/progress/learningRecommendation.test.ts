@@ -52,6 +52,15 @@ describe('统一可解释推荐', () => {
     expect(result?.reasons).toContain('部分前置知识尚未验证，建议先确认基础。');
   });
 
+  it('未解决的问题进入同一推荐排序与原因，解决后自动退出', () => {
+    const question = { id: 'open-1', pointId: 'target', learnerId: 'student', text: '为什么会这样？', status: 'open' as const, createdAt: failure.createdAt };
+    const result = recommendLearningNode({ learnerId: 'student', nodes, evidence: prerequisitePass, learningQuestions: [question] });
+    expect(result?.pointId).toBe('target');
+    expect(result?.score).toBe(48);
+    expect(result?.reasons).toContain('你在这个知识点留下了尚未解决的问题。');
+    expect(recommendLearningNode({ learnerId: 'student', nodes, evidence: prerequisitePass, learningQuestions: [{ ...question, status: 'resolved' }] })?.reasons.join('')).not.toContain('尚未解决的问题');
+  });
+
   it('所有节点已通过即无待学推荐，残留补救任务不强行重新推荐', () => {
     const evidence = [...prerequisitePass, record('target-2', 'target'), record('target-3', 'target', { verificationQuestionIds: ['target-2', 'target-3'] })];
     expect(recommendLearningNode({ learnerId: 'student', nodes, evidence, remediationTasks: [task] })).toBeNull();

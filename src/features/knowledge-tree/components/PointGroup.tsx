@@ -24,7 +24,6 @@ export function PointGroup({ group, defaultOpen, forceOpen, children }: PointGro
     <section className="point-group" aria-label={group.name}>
       <button className="point-group__header" type="button" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen((value) => !value)}>
         <span>{group.name}</span>
-        <small>{String(group.points.length).padStart(2, '0')}</small>
         <CaretDown className={open ? 'is-open' : ''} size={15} aria-hidden="true" />
       </button>
       <AnimatePresence initial={false}>

@@ -76,4 +76,19 @@ test.describe('自主学习、带我学与能力验证分工', () => {
     await expect(page.getByRole('heading', { name: '学习状态' }).locator('..')).toContainText('需要巩固');
     await expect(page.getByRole('heading', { name: '为什么建议从这里继续' }).locator('..')).toContainText('最近作答尚未通过');
   });
+
+  test('自主学习可以留下具体问题，并由同一推荐带回对应知识点', async ({ page }) => {
+    await page.goto(pointPath('study', 'knowledge-tcp'));
+    const question = '为什么窗口达到门限后不再翻倍？';
+    await page.getByRole('textbox', { name: '仍然没想通什么？' }).fill(question);
+    await page.getByRole('button', { name: '留下一个问题' }).click();
+    await expect(page.getByLabel('知识点上下文')).toContainText(question);
+
+    await page.goto('/library/computer/tree/tree-408/path');
+    await expect(page.getByRole('button', { name: /当前建议 TCP可靠传输.*尚未解决的问题/ })).toBeVisible();
+
+    await page.goto(pointPath('study', 'knowledge-tcp'));
+    await page.getByRole('button', { name: '标记已解决' }).click();
+    await expect(page.getByLabel('知识点上下文')).toContainText('当前没有待解决问题');
+  });
 });
