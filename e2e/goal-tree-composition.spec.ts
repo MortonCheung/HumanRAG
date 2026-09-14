@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetDemoState } from './helpers';
+import { clickPageAction, resetDemoState } from './helpers';
 
 test('自然语言目标整理为一棵可学习、可练习的普通知识树', async ({ page }) => {
   await resetDemoState(page);
@@ -12,13 +12,13 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   const stage = page.locator('[data-spatial-stage] canvas');
   await expect(stage).toBeVisible({ timeout: 12_000 });
   const stageIdentity = await stage.evaluateHandle((canvas) => canvas);
-  await page.getByRole('button', { name: '选择目标' }).click();
+  await clickPageAction(page, '选择目标');
 
   const prompt = '我要准备 408，网络基础比较弱，数据结构还可以，也对 AI 感兴趣。';
   await page.getByLabel('你现在想做什么？').fill(prompt);
-  await page.getByRole('button', { name: '整理相关知识' }).click();
+  await page.getByRole('button', { name: '生成知识树' }).click();
 
-  await expect(page.getByRole('status')).toContainText(/已找到相关知识|正在分离原有关系/);
+  await expect(page.getByRole('status')).toContainText(/找到相关知识了|正在整理关系/);
   await expect(page).toHaveURL(/\/universe$/);
   await expect.poll(async () => page.evaluate(() => performance.getEntriesByType('resource').some((entry) => /LibraryHomePage-.*\.js/.test(entry.name)))).toBe(true);
 
@@ -43,8 +43,8 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
 
   await page.getByRole('button', { name: '进入知识树' }).click();
   await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-.*\/path$/);
-  await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '能力验证' }).click();
-  const verification = page.getByRole('button', { name: /开始能力验证/ });
+  await page.getByRole('navigation', { name: '知识树页面' }).getByRole('link', { name: '测验' }).click();
+  const verification = page.getByRole('button', { name: /开始测验/ });
   await expect(verification).toBeEnabled();
   await verification.click();
   await expect(page.getByText('考试进度', { exact: false })).toBeVisible();
@@ -54,7 +54,7 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
 test('自动建树失败时回到完整 Universe，并保留原始输入供重试', async ({ page }) => {
   await resetDemoState(page);
   await page.goto('/universe');
-  await page.getByRole('button', { name: '选择目标' }).click();
+  await clickPageAction(page, '选择目标');
   const prompt = '我要准备 408，网络基础比较弱';
   await page.getByLabel('你现在想做什么？').fill(prompt);
   await page.evaluate(() => {
@@ -64,7 +64,7 @@ test('自动建树失败时回到完整 Universe，并保留原始输入供重�
       return original.call(this, key, value);
     };
   });
-  await page.getByRole('button', { name: '整理相关知识' }).click();
+  await page.getByRole('button', { name: '生成知识树' }).click();
 
   await expect(page.getByRole('alert')).toHaveText('没能整理这棵知识树。保留了你的输入，可以再试一次。');
   await expect(page.getByLabel('你现在想做什么？')).toHaveValue(prompt);

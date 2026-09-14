@@ -11,7 +11,7 @@ vi.mock('../../domain/knowledge/migration', () => ({ migrateV9: () => ({ library
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('flat, persistent page actions', () => {
-  it('never lets mobile disclosure state hide desktop actions after clicks, resizes or route returns', async () => {
+  it('keeps secondary actions behind one disclosure at every width and never strands focus', async () => {
     let wide = true;
     const listeners = new Set<() => void>();
     const action = vi.fn();
@@ -19,36 +19,37 @@ describe('flat, persistent page actions', () => {
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     const router = createMemoryRouter([{ element: <AppShell />, children: [
       { path: '/library', element: <WorkspaceHeader title="知识库" actions={<button onClick={action}>当前操作</button>} /> },
-      { path: '/progress', element: <WorkspaceHeader title="学习证据" /> },
+      { path: '/progress', element: <WorkspaceHeader title="学习记录" /> },
     ] }], { initialEntries: ['/library'] });
     render(<RouterProvider router={router} />);
     const resize = async (next: boolean) => act(() => { wide = next; listeners.forEach((listener) => listener()); });
-    const assertVisible = () => {
-      const button = screen.getByRole('button', { name: '当前操作' });
-      expect(button.closest('[hidden]')).toBeNull();
-      expect(button.closest('details')).toBeNull();
-    };
-    screen.getByRole('button', { name: '当前操作' }).focus();
-    await resize(false);
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: '页面操作' }));
-    await resize(true);
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: '当前操作' }));
+    const disclosure = () => screen.getByRole('button', { name: '页面操作' });
+    const actionButton = () => screen.getByRole('button', { name: '当前操作', hidden: true });
+    const collapsed = () => actionButton().closest('[hidden]') !== null;
+
+    // Desktop starts collapsed exactly like mobile: one disclosure owns the actions.
+    expect(collapsed()).toBe(true);
+    expect(actionButton().closest('details')).toBeNull();
+
     for (let cycle = 0; cycle < 3; cycle += 1) {
-      fireEvent.click(screen.getByRole('button', { name: '当前操作' }));
-      assertVisible();
-      await resize(false);
-      expect(screen.queryByRole('button', { name: '当前操作' })).toBeNull();
-      fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
-      assertVisible();
-      fireEvent.click(screen.getByRole('button', { name: '当前操作' }));
-      expect(screen.queryByRole('button', { name: '当前操作' })).toBeNull();
-      await resize(true);
-      assertVisible();
+      await resize(cycle % 2 === 1);
+      expect(collapsed()).toBe(true);
+      fireEvent.click(disclosure());
+      expect(collapsed()).toBe(false);
+      fireEvent.click(actionButton());
+      expect(collapsed()).toBe(true);
       await act(() => router.navigate('/progress'));
       await act(() => router.navigate('/library'));
-      assertVisible();
+      expect(collapsed()).toBe(true);
     }
-    expect(action).toHaveBeenCalledTimes(6);
+    expect(action).toHaveBeenCalledTimes(3);
+
+    // Resizing while focus sits inside the open panel must move focus to the trigger.
+    fireEvent.click(disclosure());
+    actionButton().focus();
+    await resize(true);
+    expect(collapsed()).toBe(true);
+    expect(document.activeElement).toBe(disclosure());
   });
 
   it('closes mobile menus with Escape and restores focus to their own trigger', () => {
@@ -96,6 +97,7 @@ describe('flat, persistent page actions', () => {
     assertEntry();
     await act(() => { wide = true; listeners.forEach((listener) => listener()); });
     assertEntry();
+    fireEvent.click(screen.getByLabelText('页面操作'));
     fireEvent.click(screen.getByRole('button', { name: '创建知识树' }));
     await act(async () => {});
     expect(router.state.location.pathname).toBe('/library/computer/trees/new');

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, resetDemoState } from './helpers';
+import { clickPageAction, expectNoHorizontalOverflow, resetDemoState } from './helpers';
 
 test.describe('评委主流程与一级路由', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,9 +29,9 @@ test.describe('评委主流程与一级路由', () => {
     await expect(page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '刷题' })).toHaveCount(0);
 
     await page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '知识空间' }).click();
-    await page.getByRole('link', { name: '学习证据' }).click();
+    await clickPageAction(page, '学习记录');
     await expect(page).toHaveURL(/\/progress$/);
-    await expect(page.getByRole('heading', { name: '提示后做对，不等于独立掌握。', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '学习记录', level: 1 })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

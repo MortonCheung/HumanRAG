@@ -59,7 +59,7 @@ const vertexShader = `
   }
 `;
 export const synapticPulseShader = `
-  uniform float uTime, uMotion, uRevealTime, uOpening, uDetach, uUniverseExit;
+  uniform float uTime, uMotion, uRevealTime, uOpening, uRevealFloor, uDetach, uUniverseExit;
   varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
@@ -72,7 +72,8 @@ export const synapticPulseShader = `
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
     float travel=clamp((uRevealTime-vDelay)/0.14,0.0,1.0);
     float grown=1.0-smoothstep(travel-0.025,travel+0.025,vProgress);
-    float reveal=mix(1.0,grown,uOpening);
+    float openingReveal=mix(uRevealFloor,1.0,grown);
+    float reveal=mix(1.0,openingReveal,uOpening);
     float centerDistance=abs(vProgress-0.5)*2.0;
     float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);
     gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.54)*reveal*keep*uUniverseExit);
@@ -93,7 +94,7 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
   // Appearance changes leave positions, topology and material identity untouched.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uRevealFloor: { value: 0.08 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
   useLayoutEffect(() => {
     const pulsing = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[quality].activePulseCount);
     let vertex = 0;

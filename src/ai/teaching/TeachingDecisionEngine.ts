@@ -150,7 +150,7 @@ export function buildDecisionSentence(input: {
       }
       return `独立检查正确率 ${checkPercent}%，未达 80%。将进入补救讲解，随后重新检查。`;
     case 'remediation':
-      return `补救讲解完成。将回到独立检查重新验证，连续两次通过即确认掌握。`;
+      return `补救讲解完成。接下来再测一次，连续两次通过就算掌握。`;
     case 'summary':
       return `本节教学闭环完成：诊断、讲解、示范、练习、纠错与确认均已执行。掌握证据已写回知识图谱。`;
     default:

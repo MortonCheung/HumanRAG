@@ -23,7 +23,7 @@ function nodeNameOf(nodeId: string): string {
 }
 
 const MODE_COPY: Record<PracticeMode, { kicker: string; evidence: string; restart: string }> = {
-  train: { kicker: '训练完成', evidence: '训练作答已写回学习证据，用于发现需要巩固的部分。', restart: '再练一遍' },
+  train: { kicker: '训练完成', evidence: '训练作答已写回学习记录，用于发现需要巩固的部分。', restart: '再练一遍' },
   verify: { kicker: '验证完成', evidence: '本轮答案现已统一揭示；完整的新题独立作答将作为本次验证证据。', restart: '换一组新题' },
   exam: { kicker: '考试完成', evidence: '本轮答案现已统一揭示；各知识点只按完整的新题独立作答写入验证证据。', restart: '开始新一轮' },
 };

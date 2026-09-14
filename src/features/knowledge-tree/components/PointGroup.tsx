@@ -1,4 +1,5 @@
-import { CaretDown } from '@phosphor-icons/react';
+import { MorphIcon } from 'morphicons/react';
+import { ChevronDown, ChevronRight } from 'lucide';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { MOTION } from '../../../motion/tokens';
@@ -24,7 +25,7 @@ export function PointGroup({ group, defaultOpen, forceOpen, children }: PointGro
     <section className="point-group" aria-label={group.name}>
       <button className="point-group__header" type="button" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen((value) => !value)}>
         <span>{group.name}</span>
-        <CaretDown className={open ? 'is-open' : ''} size={15} aria-hidden="true" />
+        <MorphIcon icon={open ? ChevronDown : ChevronRight} size={15} strokeWidth={1.8} spring="snappy" reducedMotion="user" />
       </button>
       <AnimatePresence initial={false}>
         {open && <motion.ul

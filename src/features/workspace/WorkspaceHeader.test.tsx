@@ -23,6 +23,7 @@ describe('context navigation host lifecycle', () => {
     const view = render(<Page host={false} version={1} />);
     expect(screen.queryByRole('button', { name: '返回' })).toBeNull();
     view.rerender(<Page host version={2} />);
+    fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
     fireEvent.click(screen.getByRole('button', { name: '保存 2' }));
     fireEvent.click(screen.getByRole('button', { name: '返回' }));
     expect(action).toHaveBeenCalledWith(2);
@@ -41,6 +42,7 @@ describe('context navigation host lifecycle', () => {
     expect(screen.getByRole('banner')).not.toBe(oldHeader);
     expect(screen.queryByRole('button', { name: '当前操作 1' })).toBeNull();
     expect(screen.getAllByRole('button', { name: '返回' })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
     fireEvent.click(screen.getByRole('button', { name: '当前操作 2' }));
     expect(action).toHaveBeenCalledWith(2);
   });

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { canStartGoalTreeHandoff, useGoalTreeTransitionStore } from './goalTreeTransitionStore';
 
-const draft = { name: '网络巩固', description: '', pointIds: ['knowledge-tcp'], reasons: { 'knowledge-tcp': ['薄弱项'] } };
+const draft = { name: '网络巩固', description: '', pointIds: ['knowledge-tcp'], seedPointIds: ['knowledge-tcp'], reasons: { 'knowledge-tcp': ['薄弱项'] } };
 
 beforeEach(() => useGoalTreeTransitionStore.getState().reset());
 

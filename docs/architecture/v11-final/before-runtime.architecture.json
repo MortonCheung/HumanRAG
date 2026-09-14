@@ -1,0 +1,394 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HumanRAG V11 Before · 运行时结构",
+    "subtitle": "收口施工前的真实运行结构：Opening 临时星座、双 CameraControls、系统树重排",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "visual_preset": "blueprint",
+    "animation": "none",
+    "repository": {
+      "url": "https://gitee.com/mortoncheung/iteach",
+      "provider": "gitee",
+      "revision": "963070bb30fbf6abdfb77abcd9a5e6894cd80586",
+      "link_mode": "web"
+    }
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 5,
+    "cellW": 240,
+    "cellH": 104,
+    "gapX": 28,
+    "gapY": 24
+  },
+  "components": [
+    {
+      "id": "app_router",
+      "type": "frontend",
+      "label": "AppRouter",
+      "sublabel": "react-router 路由层",
+      "sources": [
+        {
+          "path": "src/app/AppRouter.tsx"
+        }
+      ],
+      "row": 0,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "tree_workspace",
+      "type": "frontend",
+      "label": "KnowledgeTreeWorkspace",
+      "sublabel": "知识树工作区",
+      "sources": [
+        {
+          "path": "src/features/knowledge-tree/KnowledgeTreeWorkspace.tsx"
+        }
+      ],
+      "row": 0,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "experience_shell",
+      "type": "frontend",
+      "label": "SpatialExperienceShell",
+      "sublabel": "常驻空间体验 · phase 状态机",
+      "sources": [
+        {
+          "path": "src/features/spatial/SpatialExperienceShell.tsx"
+        }
+      ],
+      "row": 1,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "global_nav",
+      "type": "frontend",
+      "label": "GlobalNav",
+      "sublabel": "NavigationSlots 导航槽",
+      "sources": [
+        {
+          "path": "src/components/navigation/GlobalNav.tsx"
+        }
+      ],
+      "row": 1,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "constellation_presets",
+      "type": "frontend",
+      "label": "constellationPresets",
+      "sublabel": "临时星座小树 · Math.random",
+      "tag": "待移除",
+      "sources": [
+        {
+          "path": "src/scene/intro/constellationPresets.ts"
+        }
+      ],
+      "row": 2,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "stage_canvas",
+      "type": "frontend",
+      "label": "SpatialStageCanvas",
+      "sublabel": "唯一 Canvas · 场景路由",
+      "sources": [
+        {
+          "path": "src/features/spatial/SpatialStageCanvas.tsx"
+        }
+      ],
+      "row": 2,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "camera_controller",
+      "type": "frontend",
+      "label": "CameraController",
+      "sublabel": "相机控制 #1",
+      "sources": [
+        {
+          "path": "src/scene/CameraController.tsx"
+        }
+      ],
+      "row": 3,
+      "col": 1,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "batched_edges",
+      "type": "frontend",
+      "label": "BatchedKnowledgeEdges",
+      "sublabel": "边批渲染",
+      "sources": [
+        {
+          "path": "src/scene/BatchedKnowledgeEdges.tsx"
+        }
+      ],
+      "row": 3,
+      "col": 2,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "goal_extraction",
+      "type": "frontend",
+      "label": "GoalTreeExtraction",
+      "sublabel": "内嵌相机控制 #2",
+      "tag": "待收敛",
+      "sources": [
+        {
+          "path": "src/features/spatial/transitions/GoalTreeExtraction.tsx"
+        }
+      ],
+      "row": 3,
+      "col": 3,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "node_point_field",
+      "type": "frontend",
+      "label": "NodePointField",
+      "sublabel": "节点点云 · openingOrigins 飞行",
+      "sources": [
+        {
+          "path": "src/scene/NodePointField.tsx"
+        }
+      ],
+      "row": 3,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "domain_registry",
+      "type": "database",
+      "label": "Domain Registry",
+      "sublabel": "migrateV9 领域注册表",
+      "sources": [
+        {
+          "path": "src/domain/knowledge/migration.ts"
+        }
+      ],
+      "row": 4,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "library_scene",
+      "type": "frontend",
+      "label": "LibraryPreviewUniverseScene",
+      "sublabel": "预览相机控制 #3 · 全部树重排",
+      "sources": [
+        {
+          "path": "src/features/library/scene/LibraryPreviewUniverseScene.tsx"
+        }
+      ],
+      "row": 4,
+      "col": 1,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "transition_store",
+      "type": "frontend",
+      "label": "GoalTreeTransitionStore",
+      "sublabel": "提取状态机 · zustand",
+      "sources": [
+        {
+          "path": "src/features/spatial/transitions/goalTreeTransitionStore.ts"
+        }
+      ],
+      "row": 4,
+      "col": 2,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "knowledge_graph",
+      "type": "database",
+      "label": "KnowledgeGraph",
+      "sublabel": "静态图数据 · 本地 SPACE_SCALE",
+      "sources": [
+        {
+          "path": "src/data/knowledgeGraph.ts"
+        }
+      ],
+      "row": 5,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Spatial Experience 常驻 Canvas",
+      "wraps": [
+        "stage_canvas",
+        "camera_controller",
+        "batched_edges",
+        "node_point_field",
+        "goal_extraction",
+        "library_scene"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "app_router",
+      "to": "experience_shell",
+      "label": "挂载",
+      "labelDy": 24
+    },
+    {
+      "id": "c2",
+      "from": "app_router",
+      "to": "tree_workspace",
+      "label": "lazy route"
+    },
+    {
+      "id": "c3",
+      "from": "experience_shell",
+      "to": "global_nav",
+      "label": "导航槽"
+    },
+    {
+      "id": "c4",
+      "from": "experience_shell",
+      "to": "stage_canvas",
+      "label": "model + phase",
+      "labelDy": 24
+    },
+    {
+      "id": "c5",
+      "from": "constellation_presets",
+      "to": "stage_canvas",
+      "label": "临时子图",
+      "variant": "dashed"
+    },
+    {
+      "id": "c6",
+      "from": "stage_canvas",
+      "to": "camera_controller",
+      "label": "渲染",
+      "labelDx": -40
+    },
+    {
+      "id": "c7",
+      "from": "stage_canvas",
+      "to": "batched_edges",
+      "label": "渲染",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c8",
+      "from": "stage_canvas",
+      "to": "goal_extraction",
+      "label": "提取期间",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 9
+    },
+    {
+      "id": "c9",
+      "from": "stage_canvas",
+      "to": "node_point_field",
+      "label": "渲染"
+    },
+    {
+      "id": "c10",
+      "from": "goal_extraction",
+      "to": "transition_store",
+      "label": "驱动相位"
+    },
+    {
+      "id": "c11",
+      "from": "knowledge_graph",
+      "to": "node_point_field",
+      "label": "nodes + edges"
+    },
+    {
+      "id": "c12",
+      "from": "domain_registry",
+      "to": "library_scene"
+    },
+    {
+      "id": "c13",
+      "from": "stage_canvas",
+      "to": "library_scene",
+      "fromSide": "left",
+      "toSide": "left",
+      "labelDy": -40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Before 已知问题",
+      "items": [
+        "Opening 生成临时星座小树再飞回原位",
+        "目标提取内嵌第二套相机控制，切换突跳",
+        "系统知识树无条件重新布局，与 Universe 坐标脱钩",
+        "pickIntroSubgraph 按预设点数裁剪真实节点"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "收口目标",
+      "items": [
+        "Opening 永远渲染真实场景",
+        "全站唯一一套相机控制",
+        "canonical 坐标三处共用",
+        "Path / Verify 只读预览交接"
+      ]
+    }
+  ]
+}

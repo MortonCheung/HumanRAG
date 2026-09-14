@@ -2,16 +2,16 @@
 .spatial-experience .knowledge-tree-workspace :is(button, a, input, textarea, select),
 .spatial-experience .knowledge-tree-workspace__panel { pointer-events: auto; }
 .knowledge-tree-workspace { height: 100dvh; overflow: hidden; }
-.knowledge-tree-workspace__body { height: calc(100dvh - var(--it-nav-height)); display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(340px, .72fr); }
+.knowledge-tree-workspace__body { height: calc(100dvh - var(--it-nav-height)); display: grid; grid-template-columns: minmax(320px, 38%) minmax(0, 1fr); }
 .knowledge-tree-workspace__stage { position: relative; min-width: 0; min-height: 0; background: transparent; }
 .knowledge-tree-workspace__panel { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-left: 1px solid var(--it-rule); background: rgb(10 13 19 / .97); box-shadow: -22px 0 70px rgb(0 0 0 / .16); }
 .knowledge-tree-workspace__mode-panel { height: 100%; overflow-y: auto; }
 .knowledge-tree-workspace__mode-panel.is-obscured { visibility: hidden; }
 .knowledge-tree-workspace--missing { display: grid; place-items: center; color: var(--it-text-soft); pointer-events: auto; }
-.tree-panel, .tree-point-detail { min-height: 100%; padding: clamp(34px, 5vh, 58px) clamp(24px, 3.2vw, 46px) 56px; }
+.tree-panel, .tree-point-detail { min-height: 100%; padding: clamp(28px, 4vh, 44px) clamp(24px, 3vw, 42px) 48px; }
 .tree-panel__header { padding-bottom: 30px; border-bottom: 1px solid var(--it-rule); }
 .tree-panel-kicker { margin: 0 0 17px; color: var(--it-accent); font: 9px/1 var(--it-mono); letter-spacing: .13em; text-transform: uppercase; }
-.tree-panel__header h1, .tree-point-detail h1 { margin: 0; font-size: clamp(28px, 2.8vw, 43px); font-weight: 500; letter-spacing: -.055em; line-height: 1.1; }
+.tree-panel__header h1, .tree-point-detail h1 { margin: 0; font-size: clamp(25px, 2.25vw, 36px); font-weight: 500; letter-spacing: -.055em; line-height: 1.1; }
 .tree-panel__header > p:not(.tree-panel-kicker), .tree-point-detail__description { margin: 17px 0 0; color: var(--it-text-soft); font-size: 13px; line-height: 1.75; }
 .tree-panel__header > span { display: block; margin-top: 15px; color: var(--it-text-faint); font: 10px/1.5 var(--it-mono); }
 .tree-recommendation { width: 100%; min-height: 72px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 5px 12px; margin-top: 22px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--it-accent) 36%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--it-accent) 5%, transparent); color: var(--it-text); text-align: left; }
@@ -27,8 +27,7 @@
 .point-group { padding-top: 18px; border-bottom: 1px solid rgb(224 231 242 / .065); }
 .point-group__header { width: 100%; min-height: 46px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding: 0 4px; background: transparent; color: var(--it-text-soft); text-align: left; }
 .point-group__header > span { overflow: hidden; font-size: 12px; font-weight: 540; text-overflow: ellipsis; white-space: nowrap; }
-.point-group__header > svg { color: var(--it-text-faint); transform: rotate(-90deg); transition: transform 180ms var(--it-ease), color 180ms var(--it-ease); }
-.point-group__header > svg.is-open { transform: rotate(0); color: var(--it-text-soft); }
+.point-group__header > svg { color: var(--it-text-faint); transition: color 180ms var(--it-ease); }
 .point-group ul { margin: 0; padding: 0 0 8px; overflow: hidden; list-style: none; }
 .point-group li + li { border-top: 1px solid rgb(224 231 242 / .065); }
 .point-group li button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 7px minmax(0, 1fr) 18px; align-items: center; gap: 14px; padding: 11px 4px; border-radius: 6px; background: transparent; text-align: left; transition: background 180ms var(--it-ease); }
@@ -65,8 +64,8 @@
 .point-actions > button > span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .point-actions strong { color: var(--it-text); font-size: 12px; font-weight: 560; }
 .point-actions small { color: var(--it-text-faint); font: 9px/1 var(--it-mono); }
-@media (max-width: 960px) {
-  .knowledge-tree-workspace__body { grid-template-columns: minmax(0, 1.22fr) minmax(310px, .78fr); }
+@media (max-width: 1100px) {
+  .knowledge-tree-workspace__body { grid-template-columns: minmax(300px, 36%) minmax(0, 1fr); }
 }
 @media (max-width: 680px) {
   .knowledge-tree-workspace { height: auto; min-height: 100dvh; overflow-y: auto; }

@@ -131,10 +131,10 @@ export function NodeInspector() {
                     type="button"
                     onClick={() => navigate(ROUTES.pointStudy('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}
                   >
-                    <BookOpenText size={15} weight="regular" /> 自主学习
+                    <BookOpenText size={15} weight="regular" /> 学习
                   </button>
                   <button className="inspector-secondary-action" type="button" onClick={() => navigate(learningState === 'needs-reinforcement' ? ROUTES.pointTeach('computer', treeId, node.id) : ROUTES.pointVerify('computer', treeId, node.id), { state: { origin: { kind: 'universe', nodeId: node.id } } })}>
-                    <NotePencil size={15} weight="regular" /> {learningState === 'needs-reinforcement' ? '带我学' : '验证掌握'}
+                    <NotePencil size={15} weight="regular" /> {learningState === 'needs-reinforcement' ? '带我学' : '测验'}
                   </button>
                 </div>}
                 <div className="node-inspector__scroll">
@@ -170,6 +170,5 @@ function typeLabel(type: KnowledgeNode['type']) {
 }
 
 function hasEditorialDescription(description: string) {
-  const value = description.trim();
-  return value.length > 0 && !/^(这是知识网络中的一个关键节点|这是一段用于建立系统能力的学习模块|通过一个可验证的小练习)/.test(value);
+  return description.trim().length > 0;
 }

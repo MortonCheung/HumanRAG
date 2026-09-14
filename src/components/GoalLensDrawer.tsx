@@ -48,8 +48,8 @@ export function GoalLensDrawer() {
 
   return (
     <AnimatePresence>
-      {open && <motion.aside className="side-drawer side-drawer--right goal-panel" aria-label="整理学习目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
-        <header className="drawer-header"><span>学习目标</span><button type="button" onClick={closePanel} aria-label="关闭学习目标"><X size={17} /></button></header>
+      {open && <motion.aside className="side-drawer side-drawer--right goal-panel" aria-label="整理目标" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }} transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}>
+        <header className="drawer-header"><span>目标</span><button type="button" onClick={closePanel} aria-label="关闭目标"><X size={17} /></button></header>
         <form className="goal-panel__form" onSubmit={handleCompose}>
           <label htmlFor="goal-prompt">你现在想做什么？</label>
           <textarea
@@ -61,10 +61,10 @@ export function GoalLensDrawer() {
             maxLength={240}
             autoFocus
           />
-          <p className="goal-panel__hint">也可以说说你的基础、兴趣、擅长或薄弱方向。</p>
+          <p className="goal-panel__hint">可以补充你的基础、兴趣、擅长或薄弱内容。</p>
           {error && <p className="goal-panel__error" role="alert">{error}</p>}
           <button className="goal-panel__submit" type="submit" disabled={!prompt.trim() || composing}>
-            <Target size={16} aria-hidden="true" />{composing ? '正在整理…' : '整理相关知识'}
+            <Target size={16} aria-hidden="true" />{composing ? '正在整理…' : '生成知识树'}
           </button>
         </form>
       </motion.aside>}

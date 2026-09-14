@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { TCP_TASKS } from '../src/data/v6/handcrafted/tcpLesson';
-import { fillTcpResponse, resetDemoState } from './helpers';
+import { fillTcpResponse, clickPageAction, expectPageAction, resetDemoState } from './helpers';
 
 test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', async ({ page }) => {
   test.setTimeout(120_000);
@@ -9,11 +9,11 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
   const openingCanvas = await page.locator('[data-spatial-stage] canvas').evaluateHandle((canvas) => canvas);
   await page.getByRole('button', { name: '进入知识空间' }).click();
   await expect(page.locator('.spatial-experience--universe')).toBeVisible({ timeout: 8_000 });
-  await expect(page.getByRole('button', { name: '选择目标' })).toBeVisible({ timeout: 8_000 });
+  await expectPageAction(page, '选择目标');
   expect(await openingCanvas.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
-  await page.getByRole('button', { name: '选择目标' }).click();
+  await clickPageAction(page, '选择目标');
   await page.getByLabel('你现在想做什么？').fill('准备408，网络比较薄弱，数据结构还可以。');
-  await page.getByRole('button', { name: '整理相关知识' }).click();
+  await page.getByRole('button', { name: '生成知识树' }).click();
   await expect(page).toHaveURL(/\/library$/, { timeout: 12_000 });
   await expect(page.getByRole('option', { selected: true })).toContainText('考研408 · 定向学习');
 
@@ -21,10 +21,10 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
   await expect(page).toHaveURL(/\/tree\/[^/]+\/path$/);
   const generatedTreeId = page.url().match(/\/tree\/([^/]+)/)?.[1];
   expect(generatedTreeId).toBeTruthy();
-  await page.getByRole('searchbox', { name: '搜索学习路径' }).fill('TCP可靠传输');
+  await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
   await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
   await expect(page.getByRole('heading', { name: 'TCP可靠传输', level: 1 })).toBeVisible();
-  await page.getByRole('button', { name: '验证掌握' }).click();
+  await page.getByRole('button', { name: '测验' }).click();
 
   const firstPair = TCP_TASKS.filter((task) => task.role === 'predict' || task.role === 'observe').slice(0, 2);
   await fillTcpResponse(page, firstPair[0], 'growth-error');
@@ -59,9 +59,9 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
     await page.getByRole('button', { name: index === 0 ? '下一项任务' : '查看本轮结果' }).click();
   }
 
-  await expect(page.getByText('已独立验证', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: '学习证据' }).click();
-  const verified = page.getByRole('heading', { name: '已独立验证' }).locator('..');
+  await expect(page.getByText('已掌握', { exact: true })).toBeVisible();
+  await clickPageAction(page, '学习记录');
+  const verified = page.getByRole('heading', { name: '已掌握' }).locator('..');
   await expect(verified).toContainText('TCP可靠传输');
   const nextAction = page.locator('.evidence-next');
   await expect(nextAction.locator('strong')).toBeVisible();
@@ -73,11 +73,11 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
   await page.goto(`/library/computer/tree/${generatedTreeId}/path`);
   await expect(page.locator('.tree-recommendation')).toBeVisible();
   await expect(page.locator('.tree-recommendation')).not.toContainText('TCP可靠传输');
-  await page.getByRole('searchbox', { name: '搜索学习路径' }).fill('TCP可靠传输');
-  await expect(page.getByRole('button', { name: 'TCP可靠传输 已独立验证' })).toBeVisible();
+  await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
+  await expect(page.getByRole('button', { name: 'TCP可靠传输 已掌握' })).toBeVisible();
   await page.goto('/universe');
-  await page.getByRole('button', { name: '搜索' }).click();
+  await clickPageAction(page, '搜索');
   await page.getByRole('textbox', { name: '搜索输入' }).fill('TCP可靠传输');
   await page.getByRole('button', { name: 'TCP可靠传输 概念' }).click();
-  await expect(page.getByRole('heading', { name: '学习状态' }).locator('..')).toContainText('已独立验证');
+  await expect(page.getByRole('heading', { name: '学习状态' }).locator('..')).toContainText('已掌握');
 });

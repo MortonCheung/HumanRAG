@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "HumanRAG V11 · Opening → Universe 时序",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "visual_preset": "blueprint",
+    "animation": "none",
+    "column_fit": "spread",
+    "viewBox": [
+      1060,
+      1220
+    ]
+  },
+  "participants": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "用户"
+    },
+    {
+      "id": "landing",
+      "type": "frontend",
+      "label": "Landing",
+      "sublabel": "LandingPage"
+    },
+    {
+      "id": "shell",
+      "type": "frontend",
+      "label": "Shell",
+      "sublabel": "SpatialShell"
+    },
+    {
+      "id": "preset",
+      "type": "frontend",
+      "label": "Preset",
+      "sublabel": "OpeningPreset"
+    },
+    {
+      "id": "reveal",
+      "type": "frontend",
+      "label": "Reveal",
+      "sublabel": "GraphRevealPlan"
+    },
+    {
+      "id": "stage",
+      "type": "frontend",
+      "label": "Stage",
+      "sublabel": "SpatialStageCanvas"
+    },
+    {
+      "id": "points",
+      "type": "frontend",
+      "label": "Points",
+      "sublabel": "NodePointField"
+    },
+    {
+      "id": "edges",
+      "type": "frontend",
+      "label": "Edges",
+      "sublabel": "KnowledgeEdges"
+    },
+    {
+      "id": "camera",
+      "type": "frontend",
+      "label": "Camera",
+      "sublabel": "CameraController"
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 622,
+      "label": "Opening 待机"
+    },
+    {
+      "from": 622,
+      "to": 782,
+      "label": "进入"
+    },
+    {
+      "from": 782,
+      "to": 1110,
+      "label": "唤醒传播"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "shell",
+      "to": "preset",
+      "y": 170,
+      "label": "选取 seed 节点 ID"
+    },
+    {
+      "id": "m2",
+      "from": "preset",
+      "to": "shell",
+      "y": 240,
+      "label": "稳定节点 ID",
+      "variant": "return"
+    },
+    {
+      "id": "m3",
+      "from": "shell",
+      "to": "reveal",
+      "y": 310,
+      "label": "构建传播计划"
+    },
+    {
+      "id": "m4",
+      "from": "reveal",
+      "to": "stage",
+      "y": 380,
+      "label": "确定性延迟",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "stage",
+      "to": "points",
+      "y": 450,
+      "label": "完整场景，其余只暗不隐"
+    },
+    {
+      "id": "m6",
+      "from": "stage",
+      "to": "edges",
+      "y": 520,
+      "label": "完整边集"
+    },
+    {
+      "id": "m7",
+      "from": "stage",
+      "to": "camera",
+      "y": 590,
+      "label": "seed 真实位置"
+    },
+    {
+      "id": "m8",
+      "from": "user",
+      "to": "landing",
+      "y": 660,
+      "label": "进入知识空间",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m9",
+      "from": "landing",
+      "to": "shell",
+      "y": 730,
+      "label": "开始入场"
+    },
+    {
+      "id": "m10",
+      "from": "shell",
+      "to": "stage",
+      "y": 800,
+      "label": "phase = awakening",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m11",
+      "from": "stage",
+      "to": "edges",
+      "y": 870,
+      "label": "边先于接收节点亮起"
+    },
+    {
+      "id": "m12",
+      "from": "stage",
+      "to": "points",
+      "y": 940,
+      "label": "节点强度逐级提升"
+    },
+    {
+      "id": "m13",
+      "from": "stage",
+      "to": "camera",
+      "y": 1010,
+      "label": "保持方向，拉开距离"
+    },
+    {
+      "id": "m14",
+      "from": "camera",
+      "to": "shell",
+      "y": 1080,
+      "label": "入场镜头结束",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "关键不变式",
+      "items": [
+        "第一帧就是完整 Universe，不存在临时星座几何",
+        "节点坐标全程不变，只有亮度、传播与镜头在动",
+        "CameraController 是唯一的相机所有者"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "时间对齐",
+      "items": [
+        "Reveal 约 1.4–1.9s，入场镜头 2.15s",
+        "只有镜头结束后 SpatialExperienceShell 才进入 universe"
+      ]
+    }
+  ]
+}

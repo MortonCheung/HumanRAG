@@ -37,13 +37,13 @@ export function canStartGoalTreeHandoff(state: Pick<GoalTreeTransitionState, 'ph
 export const EXTRACTION_PHASES: ExtractionPhase[] = ['highlighting', 'detaching', 'receding', 'forming', 'connecting'];
 
 export function extractionPhaseDurationMs(phase: ExtractionPhase, motionAllowed: boolean): number {
-  if (!motionAllowed) return phase === 'forming' ? 90 : 55;
+  if (!motionAllowed) return phase === 'forming' ? 80 : 45;
   return {
-    highlighting: 520,
-    detaching: 480,
-    receding: 520,
-    forming: 780,
-    connecting: 560,
+    highlighting: 820,
+    detaching: 360,
+    receding: 320,
+    forming: 620,
+    connecting: 420,
     idle: 0,
     ready: 0,
     handoff: 0,

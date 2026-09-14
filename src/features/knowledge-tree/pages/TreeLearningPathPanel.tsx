@@ -36,13 +36,11 @@ export function TreeLearningPathPanel() {
   return (
     <section className="tree-panel tree-path-panel">
       <header className="tree-panel__header">
-        <p className="tree-panel-kicker">学习路径</p>
-        <h1>沿知识关系前进</h1>
-        <p>从课程脉络中选择一个节点，查看它在知识树中的位置与下一步。</p>
+        <h1>学习</h1>
         {recommendation && recommendedPoint && <button className="tree-recommendation" type="button" onClick={() => selectPoint(recommendation.pointId)}>
-          <span>当前建议</span><strong>{recommendedPoint.name}</strong><small>{recommendation.reasons.slice(0, 2).join(' ')}</small><ArrowRight size={17} aria-hidden="true" />
+          <span>建议先学</span><strong>{recommendedPoint.name}</strong><small>{recommendation.reasons.slice(0, 2).join(' ')}</small><ArrowRight size={17} aria-hidden="true" />
         </button>}
-        <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索学习路径" placeholder="搜索知识点" /></label>
+        <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索知识点" placeholder="搜索知识点" /></label>
       </header>
       <div className="tree-panel__groups">
         {data.groups.map((group) => <PointGroup key={group.id} group={group}

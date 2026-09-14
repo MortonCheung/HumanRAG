@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CornersIn, CornersOut } from '@phosphor-icons/react';
+import { MorphIcon } from 'morphicons/react';
+import { Maximize2, Minimize2 } from 'lucide';
 
 export function FullscreenButton() {
   const [active, setActive] = useState(Boolean(document.fullscreenElement));
@@ -31,7 +32,7 @@ export function FullscreenButton() {
   return (
     <>
       <button type="button" className="context-nav__button" onClick={toggle} disabled={busy || !supported} aria-label={supported ? active ? '退出全屏' : '全屏' : '此浏览器不支持全屏'} aria-pressed={active}>
-        {active ? <CornersIn size={18} aria-hidden="true" /> : <CornersOut size={18} aria-hidden="true" />}
+        <MorphIcon icon={active ? Minimize2 : Maximize2} size={18} strokeWidth={1.8} spring="snappy" reducedMotion="user" />
         <span>{supported ? active ? '退出全屏' : '全屏' : '全屏不可用'}</span>
       </button>
       {error && createPortal(<div className="context-nav__notice" role="status"><span>{error}</span><button type="button" aria-label="关闭全屏提示" onClick={() => setError('')}>关闭</button></div>, document.body)}

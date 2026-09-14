@@ -40,13 +40,11 @@ export function TreeVerificationPanel() {
   return (
     <section className="tree-panel tree-verify-panel">
       <header className="tree-panel__header">
-        <p className="tree-panel-kicker">能力验证</p>
-        <h1>检验整棵知识树</h1>
-        <p>题目按知识点聚合，只覆盖已有题目的节点。</p>
+        <h1>测验</h1>
         <button className="tree-verify-panel__start" type="button" disabled={questionCount === 0} onClick={() => {
           if (libraryId && treeId) navigate(ROUTES.treePracticeSession(libraryId, treeId), { state: { origin: { kind: 'tree', libraryId, treeId }, returnTo: location.pathname } });
-        }}><Exam size={18} aria-hidden="true" />开始能力验证</button>
-        <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索验证范围" placeholder="搜索有题目的知识点" /></label>
+        }}><Exam size={18} aria-hidden="true" />开始测验</button>
+        <label className="tree-panel-search"><MagnifyingGlass size={16} aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} aria-label="搜索知识点" placeholder="搜索知识点" /></label>
       </header>
       <div className="tree-panel__groups">
         {data.groups.map((group) => <PointGroup key={group.id} group={group}
@@ -55,7 +53,7 @@ export function TreeVerificationPanel() {
         >{(point) => {
             return <li key={point.id}><button type="button" onClick={() => selectPoint(point.id)}>
               <i style={{ background: point.color }} aria-hidden="true" />
-              <span><strong>{point.name}</strong><small>可独立验证</small></span>
+              <span><strong>{point.name}</strong><small>有题目</small></span>
               <ArrowRight size={17} aria-hidden="true" />
             </button></li>;
           }}</PointGroup>)}

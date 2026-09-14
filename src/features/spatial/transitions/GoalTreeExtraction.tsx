@@ -1,6 +1,6 @@
-import { CameraControls, CameraControlsImpl, Html } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useRef } from 'react';
+import { Html } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
+import { useEffect } from 'react';
 import * as THREE from 'three';
 import type { GoalTreeDraft } from '../../../ai/knowledge-tree/GoalTreeComposer';
 import { getRegistry } from '../../../domain/knowledge/selectors';
@@ -85,7 +85,6 @@ export function GoalTreeExtraction({ model, layout, motionAllowed }: {
   if (!draft || phase === 'idle') return null;
   const showLabels = phase === 'highlighting' || phase === 'detaching' || phase === 'receding';
   return <>
-    <GoalTreeExtractionCamera layout={layout} phase={phase} motionAllowed={motionAllowed} />
     <GoalTreeBuildingEdges layout={layout} phase={phase} phaseStartedAt={phaseStartedAt} motionAllowed={motionAllowed} />
     {showLabels && draft.pointIds.slice(0, 4).map((id) => {
       const node = model.nodes.find((candidate) => candidate.id === id);
@@ -97,43 +96,6 @@ export function GoalTreeExtraction({ model, layout, motionAllowed }: {
       </group>;
     })}
   </>;
-}
-
-function GoalTreeExtractionCamera({ layout, phase, motionAllowed }: {
-  layout: GoalTreeExtractionLayout;
-  phase: ExtractionPhase;
-  motionAllowed: boolean;
-}) {
-  const controls = useRef<CameraControlsImpl>(null);
-  const fromPosition = useRef(new THREE.Vector3());
-  const fromTarget = useRef(new THREE.Vector3());
-  const toPosition = useRef(new THREE.Vector3());
-  const toTarget = useRef(new THREE.Vector3());
-  const currentPosition = useRef(new THREE.Vector3());
-  const currentTarget = useRef(new THREE.Vector3());
-  const phaseStartedAt = useGoalTreeTransitionStore((state) => state.phaseStartedAt);
-  const { camera, invalidate, size } = useThree();
-  useEffect(() => {
-    if (!controls.current || phase !== 'forming') return;
-    const pose = customTreeFrame(layout.positions, size.width, size.height, true);
-    pose.position.add(layout.anchor);
-    pose.target.add(layout.anchor);
-    fromPosition.current.copy(camera.position);
-    controls.current.getTarget(fromTarget.current);
-    toPosition.current.copy(pose.position);
-    toTarget.current.copy(pose.target);
-    invalidate();
-  }, [camera.position, invalidate, layout.anchor, layout.positions, phase, size.height, size.width]);
-  useFrame(() => {
-    if (!controls.current || !['forming', 'connecting', 'ready', 'handoff'].includes(phase)) return;
-    const progress = phase === 'forming' ? extractionProgress(phase, phaseStartedAt, motionAllowed) : 1;
-    currentPosition.current.lerpVectors(fromPosition.current, toPosition.current, progress);
-    currentTarget.current.lerpVectors(fromTarget.current, toTarget.current, progress);
-    const position = currentPosition.current;
-    const target = currentTarget.current;
-    void controls.current.setLookAt(position.x, position.y, position.z, target.x, target.y, target.z, false);
-  });
-  return <CameraControls ref={controls} makeDefault enabled={false} smoothTime={0} />;
 }
 
 function GoalTreeBuildingEdges({ layout, phase, phaseStartedAt, motionAllowed }: {

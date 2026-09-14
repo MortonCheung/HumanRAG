@@ -206,10 +206,7 @@ const RELATED: Array<[string, string]> = [
 
 const normalize = (value: string) => value.normalize('NFKC').toLocaleLowerCase('zh-CN').trim().replace(/[\s，。、“”‘’'"：:；;！？!?、/\\()[\]{}<>《》·-]/g, '');
 
-const makeDescription = (name: string, type: NodeType) => {
-  const prefix = type === 'practice' ? '通过一个可验证的小练习' : type === 'course' || type === 'skill' ? '这是一段用于建立系统能力的学习模块' : '这是知识网络中的一个关键节点';
-  return `${prefix}，围绕“${name}”建立概念、关系与应用之间的连接。`;
-};
+const makeDescription = (_name: string, _type: NodeType) => '';
 
 function createNodes(): KnowledgeNode[] {
   const counters: Record<string, number> = {};
@@ -287,7 +284,7 @@ function createExtendedNodes(seed: KnowledgeNode[]) {
         layer: -10,
         branchId: course.branchId,
         parentId: course.id,
-        description: `“${topic}”是${course.name}中的关键连接点。理解它可以把基础概念、实现约束和实际练习连成可验证的学习路径。`,
+        description: '',
         keywords: [topic, course.name, course.branchId],
         recommendedContent: [`${topic}概念图`, `${topic}推导与实现`, `${topic}小练习`],
         basePosition: [

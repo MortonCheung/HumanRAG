@@ -6,6 +6,36 @@ import { tcpExpected, type TcpTask } from '../src/data/v6/handcrafted/tcpLesson'
 export const SYSTEM_UNIT_ID = 'tu-knowledge-linear-list';
 export const SYSTEM_NODE_ID = 'knowledge-linear-list';
 
+/** 第 30 章：次要操作在任何 viewport 都收进同一个 `...` disclosure。 */
+function secondaryAction(page: Page, name: string) {
+  const nav = page.locator('header.context-nav');
+  return nav
+    .getByRole('button', { name, exact: true, includeHidden: true })
+    .or(nav.getByRole('link', { name, exact: true, includeHidden: true }))
+    .first();
+}
+
+export async function openPageActions(page: Page) {
+  const actions = page.locator('#context-nav-actions');
+  if (await actions.isVisible()) return actions;
+  await page.getByRole('button', { name: '页面操作', exact: true }).click();
+  await expect(actions).toBeVisible();
+  return actions;
+}
+
+export async function expectPageAction(page: Page, name: string) {
+  const target = secondaryAction(page, name);
+  await expect(target).toBeAttached();
+  if (!(await target.isVisible())) await openPageActions(page);
+  await expect(target).toBeVisible();
+  return target;
+}
+
+export async function clickPageAction(page: Page, name: string) {
+  const target = await expectPageAction(page, name);
+  await target.click();
+}
+
 export async function resetDemoState(page: Page) {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());

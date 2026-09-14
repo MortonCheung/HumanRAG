@@ -58,10 +58,10 @@ export function StudyWorkspacePage() {
   const exit = () => navigate(parent.to, { state: parent.state });
 
   return <div className="page study-page">
-    <WorkspaceHeader title={point?.name ?? node?.name ?? '自主学习'} backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习证据</Link>} primaryAction={libraryId && treeId && pointId ? <Link className="context-nav__button context-nav__button--primary" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>带我学</Link> : undefined} />
+    <WorkspaceHeader title={point?.name ?? node?.name ?? '学习'} backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} primaryAction={libraryId && treeId && pointId ? <Link className="context-nav__button context-nav__button--primary" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>带我学</Link> : undefined} />
     {!point || !libraryId || !treeId || !pointId ? <main className="page__inner"><h1 className="page-title">没有找到这个知识点</h1><p className="page-lead">它可能已被移除，或不属于当前知识树。</p></main> : <div className="study-workspace">
       <main className="study-workspace__main">
-        <header className="study-hero"><p className="study-section__kicker">自主学习 · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</p><h1>{point.name}</h1><p>{point.description || node?.description}</p><div className="study-core-question"><span>核心问题</span><strong>{point.id === TCP_NODE_ID ? '为什么发送方不能无限增加发送速率？' : objective}</strong></div></header>
+        <header className="study-hero"><p className="study-section__kicker">学习 · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</p><h1>{point.name}</h1><p>{point.description || node?.description}</p><div className="study-core-question"><span>核心问题</span><strong>{point.id === TCP_NODE_ID ? '为什么发送方不能无限增加发送速率？' : objective}</strong></div></header>
 
         <section className="study-section" aria-labelledby="study-prerequisites"><p className="study-section__kicker">开始之前</p><h2 id="study-prerequisites">先确认这些前置</h2>{prerequisites.length ? <ul className="study-inline-list">{prerequisites.map((entry) => <li key={entry.id}>{entry.name}</li>)}</ul> : <p className="study-section__lead">无需额外前置，可以直接从核心问题开始。</p>}</section>
 

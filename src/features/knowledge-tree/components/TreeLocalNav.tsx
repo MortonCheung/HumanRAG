@@ -7,9 +7,9 @@ export function TreeLocalNav() {
   if (!libraryId || !treeId) return null;
 
   return (
-    <NavigationModes label="知识树模式" items={[
-      { to: ROUTES.treePath(libraryId, treeId), label: '学习路径' },
-      { to: ROUTES.treeVerify(libraryId, treeId), label: '能力验证' },
+    <NavigationModes label="知识树页面" items={[
+      { to: ROUTES.treePath(libraryId, treeId), label: '学习' },
+      { to: ROUTES.treeVerify(libraryId, treeId), label: '测验' },
     ]} />
   );
 }

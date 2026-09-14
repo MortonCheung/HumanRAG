@@ -40,3 +40,21 @@ export function nodeFocusPose(camera: THREE.PerspectiveCamera, point: THREE.Vect
   const target = point.clone();
   return { position: target.clone().add(offset), target };
 }
+
+/** Reframe a sphere without turning the camera: the current view direction is kept. */
+export function frameSphereAlongView(
+  camera: THREE.PerspectiveCamera,
+  currentPosition: THREE.Vector3,
+  currentTarget: THREE.Vector3,
+  sphere: THREE.Sphere,
+  padding = 1.28,
+) {
+  const direction = currentPosition.clone().sub(currentTarget).normalize();
+  const verticalFov = THREE.MathUtils.degToRad(camera.fov);
+  const horizontalFov = 2 * Math.atan(Math.tan(verticalFov / 2) * Math.max(0.1, camera.aspect));
+  const limitingFov = Math.min(verticalFov, horizontalFov);
+  const distance = THREE.MathUtils.clamp(sphere.radius / Math.sin(limitingFov / 2) * padding, 8, 320);
+  const target = sphere.center.clone();
+  const position = target.clone().addScaledVector(direction, distance);
+  return { position, target };
+}

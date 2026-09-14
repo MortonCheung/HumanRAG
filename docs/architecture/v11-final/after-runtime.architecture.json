@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "HumanRAG V11 After · 运行时结构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "visual_preset": "blueprint",
+    "animation": "none"
+  },
+  "layout": {
+    "mode": "grid",
+    "cols": 5,
+    "cellW": 240,
+    "cellH": 104,
+    "gapX": 28,
+    "gapY": 24
+  },
+  "components": [
+    {
+      "id": "app_router",
+      "type": "frontend",
+      "label": "AppRouter",
+      "sublabel": "react-router 路由层",
+      "row": 0,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "tree_workspace",
+      "type": "frontend",
+      "label": "KnowledgeTreeWorkspace",
+      "sublabel": "学习 / 测验工作区",
+      "row": 0,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "stores",
+      "type": "database",
+      "label": "Learning / Progress stores",
+      "sublabel": "学习状态与作答证据",
+      "row": 1,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "experience_shell",
+      "type": "frontend",
+      "label": "SpatialExperienceShell",
+      "sublabel": "常驻空间体验 · phase 状态机",
+      "row": 1,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "global_nav",
+      "type": "frontend",
+      "label": "GlobalNav + NavigationSlots",
+      "sublabel": "左中右锚定 · 次要操作进 ...",
+      "row": 1,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "graph_canonical",
+      "type": "database",
+      "label": "KnowledgeGraph + CanonicalSpace",
+      "sublabel": "basePosition 经单一坐标缩放",
+      "row": 2,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "stage_canvas",
+      "type": "frontend",
+      "label": "SpatialStageCanvas",
+      "sublabel": "唯一 Canvas · 场景路由",
+      "row": 2,
+      "col": 2,
+      "size": [
+        448,
+        84
+      ]
+    },
+    {
+      "id": "domain_registry",
+      "type": "database",
+      "label": "Domain Registry",
+      "sublabel": "migrateV9 领域注册表",
+      "row": 2,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "reveal_plan",
+      "type": "frontend",
+      "label": "GraphRevealPlan",
+      "sublabel": "确定性传播引擎",
+      "row": 3,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "camera_controller",
+      "type": "frontend",
+      "label": "CameraController",
+      "sublabel": "唯一相机所有者",
+      "row": 3,
+      "col": 1,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "preview_scene",
+      "type": "frontend",
+      "label": "LibraryPreviewUniverseScene",
+      "sublabel": "library / tree 模式 · 只读预览",
+      "row": 3,
+      "col": 3,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "goal_composer",
+      "type": "frontend",
+      "label": "GoalTreeComposer",
+      "sublabel": "自然语言 → seedPointIds",
+      "row": 4,
+      "col": 1,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "transition_store",
+      "type": "frontend",
+      "label": "GoalTreeTransitionStore",
+      "sublabel": "提取状态机 · zustand",
+      "row": 4,
+      "col": 3,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "preview_tree",
+      "type": "frontend",
+      "label": "PreviewTreeGroup",
+      "sublabel": "系统树 canonical / 用户树 custom",
+      "row": 4,
+      "col": 4,
+      "size": [
+        210,
+        84
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Spatial Experience 常驻 Canvas",
+      "wraps": [
+        "stage_canvas",
+        "camera_controller",
+        "reveal_plan",
+        "preview_scene",
+        "preview_tree"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "app_router",
+      "to": "experience_shell",
+      "label": "挂载",
+      "labelDy": 24
+    },
+    {
+      "id": "c2",
+      "from": "app_router",
+      "to": "tree_workspace",
+      "label": "lazy route"
+    },
+    {
+      "id": "c3",
+      "from": "experience_shell",
+      "to": "global_nav",
+      "label": "导航槽"
+    },
+    {
+      "id": "c4",
+      "from": "experience_shell",
+      "to": "stage_canvas",
+      "label": "model + phase",
+      "labelDy": 24
+    },
+    {
+      "id": "c5",
+      "from": "stores",
+      "to": "experience_shell",
+      "label": "学习状态"
+    },
+    {
+      "id": "c6",
+      "from": "graph_canonical",
+      "to": "stage_canvas",
+      "label": "canonical 节点"
+    },
+    {
+      "id": "c7",
+      "from": "stage_canvas",
+      "to": "reveal_plan",
+      "label": "Opening / 提取共用"
+    },
+    {
+      "id": "c8",
+      "from": "stage_canvas",
+      "to": "camera_controller",
+      "label": "唯一相机"
+    },
+    {
+      "id": "c9",
+      "from": "stage_canvas",
+      "to": "preview_scene",
+      "label": "library / tree 模式",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c10",
+      "from": "preview_scene",
+      "to": "preview_tree",
+      "label": "每棵树常驻",
+      "labelDy": 40
+    },
+    {
+      "id": "c11",
+      "from": "goal_composer",
+      "to": "transition_store",
+      "label": "draft + seedPointIds"
+    },
+    {
+      "id": "c12",
+      "from": "transition_store",
+      "to": "stage_canvas",
+      "label": "提取相位",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "c13",
+      "from": "domain_registry",
+      "to": "preview_scene",
+      "label": "读取领域"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "After 已收敛",
+      "items": [
+        "Opening 从第一帧渲染完整 Universe，只改亮度与传播",
+        "全站唯一 CameraController 拥有相机，提取期间用户无法抢占",
+        "系统知识树直接复用 Universe canonical 坐标，不再重新布局",
+        "GraphRevealPlan 同时服务 Opening 与 HumanRAG 目标提取"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "保留边界",
+      "items": [
+        "用户自建树仍允许 layoutCustomTree 自定义布局",
+        "Path / Verify 左侧模型只读：树在转，相机与交互锁死",
+        "次要操作统一收进 ... disclosure，主按钮任何 viewport 完整可见"
+      ]
+    }
+  ]
+}

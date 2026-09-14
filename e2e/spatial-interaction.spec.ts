@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetDemoState } from './helpers';
+import { clickPageAction, expectPageAction, resetDemoState } from './helpers';
 
 test.describe('三维知识空间交互', () => {
   test.beforeEach(async ({ page }) => {
@@ -48,10 +48,9 @@ test.describe('三维知识空间交互', () => {
     await expect(canvas).toBeVisible();
     await expect(page).toHaveURL(/\/universe$/);
 
-    const overview = page.getByRole('button', { name: '视图复位' });
-    await expect(overview).toBeVisible();
-    await overview.click();
+    await clickPageAction(page, '视图复位');
     await expect(detail).toBeHidden();
-    await expect(overview).toBeVisible();
+    // 次要操作收进 `...` 后，点击操作会收起面板，但操作本身仍可再次到达。
+    await expectPageAction(page, '视图复位');
   });
 });

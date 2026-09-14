@@ -8,10 +8,10 @@ import type {
   VisualState,
 } from './types';
 import { buildCausalCorridor } from './causalCorridor';
+import { canonicalPosition } from './canonicalSpace';
 import { colorForBranch } from '../design/domainPalette';
 import type { LearningState } from '../domain/learning/deriveLearningState';
 
-const SPACE_SCALE: [number, number, number] = [1.22, 1.08, 1.22];
 const descendantsCache = new Map<string, Map<string, number>>();
 const adjacencyByNode = new Map<string, Set<string>>();
 const hierarchyChildren = new Map<string, string[]>();
@@ -124,14 +124,6 @@ function visualState(
   return 'dormant';
 }
 
-function getStablePosition(node: KnowledgeNode): [number, number, number] {
-  return [
-    node.basePosition[0] * SPACE_SCALE[0],
-    node.basePosition[1] * SPACE_SCALE[1],
-    node.basePosition[2] * SPACE_SCALE[2],
-  ];
-}
-
 function realPathEdgeIds(path: string[]) {
   const ids = new Set<string>();
   for (let index = 0; index < path.length - 1; index += 1) {
@@ -178,7 +170,7 @@ export function buildSceneModel(input: SceneModelInput): SceneModel {
     );
     const state = visualState(relevance, node.id, selectedNodeId, upstreamNodeIds, downstreamNodeIds, lateralNodeIds, learningPathIds);
     // 选择只改变信息层级与明暗，绝不移动拓扑。这样边不会刷新，用户也不会失去空间记忆。
-    const displayPosition = getStablePosition(node);
+    const displayPosition = canonicalPosition(node.basePosition);
     const labelVisible =
       node.id === selectedNodeId ||
       node.id === hoveredNodeId ||

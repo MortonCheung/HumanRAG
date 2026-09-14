@@ -39,6 +39,8 @@ function SpatialExperience() {
   const directUniverse = location.pathname === ROUTES.universe;
   const spatialTreeMatch = matchPath('/library/:libraryId/tree/:treeId/*', location.pathname)
     ?? matchPath('/library/:libraryId/tree/:treeId', location.pathname);
+  // Path / Verify workspaces are display models; the tree stage is readonly there.
+  const treeWorkspaceReadOnly = Boolean(spatialTreeMatch && (location.pathname.endsWith('/path') || location.pathname.endsWith('/verify')));
   const libraryRoute = location.pathname === ROUTES.library;
   const [phase, setPhase] = useState<SpatialExperiencePhase>(openingRoute ? 'intro' : 'universe');
   const [canvasReady, setCanvasReady] = useState(false);
@@ -130,12 +132,12 @@ function SpatialExperience() {
   }, [extractionPhase, libraryRoute, resetExtraction]);
 
   const extractionStatus = {
-    highlighting: '已找到相关知识',
-    detaching: '正在分离原有关系',
-    receding: '正在收拢学习范围',
-    forming: '正在形成知识树',
-    connecting: '正在连接知识关系',
-    ready: '知识树已经就绪',
+    highlighting: '找到相关知识了',
+    detaching: '正在整理关系',
+    receding: '正在收起其他内容',
+    forming: '正在整理成树',
+    connecting: '正在补上关系',
+    ready: '知识树已生成',
   }[extractionPhase as Exclude<typeof extractionPhase, 'idle' | 'handoff'>];
 
   return (
@@ -144,7 +146,7 @@ function SpatialExperience() {
         <SceneBoundary key={attempt} onError={handleError}>
           <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
-            onEntryComplete={finishEntry} />
+            onEntryComplete={finishEntry} treeReadOnly={treeWorkspaceReadOnly} />
         </SceneBoundary>
         <GlobalNav concealed={(openingRoute || directUniverse) && phase !== 'settling' && phase !== 'universe'} />
         {(openingRoute || directUniverse) && <UniversePage />}

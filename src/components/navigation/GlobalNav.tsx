@@ -40,18 +40,15 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
   }, [pathname, wide]);
 
   useLayoutEffect(() => {
-    // Resizing must not strand keyboard focus inside a now-hidden disclosure,
-    // or on a mobile trigger that disappears at the desktop breakpoint.
+    // Secondary actions live behind one disclosure at every width, so closing a
+    // disclosure (resize, route change, outside click) must return focus to its
+    // trigger instead of stranding it inside a now-hidden panel.
     const focused = document.activeElement;
     for (const menu of [appMenu.current, actionMenu.current]) {
       if (!menu || !focused || !menu.contains(focused)) continue;
       const trigger = menu.querySelector('button');
       const panel = menu.querySelector<HTMLElement>('nav, .context-nav__actions-slot');
-      if (!wide && panel?.contains(focused)) trigger?.focus();
-      if (wide && focused === trigger) {
-        (panel?.querySelector<HTMLElement>('a[href], button:not(:disabled), input, select')
-          ?? appMenu.current?.querySelector<HTMLElement>('a[href]'))?.focus();
-      }
+      if (panel?.contains(focused) && panel.hasAttribute('hidden')) trigger?.focus();
     }
   }, [wide]);
 
@@ -92,7 +89,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     };
   }, [wide, appOpen, actionsOpen]);
 
-  const fallbackTitle = pathname === ROUTES.library ? '计算机科学' : pathname === ROUTES.progress ? '学习证据' : pathname === ROUTES.universe ? '知识空间' : '';
+  const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '学习记录' : pathname === ROUTES.universe ? '知识空间' : '';
 
   return (
     <motion.header
@@ -132,7 +129,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
           className="context-nav__overflow"
         >
           <button type="button" className="context-nav__button context-nav__more" aria-label="页面操作" aria-controls="context-nav-actions" aria-expanded={actionsOpen} onClick={() => { setActionsOpen((open) => !open); setAppOpen(false); }}><DotsThree size={24} aria-hidden="true" /></button>
-          <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!wide && !actionsOpen} />
+          <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!actionsOpen} />
         </div>
         <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />
       </div>

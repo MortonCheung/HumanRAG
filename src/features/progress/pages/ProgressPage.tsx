@@ -16,7 +16,7 @@ import { getLearningRecommendation } from '../../../ai/learningRecommendation';
 import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
 import '../progress.css';
 
-const SOURCE = { diagnostic: '尝试', 'guided-practice': '引导练习', 'independent-check': '独立验证', practice: '练习' };
+const SOURCE = { diagnostic: '尝试', 'guided-practice': '练习', 'independent-check': '测验', practice: '练习' };
 const HELP = { independent: '无提示', hint: '使用提示', demonstration: '示范后完成', unknown: '帮助情况未知' };
 function formatResponse(value: string) {
   try { const parsed = JSON.parse(value); if (Array.isArray(parsed.values)) return `${parsed.values.join('、')}；${TCP_REASONS.find((reason) => reason.id === parsed.reason)?.text ?? '未记录理由'}`; } catch { /* Old snapshots may contain plain text. */ }
@@ -38,10 +38,10 @@ interface PointEvidenceState {
 }
 
 const STATUS_GROUPS: Array<{ title: string; matches: (item: PointEvidenceState) => boolean }> = [
-  { title: '已独立验证', matches: (item) => item.state === 'verified' },
+  { title: '已掌握', matches: (item) => item.state === 'verified' },
   { title: '需要巩固', matches: (item) => item.state === 'needs-reinforcement' },
-  { title: '辅助下完成', matches: (item) => item.state === 'needs-verification' && item.assisted },
-  { title: '待重新验证', matches: (item) => (item.state === 'needs-verification' && !item.assisted) || item.state === 'learning' },
+  { title: '提示后完成', matches: (item) => item.state === 'needs-verification' && item.assisted },
+  { title: '待测验', matches: (item) => (item.state === 'needs-verification' && !item.assisted) || item.state === 'learning' },
 ];
 
 export function ProgressPage() {
@@ -71,9 +71,9 @@ export function ProgressPage() {
     ? actionForState(deriveLearningStateFromEvidence(recommendation.pointId, learnerId, records))
     : 'study';
   return <div className="page">
-    <WorkspaceHeader title="学习证据" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
+    <WorkspaceHeader title="学习记录" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
     <main className="learning-records">
-      <header className="learning-records__intro"><p className="tree-panel-kicker">学习证据</p><h1>提示后做对，不等于独立掌握。</h1><p>这里只保留可核验的作答、帮助情况、任务曝光和下一步依据。</p></header>
+      <header className="learning-records__intro"><h1>学习记录</h1><p>这里记录你的作答、提示使用和需要巩固的内容。</p></header>
       {storageError && <p className="lesson-save-error" role="alert">{storageError}</p>}
       <section className="evidence-status" aria-labelledby="evidence-status-title"><h2 id="evidence-status-title">当前学习状态</h2><div className="evidence-status__groups">
         {STATUS_GROUPS.map((group) => { const items = pointStates.filter(group.matches); return <section key={group.title}><h3>{group.title}</h3>{items.length ? items.map((item) => <EvidenceStatusRow key={item.pointId} item={item} />) : <p>暂无</p>}</section>; })}
@@ -85,9 +85,9 @@ export function ProgressPage() {
             const pointId = task.unitId.replace(/^tu-/, '');
             return <article key={task.id}><strong>{label}</strong><p>{task.reason}</p><Link className="text-button" to={actionPath(pointId, 'teach')}>带我学 <ArrowRight size={16} /></Link></article>;
           }) : <p className="progress-empty">当前没有待处理误区。</p>}</section>
-          <section className="evidence-next"><h2>下一步</h2>{recommendation ? <><strong>{contentRepository.getNode(recommendation.pointId)?.name ?? recommendation.pointId}</strong><p>{recommendation.reasons.join(' ')}</p><Link className="text-button text-button--primary" to={actionPath(recommendation.pointId, recommendationAction)}>{recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '重新验证' : '从这里继续'} <ArrowRight size={16} /></Link></> : <p className="progress-empty">当前范围已完成独立验证，可从知识树选择新的方向。</p>}</section>
+          <section className="evidence-next"><h2>下一步</h2>{recommendation ? <><strong>{contentRepository.getNode(recommendation.pointId)?.name ?? recommendation.pointId}</strong><p>{recommendation.reasons.join(' ')}</p><Link className="text-button text-button--primary" to={actionPath(recommendation.pointId, recommendationAction)}>{recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '再测一次' : '从这里继续'} <ArrowRight size={16} /></Link></> : <p className="progress-empty">当前范围已完成独立验证，可从知识树选择新的方向。</p>}</section>
         </div>
-        <section className="recent-evidence" aria-labelledby="recent-evidence-title"><h2 id="recent-evidence-title">最近形成的证据</h2>{visible.length ? visible.slice(0, 80).map((record) => <EvidenceEntry key={record.id} record={record} />) : <div className="learning-records__empty"><p>还没有可核验的作答证据。</p><Link className="text-button" to="/library">选择知识点 <ArrowRight size={16} /></Link></div>}{visible.length > 80 && <p className="learning-record__legacy">展示最近 80 条；更早的证据仍保留在本地。</p>}</section>
+        <section className="recent-evidence" aria-labelledby="recent-evidence-title"><h2 id="recent-evidence-title">最近记录</h2>{visible.length ? visible.slice(0, 80).map((record) => <EvidenceEntry key={record.id} record={record} />) : <div className="learning-records__empty"><p>还没有学习记录。</p><Link className="text-button" to="/library">选择知识点 <ArrowRight size={16} /></Link></div>}{visible.length > 80 && <p className="learning-record__legacy">展示最近 80 条；更早的记录仍保留在本地。</p>}</section>
       </div>
     </main>
   </div>;
@@ -95,7 +95,7 @@ export function ProgressPage() {
 
 function EvidenceStatusRow({ item }: { item: PointEvidenceState }) {
   const action = actionForState(item.state);
-  const label = action === 'teach' ? '巩固' : action === 'verify' ? '重新验证' : item.state === 'verified' ? '查看' : '继续学习';
+  const label = action === 'teach' ? '巩固' : action === 'verify' ? '再测一次' : item.state === 'verified' ? '查看' : '继续学习';
   return <Link to={actionPath(item.pointId, action)}><span>{contentRepository.getNode(item.pointId)?.name ?? item.pointId}</span><small>{label}</small><ArrowRight size={14} aria-hidden="true" /></Link>;
 }
 

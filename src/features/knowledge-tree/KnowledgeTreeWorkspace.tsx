@@ -65,7 +65,7 @@ export function KnowledgeTreeWorkspace() {
       />
       <div className="knowledge-tree-workspace__body">
         <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`} />
-        <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习路径' : '能力验证'}>
+        <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习' : '测验'}>
           <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
           {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
         </aside>
@@ -91,10 +91,10 @@ function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evide
     : recommendedActionFor(learningState);
   return (
     <section className="tree-point-detail">
-      <button type="button" className="tree-workspace-back" onClick={onClose}>返回{mode === 'path' ? '学习路径' : '能力验证'}</button>
+      <button type="button" className="tree-workspace-back" onClick={onClose}>返回{mode === 'path' ? '学习' : '测验'}</button>
       <p className="tree-panel-kicker">知识点</p>
       <h1>{point.name}</h1>
-      <p className="tree-point-detail__description">{point.description || '这个知识点还没有补充说明。'}</p>
+      {point.description && <p className="tree-point-detail__description">{point.description}</p>}
       <p className={`tree-point-detail__state tree-point-detail__state--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</p>
       {recommendation?.pointId === point.id && <section className="tree-point-detail__recommendation"><h2>为什么建议从这里继续</h2><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
       <dl className="tree-point-detail__facts">
@@ -104,9 +104,9 @@ function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evide
       </dl>
       {point.learningObjectives.length > 0 && <div className="tree-point-detail__section"><h2>学习目标</h2><ul>{point.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ul></div>}
       <div className="point-actions" role="group" aria-label="知识点操作">
-        <button type="button" aria-label="自主学习" className={recommendedAction === 'study' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>自主学习</strong>{recommendedAction === 'study' && <small>当前建议</small>}</span></button>
-        <button type="button" aria-label="带我学" className={recommendedAction === 'teach' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong>{recommendedAction === 'teach' ? <small>当前建议</small> : <small>HumanRAG 引导</small>}</span></button>
-        <button type="button" aria-label="验证掌握" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>验证掌握</strong>{recommendedAction === 'verify' && <small>当前建议</small>}</span></button>
+        <button type="button" aria-label="学习" className={recommendedAction === 'study' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>学习</strong>{recommendedAction === 'study' && <small>建议</small>}</span></button>
+        <button type="button" aria-label="带我学" className={recommendedAction === 'teach' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong>{recommendedAction === 'teach' && <small>建议</small>}</span></button>
+        <button type="button" aria-label="测验" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>测验</strong>{recommendedAction === 'verify' && <small>建议</small>}</span></button>
       </div>
     </section>
   );

@@ -71,7 +71,7 @@ export function deriveLearningStatus(nodeId: string, learnerId: string, evidence
   let status: LearningStatus = recorded.length ? 'learning' : 'unknown';
   let reason = recorded.length
     ? '已有学习或训练作答，尚未完成独立验证。'
-    : entries.length ? '旧证据缺少作答快照、内容版本或来源，不能据此确认当前状态。' : '还没有可核验的学习证据。';
+    : entries.length ? '旧证据缺少作答快照、内容版本或来源，不能据此确认当前状态。' : '还没有学习记录。';
 
   if (lastAssisted > Math.max(lastFailure, lastPass)) {
     status = 'needs-verification';

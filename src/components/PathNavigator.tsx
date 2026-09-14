@@ -18,7 +18,7 @@ export function PathNavigator() {
       {open && path.length > 0 && node && (
         <motion.nav
           className="path-navigator"
-          aria-label="推荐学习路径"
+          aria-label="推荐学习顺序"
           initial={{ opacity: 0, y: 16, x: '-50%' }}
           animate={{ opacity: 1, y: 0, x: '-50%' }}
           exit={{ opacity: 0, y: 10, x: '-50%' }}
@@ -31,7 +31,7 @@ export function PathNavigator() {
             <span style={{ '--path-progress': `${((index + 1) / path.length) * 100}%` } as React.CSSProperties} />
           </button>
           <button className="path-navigator__step" onClick={() => index < path.length - 1 && selectNode(path[index + 1])} disabled={index === path.length - 1} aria-label="下一个路径节点"><CaretRight size={16} /></button>
-          <button className="path-navigator__close" onClick={close} aria-label="关闭学习路径"><X size={15} /></button>
+          <button className="path-navigator__close" onClick={close} aria-label="关闭学习顺序"><X size={15} /></button>
         </motion.nav>
       )}
     </AnimatePresence>

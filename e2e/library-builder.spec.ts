@@ -13,8 +13,10 @@ test.describe('知识库、知识树与知识点创建', () => {
     await expect(page.locator('[data-spatial-stage] canvas')).toHaveCount(1);
     await expect(page.getByRole('listbox', { name: '知识树列表' })).toBeVisible();
     await expect(page.getByRole('button', { name: /进入知识树/ })).toBeVisible();
-    await expect(page.getByRole('button', { name: /能力验证/ })).toBeVisible();
+    await page.getByRole('button', { name: '页面操作' }).click();
+    await expect(page.getByRole('button', { name: /测验/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /创建知识树/ })).toBeVisible();
+    await page.getByRole('button', { name: '页面操作' }).click();
 
     const canvas = page.locator('[data-spatial-stage] canvas');
     const canvasIdentity = await canvas.evaluateHandle((element) => element);
@@ -30,7 +32,7 @@ test.describe('知识库、知识树与知识点创建', () => {
     await expect(page).toHaveURL(/\/library$/);
     await page.getByRole('button', { name: /进入知识树/ }).click();
     await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-ai\/path$/);
-    await expect(page.getByRole('heading', { name: '沿知识关系前进' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '学习' })).toBeVisible();
     await expect(canvas).toHaveAttribute('data-tree-scene-mode', 'tree');
     await expect(canvas).toHaveAttribute('data-tree-universe-instance', treeUniverseIdentity!);
     expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);

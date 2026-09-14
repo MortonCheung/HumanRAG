@@ -5,6 +5,8 @@ export interface GoalTreeDraft {
   name: string;
   description: string;
   pointIds: string[];
+  /** 自然语言最直接命中的起点，Reveal 从这里出发。 */
+  seedPointIds: string[];
   reasons: Record<string, string[]>;
 }
 
@@ -300,6 +302,7 @@ export function composeGoalTree(prompt: string): GoalTreeDraft {
     name: createTreeName(selectedPoints, query),
     description: `围绕“${query.original}”从当前知识库整理的学习范围，包含 ${pointIds.length} 个已有知识点。`,
     pointIds,
+    seedPointIds: seedIds.filter((id) => selected.has(id)),
     reasons,
   };
 }

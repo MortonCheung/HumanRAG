@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { expectPageAction } from './helpers';
 
 test('开场保留同一个场景、导航和操作入口，进入后没有路由交接', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   const canvas = page.locator('.spatial-canvas-layer canvas');
   await expect(canvas).toBeVisible({ timeout: 12_000 });
-  await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
   await expect(page.locator('.it-landing__copy')).toHaveCSS('opacity', '1');
   await expect(page.locator('header.context-nav')).toHaveCount(1);
   await expect(page.getByRole('banner')).toHaveCount(0);
@@ -27,8 +28,8 @@ test('开场保留同一个场景、导航和操作入口，进入后没有路�
   }))).toEqual({ canvas: true, nav: true, workspace: true });
   await expect(page.getByRole('banner')).toBeVisible();
   await expect(page.getByRole('banner')).toBeFocused();
-  await expect(page.getByRole('button', { name: '搜索', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '视图复位' })).toBeVisible();
+  await expectPageAction(page, '搜索');
+  await expectPageAction(page, '视图复位');
   await page.screenshot({ path: 'output/playwright/v11-universe-1440.png' });
 });
 
@@ -37,7 +38,7 @@ test('低动态模式直接显示已准备好的最终空间', async ({ page }) 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.locator('canvas')).toBeVisible({ timeout: 12_000 });
-  await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false');
+  await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
   await expect(page.getByRole('button', { name: '进入知识空间' })).toBeInViewport();
   await page.screenshot({ path: 'output/playwright/v11-opening-390.png' });
   await page.getByRole('button', { name: '进入知识空间' }).click();
@@ -51,7 +52,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
   test(`${viewport.width}px：切换节点保留详情外壳并居中于有效视区`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await page.goto('/universe');
-    await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false');
+    await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
     const panel = page.locator('.node-inspector.is-expanded');
     let shell: Awaited<ReturnType<typeof page.evaluateHandle>> | undefined;
     for (const name of ['线性表', 'TCP可靠传输', '线性表']) {

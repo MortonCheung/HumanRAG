@@ -4,6 +4,7 @@ import gsap from 'gsap';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { KnowledgePoint, KnowledgeRelation, KnowledgeTree } from '../../../domain/knowledge/types';
+import { canonicalPositionMap } from '../../../graph/canonicalSpace';
 import { layoutCustomTree, type TreePositionMap } from '../../library-builder/customTreeLayout';
 import { customTreeFrame } from '../../library-builder/customTreeFraming';
 import { NeuronStar } from '../../../scene/NodePointField';
@@ -22,9 +23,15 @@ export interface PreviewTreeGraph {
 
 export function buildPreviewTreeGraph(tree: KnowledgeTree, points: KnowledgePoint[], relations: KnowledgeRelation[]): PreviewTreeGraph {
   const pointIds = new Set(points.map((point) => point.id));
-  const nodes = toCustomNodes(points).map((node) => ({ ...node, position: undefined }));
+  const nodes = toCustomNodes(points);
   const edges = toCustomEdges(relations, pointIds);
-  const positions = layoutCustomTree(nodes, edges);
+  // System tree = Universe canonical topology；只有 user tree 允许重新布局。
+  const positions = tree.ownerType === 'system'
+    ? canonicalPositionMap(points)
+    : layoutCustomTree(
+        nodes.map((node) => ({ ...node, position: undefined })),
+        edges,
+      );
   return { tree, nodes, edges, positions, offset: customTreeFrame(positions, 1, 1, true).offset };
 }
 

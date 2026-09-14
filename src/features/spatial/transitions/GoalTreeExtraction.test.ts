@@ -19,7 +19,7 @@ describe('GoalTreeExtraction', () => {
   it('从第一帧就复用正式知识树布局与居中偏移', () => {
     const state = migrateV9();
     const pointIds = ['direction-408', 'course-computer-networks', 'knowledge-tcp', 'practice-tcp-state'];
-    const draft = { name: '网络巩固', description: '', pointIds, reasons: {} };
+    const draft = { name: '网络巩固', description: '', pointIds, seedPointIds: ['knowledge-tcp'], reasons: {} };
     const result = buildGoalTreeExtractionLayout(draft);
     const nodes = toCustomNodes(pointIds.map((id) => state.points.find((point) => point.id === id)!)).map((node) => ({ ...node, position: undefined }));
     const expected = layoutCustomTree(nodes, toCustomEdges(state.relations, new Set(pointIds)));
@@ -36,7 +36,7 @@ describe('GoalTreeExtraction', () => {
       identity: { name: '网络巩固', description: '', color: '#b1d8ca' },
       pointIds,
     });
-    const result = buildGoalTreeExtractionLayout({ name: tree.name, description: '', pointIds, reasons: {} }, tree.id);
+    const result = buildGoalTreeExtractionLayout({ name: tree.name, description: '', pointIds, seedPointIds: ['knowledge-tcp'], reasons: {} }, tree.id);
     const local = new THREE.Vector3(...result.centeredPositions.get('knowledge-tcp')!);
     const expected = local
       .applyAxisAngle(new THREE.Vector3(0, 1, 0), treeRotationPhase(tree.id))

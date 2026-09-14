@@ -35,7 +35,7 @@ export function LibraryHomePage() {
       <WorkspaceHeader
         title="知识库"
         primaryAction={selectedTree ? <button type="button" className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.treePath(domain.library.id, selectedTree.id))}>进入知识树</button> : undefined}
-        actions={<><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.treeNew(domain.library.id))}><Plus size={16} aria-hidden="true" />创建知识树</button><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.libraryPractice(domain.library.id))}><Exam size={16} aria-hidden="true" />能力验证</button></>}
+        actions={<><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.treeNew(domain.library.id))}><Plus size={16} aria-hidden="true" />创建知识树</button><button type="button" className="context-nav__button" onClick={() => navigate(ROUTES.libraryPractice(domain.library.id))}><Exam size={16} aria-hidden="true" />测验</button></>}
       />
       <div className="library-manager__inner">
         <header className="library-manager__header">

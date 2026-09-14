@@ -8,8 +8,8 @@ export const LEARNING_STATE_LABELS: Record<LearningState, string> = {
   unknown: '尚未开始',
   learning: '学习中',
   'needs-reinforcement': '需要巩固',
-  'needs-verification': '待重新验证',
-  verified: '已独立验证',
+  'needs-verification': '待测验',
+  verified: '已掌握',
 };
 
 /**

@@ -8,7 +8,7 @@ import { resetDemoData } from '../../services/resetDemoData';
 const ITEMS = [
   { to: ROUTES.universe, label: '知识空间', icon: <Path size={19} weight="regular" /> },
   { to: ROUTES.library, label: '知识库', icon: <Books size={19} weight="regular" /> },
-  { to: ROUTES.progress, label: '学习证据', icon: <Notebook size={19} weight="regular" /> },
+  { to: ROUTES.progress, label: '学习记录', icon: <Notebook size={19} weight="regular" /> },
 ] as const;
 
 export function MobileNav() {

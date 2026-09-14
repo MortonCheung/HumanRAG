@@ -2,12 +2,7 @@
   position: fixed;
   inset: 0 0 auto;
   z-index: 30;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 16px;
   height: var(--it-nav-height, 64px);
-  padding: 0 32px;
   border-bottom: 1px solid var(--it-rule, rgb(224 231 242 / .1));
   background: rgb(11 14 20 / .92);
   backdrop-filter: blur(20px);
@@ -16,16 +11,41 @@
   font-size: 14px;
   view-transition-name: context-nav;
 }
-.context-nav__leading, .context-nav__trailing, .context-nav__title-slot, .context-nav__primary-slot { display: flex; align-items: center; min-width: 0; gap: 8px; }
-.context-nav__leading { justify-self: start; }
 .context-nav[data-concealed] { pointer-events: none; }
-.context-nav__trailing { justify-self: end; }
-.context-nav__center { min-width: 0; text-align: center; }
-.context-nav__title-slot { justify-content: center; gap: 18px; }
+.context-nav__leading {
+  position: absolute;
+  top: 50%;
+  left: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(50vw - 170px);
+  transform: translateY(-50%);
+}
+.context-nav__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(32vw, 420px);
+  min-width: 0;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.context-nav__title-slot { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; pointer-events: auto; }
 .context-nav__title-slot:not(:empty) + .context-nav__fallback { display: none; }
 .context-nav__title, .context-nav__fallback { overflow: hidden; max-width: 24vw; font-size: 14px; font-weight: 560; white-space: nowrap; text-overflow: ellipsis; }
+.context-nav__trailing {
+  position: absolute;
+  top: 50%;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translateY(-50%);
+}
 .context-nav__back-slot { min-width: 44px; min-height: 44px; }
-.context-nav__primary-slot { min-width: 88px; min-height: 44px; justify-content: flex-end; }
+.context-nav__primary-slot { display: flex; align-items: center; flex-shrink: 0; min-width: 44px; min-height: 44px; }
 .context-nav__app, .context-nav__overflow { position: relative; }
 .context-nav__brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 8px; margin-left: -8px; border: 0; border-radius: 9px; background: transparent; color: var(--it-text); font: inherit; font-weight: 650; letter-spacing: -.04em; cursor: pointer; transition: background 180ms ease, color 180ms ease; }
 .context-nav__desktop-brand { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; color: var(--it-text); font-weight: 650; letter-spacing: -.04em; text-decoration: none; }
@@ -75,7 +95,25 @@
 .context-nav__app-menu a.active { color: var(--it-accent); }
 .context-nav__app-menu[hidden], .context-nav__actions-slot[hidden] { display: none; }
 .context-nav__overflow:has(.context-nav__actions-slot:empty) { visibility: hidden; }
-.context-nav__more { display: none; }
+.context-nav__more { display: inline-flex; }
+.context-nav__actions-slot {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  max-width: min(320px, calc(100vw - 32px));
+  max-height: min(70dvh, 540px);
+  overflow-y: auto;
+  align-items: stretch;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid var(--it-rule-strong);
+  border-radius: 12px;
+  background: var(--it-surface, #101518);
+  box-shadow: 0 14px 36px rgb(0 0 0 / .24);
+}
+.context-nav__actions-slot > :is(button, a) { justify-content: flex-start; width: 100%; }
+.context-nav__actions-slot:not([hidden]) { animation: context-menu-enter 180ms cubic-bezier(.2, .7, .2, 1); transform-origin: top; }
 .context-nav__mode-links { display: flex; align-items: center; gap: 2px; padding: 3px; }
 .context-nav__mode-links a { min-height: 36px; padding: 0 11px; border-radius: 7px; }
 .context-nav__mode-select { display: none; max-width: 100px; }
@@ -88,7 +126,8 @@
 .context-nav__guard-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .context-nav__guard .context-nav__button:focus-visible { outline: 2px solid var(--it-accent); outline-offset: 3px; }
 @media (max-width: 1279px) {
-  .context-nav { padding: 0 24px; gap: 12px; }
+  .context-nav__leading { left: 24px; }
+  .context-nav__trailing { right: 24px; }
   .context-nav__title-slot { gap: 8px; }
   .context-nav__back span { display: none; }
   .context-nav__utility span { display: none; }
@@ -101,28 +140,27 @@
 }
 @media (min-width: 768px) and (max-width: 1099px) {
   .context-nav__search { width: 120px; padding: 0 8px; gap: 6px; }
-  .context-nav { padding: 0 16px; gap: 8px; font-size: 13px; }
-  .context-nav__actions-slot > .context-nav__button:has(svg) { width: 44px; padding: 0; font-size: 0; gap: 0; }
-  .context-nav__actions-slot > .context-nav__button:has(svg) span { display: none; }
+  .context-nav { font-size: 13px; }
+  .context-nav__leading { left: 16px; }
+  .context-nav__trailing { right: 16px; }
   .context-nav__title-slot:has(.context-nav__modes) > .context-nav__title { display: none; }
   .context-nav__mode-links a { padding: 0 7px; }
 }
 @media (max-width: 767px) {
   .context-nav__search { width: 100%; }
   .context-nav:has(.context-nav__primary-slot > :nth-child(2)) .context-nav__title-slot:has(.context-nav__modes) > .context-nav__title { display: none; }
-  .context-nav__app-menu:not([hidden]), .context-nav__actions-slot:not([hidden]) { animation: context-menu-enter 180ms cubic-bezier(.2, .7, .2, 1); transform-origin: top; }
-  .context-nav__more { display: inline-flex; }
-  .context-nav__actions-slot { position: absolute; top: calc(100% + 8px); right: 0; min-width: 200px; max-width: calc(100vw - 32px); max-height: min(70dvh, 540px); overflow-y: auto; align-items: stretch; flex-direction: column; padding: 8px; border: 1px solid var(--it-rule-strong); border-radius: 12px; background: var(--it-surface, #101518); box-shadow: 0 14px 36px rgb(0 0 0 / .24); }
-  .context-nav__actions-slot > :is(button, a) { justify-content: flex-start; width: 100%; }
+  .context-nav__app-menu:not([hidden]) { animation: context-menu-enter 180ms cubic-bezier(.2, .7, .2, 1); transform-origin: top; }
   .context-nav__utility span { display: inline; }
   .context-nav__title { max-width: 100%; }
 }
 @media (max-width: 767px) {
-  .context-nav { height: var(--it-nav-height, 56px); padding: 0 16px; gap: 6px; }
+  .context-nav { height: var(--it-nav-height, 56px); }
   .context-nav__brand { justify-content: center; }
   .context-nav__brand-name, .context-nav__brand > svg { display: none; }
   .context-nav__monogram { display: inline; font-size: 20px; }
-  .context-nav__leading, .context-nav__trailing { gap: 4px; }
+  .context-nav__leading { left: 16px; gap: 4px; max-width: calc(50vw - 70px); }
+  .context-nav__trailing { right: 16px; gap: 4px; }
+  .context-nav__center { width: min(34vw, 210px); }
   .context-nav__title-slot { gap: 4px; }
   .context-nav__mode-links { display: none; }
   .context-nav__mode-select { display: inline-flex; }
@@ -133,8 +171,10 @@
   .context-nav__primary-slot { min-width: 44px; }
 }
 @keyframes context-menu-enter { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@media (max-width: 380px) {
-  .context-nav { padding-inline: 12px; }
+@media (max-width: 390px) {
+  .context-nav__leading { left: 12px; }
+  .context-nav__trailing { right: 12px; }
+  .context-nav__center { width: 30vw; }
   .context-nav__primary-slot:has(> :nth-child(2)) .context-nav__button { width: 44px; padding: 0; font-size: 0; gap: 0; }
   .context-nav__primary-slot:has(> :nth-child(2)) .context-nav__button svg { display: block; }
 }

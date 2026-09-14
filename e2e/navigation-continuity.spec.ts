@@ -13,7 +13,7 @@ async function pageAction(page: Page, name: string) {
 }
 
 for (const width of [1440, 768, 390]) {
-  test(`${width}px：五轮知识库、学习路径与能力验证保持同一棵空间树`, async ({ page }) => {
+  test(`${width}px：五轮知识库、学习与测验保持同一棵空间树`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 900 });
     await resetDemoState(page);
@@ -34,27 +34,27 @@ for (const width of [1440, 768, 390]) {
       const expandedCount = await pathGroups.evaluateAll((headers) => headers.filter((header) => header.getAttribute('aria-expanded') === 'true').length);
       expect(expandedCount).toBeGreaterThan(0);
       expect(expandedCount).toBeLessThan(pathGroupCount);
-      await page.getByRole('searchbox', { name: '搜索学习路径' }).fill('TCP可靠传输');
+      await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
       const pathPoint = page.getByRole('button', { name: /TCP可靠传输/ });
       await expect(pathPoint).toBeVisible();
       await pathPoint.click();
-      await expect(page.getByRole('button', { name: '返回学习路径' })).toBeVisible();
+      await expect(page.getByRole('button', { name: '返回学习' })).toBeVisible();
       expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
-      await page.getByRole('button', { name: '返回学习路径' }).click();
-      await expect(page.getByRole('searchbox', { name: '搜索学习路径' })).toHaveValue('TCP可靠传输');
-      if (width < 768) await page.getByRole('combobox', { name: '知识树模式' }).selectOption('/library/computer/tree/tree-408/verify');
-      else await page.getByRole('navigation', { name: '知识树模式' }).getByRole('link', { name: '能力验证' }).click();
+      await page.getByRole('button', { name: '返回学习' }).click();
+      await expect(page.getByRole('searchbox', { name: '搜索知识点' })).toHaveValue('TCP可靠传输');
+      if (width < 768) await page.getByRole('combobox', { name: '知识树页面' }).selectOption('/library/computer/tree/tree-408/verify');
+      else await page.getByRole('navigation', { name: '知识树页面' }).getByRole('link', { name: '测验' }).click();
       await expect(page).toHaveURL(/\/tree-408\/verify$/);
-      await expect(page.getByRole('button', { name: /开始能力验证/ })).toBeEnabled();
+      await expect(page.getByRole('button', { name: /开始测验/ })).toBeEnabled();
       const verificationGroups = page.locator('.tree-verify-panel .point-group__header');
       await expect(verificationGroups.first()).toBeVisible();
       expect(await verificationGroups.count()).toBeGreaterThan(3);
       const verificationRows = page.locator('.tree-verify-panel .point-group ul li');
       await expect(verificationRows.first()).toBeVisible();
       await verificationRows.first().getByRole('button').click();
-      await expect(page.getByRole('button', { name: '返回能力验证' })).toBeVisible();
+      await expect(page.getByRole('button', { name: '返回测验' })).toBeVisible();
       expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
-      await page.getByRole('button', { name: '返回能力验证' }).click();
+      await page.getByRole('button', { name: '返回测验' }).click();
       await expect(page.getByRole('banner')).toHaveCount(1);
       await expectNoHorizontalOverflow(page);
       await page.getByRole('button', { name: '返回知识库', exact: true }).click();

@@ -29,7 +29,7 @@ interface PreviewCameraState {
 let previewUniverseInstance = 0;
 
 /** Every tree remains mounted while Library preview becomes the formal workspace. */
-export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'library' | 'tree'; motionAllowed: boolean }) {
+export function LibraryPreviewUniverseScene({ mode, motionAllowed, readOnly }: { mode: 'library' | 'tree'; motionAllowed: boolean; readOnly: boolean }) {
   const selectedTreeId = useSpatialStageStore((state) => state.selectedTreeId);
   const selectedPointId = useSpatialStageStore((state) => state.selectedTreePointId);
   const hoveredPointId = useSpatialStageStore((state) => state.hoveredTreePointId);
@@ -67,8 +67,8 @@ export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'li
           anchor={anchors.get(graph.tree.id) ?? new THREE.Vector3()}
           motionAllowed={motionAllowed}
           holdRotation={graph.tree.id === handoffTreeId}
-          autoRotate={mode === 'library'}
-          interactive={mode === 'tree' && graph.tree.id === selectedTreeId}
+          autoRotate
+          interactive={mode === 'tree' && !readOnly && graph.tree.id === selectedTreeId}
           reportRotation={graph.tree.id === selectedTreeId}
           selectedPointId={graph.tree.id === selectedTreeId ? selectedPointId : null}
           hoveredPointId={graph.tree.id === selectedTreeId ? hoveredPointId : null}
@@ -83,20 +83,22 @@ export function LibraryPreviewUniverseScene({ mode, motionAllowed }: { mode: 'li
         graphs={graphs}
         anchors={anchors}
         motionAllowed={motionAllowed}
+        readOnly={readOnly}
         handoff={mode === 'library' && Boolean(handoffTreeId && selectedTreeId === handoffTreeId)}
       />
       <LibraryPreviewClip />
-      {mode === 'library' && motionAllowed && <PreviewAnimationClock />}
+      {motionAllowed && <PreviewAnimationClock />}
     </>
   );
 }
 
-function LibraryPreviewCamera({ mode, selectedTreeId, graphs, anchors, motionAllowed, handoff }: {
+function LibraryPreviewCamera({ mode, selectedTreeId, graphs, anchors, motionAllowed, readOnly, handoff }: {
   mode: 'library' | 'tree';
   selectedTreeId: string | null;
   graphs: PreviewTreeGraph[];
   anchors: ReadonlyMap<string, THREE.Vector3>;
   motionAllowed: boolean;
+  readOnly: boolean;
   handoff: boolean;
 }) {
   const controls = useRef<CameraControlsImpl>(null);
@@ -197,7 +199,7 @@ function LibraryPreviewCamera({ mode, selectedTreeId, graphs, anchors, motionAll
     <CameraControls
       ref={controls}
       makeDefault
-      enabled={mode === 'tree'}
+      enabled={mode === 'tree' && !readOnly}
       minDistance={7}
       maxDistance={320}
       smoothTime={mode === 'tree' && motionAllowed ? 0.34 : 0}

@@ -5,7 +5,7 @@ import type gsap from 'gsap';
 import * as THREE from 'three';
 import type { CameraIntent, SceneModel } from '../graph/types';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
-import { applyCameraPose, freezeCamera, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
+import { applyCameraPose, frameSphereAlongView, freezeCamera, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
 import { createEntryShot } from './entryShot';
 import { useSpatialViewport } from '../features/spatial/SpatialViewport';
 
@@ -16,26 +16,41 @@ export interface CameraLifecycle {
   onEntryComplete: () => void;
 }
 
-export function CameraController({ intent, model, experiencePhase, motionAllowed, onEntryComplete }: Omit<CameraLifecycle, 'onReady'> & {
-  intent: CameraIntent; model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean;
+export function CameraController({ intent, model, experiencePhase, motionAllowed, onEntryComplete, openingSeedIds, extractionFrame }: Omit<CameraLifecycle, 'onReady'> & {
+  intent: CameraIntent; model: SceneModel; experiencePhase: SpatialExperiencePhase; motionAllowed: boolean; openingSeedIds: ReadonlySet<string>;
+  extractionFrame?: { active: boolean; positions: ReadonlyMap<string, [number, number, number]> | null };
 }) {
   const controls = useRef<CameraControlsImpl>(null);
   const previousPhase = useRef<SpatialExperiencePhase | null>(null);
   const timeline = useRef<gsap.core.Timeline | null>(null);
-  const current = useRef({ model, intent, experiencePhase, onEntryComplete });
-  current.current = { model, intent, experiencePhase, onEntryComplete };
+  const current = useRef({ model, intent, experiencePhase, onEntryComplete, openingSeedIds, extractionFrame });
+  current.current = { model, intent, experiencePhase, onEntryComplete, openingSeedIds, extractionFrame };
   const { camera, size, invalidate, gl } = useThree();
   const usable = useSpatialViewport();
 
   useEffect(() => {
     const instance = controls.current;
     if (!instance) return;
+    const readPose = () => ({
+      position: instance.getPosition(new THREE.Vector3(), false),
+      target: instance.getTarget(new THREE.Vector3(), false),
+    });
+    // Publish the settled pose so spatial E2E can verify camera ownership and
+    // direction stability without reading React state or the WebGL scene graph.
+    const publish = () => {
+      const { position, target } = readPose();
+      gl.domElement.dataset.spatialCamera = [position.x, position.y, position.z, target.x, target.y, target.z]
+        .map((value) => value.toFixed(3)).join(',');
+    };
     const remember = () => {
-      if (current.current.experiencePhase !== 'universe') return;
-      lastUniverseView = { position: instance.getPosition(new THREE.Vector3(), false), target: instance.getTarget(new THREE.Vector3(), false), offset: instance.getFocalOffset(new THREE.Vector3(), false), intentId: current.current.intent.id };
+      publish();
+      if (current.current.experiencePhase !== 'universe' || current.current.extractionFrame?.active) return;
+      const { position, target } = readPose();
+      lastUniverseView = { position, target, offset: instance.getFocalOffset(new THREE.Vector3(), false), intentId: current.current.intent.id };
     };
     const takeControl = () => {
-      if (current.current.experiencePhase !== 'universe') return;
+      // During extraction the camera belongs to the shot; users cannot grab it.
+      if (current.current.experiencePhase !== 'universe' || current.current.extractionFrame?.active) return;
       timeline.current?.kill();
       timeline.current = null;
       freezeCamera(instance);
@@ -43,7 +58,8 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     gl.domElement.addEventListener('pointerdown', takeControl, true);
     gl.domElement.addEventListener('wheel', takeControl, { capture: true, passive: true });
     instance.addEventListener('rest', remember);
-    return () => { remember(); gl.domElement.removeEventListener('pointerdown', takeControl, true); gl.domElement.removeEventListener('wheel', takeControl, true); instance.removeEventListener('rest', remember); };
+    publish();
+    return () => { remember(); gl.domElement.removeEventListener('pointerdown', takeControl, true); gl.domElement.removeEventListener('wheel', takeControl, true); instance.removeEventListener('rest', remember); delete gl.domElement.dataset.spatialCamera; };
   }, [gl]);
 
   useLayoutEffect(() => {
@@ -58,6 +74,12 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       return;
     }
     const all = current.current.model.nodes;
+    // Opening frames the seed cluster, not the whole universe; the camera goes to the seeds.
+    const openingNodes = all.filter((node) => current.current.openingSeedIds.has(node.id));
+    const introNodes = openingNodes.length ? openingNodes : all;
+    const introSphere = new THREE.Box3().setFromPoints(introNodes.map((node) => new THREE.Vector3(...node.displayPosition))).getBoundingSphere(new THREE.Sphere());
+    const fullSphere = new THREE.Box3().setFromPoints(all.map((node) => new THREE.Vector3(...node.displayPosition))).getBoundingSphere(new THREE.Sphere());
+    const fullDistance = THREE.MathUtils.clamp(fullSphere.radius * 2.0, 42, 165);
     const branch = all.find((node) => node.id === intent.nodeId)?.branchId;
     const focused = intent.mode === 'goal' && experiencePhase === 'universe' ? all.filter((node) => node.branchId === branch) : all;
     const sphere = new THREE.Box3().setFromPoints(focused.map((node) => new THREE.Vector3(...node.displayPosition))).getBoundingSphere(new THREE.Sphere());
@@ -69,19 +91,19 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       invalidate();
     };
     if (experiencePhase === 'intro') {
-      void instance.setFocalOffset(0, 0, 0, false);
-      const target = center.clone();
+      // Camera finds the seeds; seeds never move toward the camera.
+      const target = introSphere.center.clone();
       const direction = new THREE.Vector3(0.68, 0.38, 0.76).normalize();
-      const screenRight = new THREE.Vector3().crossVectors(direction, new THREE.Vector3(0, 1, 0)).normalize().negate();
-      target.addScaledVector(screenRight, size.width >= 820 ? -sphere.radius * 0.58 : 0);
-      if (size.width < 820) target.y -= sphere.radius * 0.24;
-      apply(target.clone().addScaledVector(direction, distance * (size.width >= 820 ? 0.98 : 1.55)), target);
+      const introDistance = THREE.MathUtils.clamp(introSphere.radius * 3.1, 13, 46);
+      void instance.setFocalOffset(0, 0, 0, false);
+      apply(target.clone().addScaledVector(direction, introDistance), target);
       return;
     }
     if (experiencePhase === 'awakening') {
       const shotTimeline = createEntryShot(
         { position: instance.getPosition(new THREE.Vector3(), false), target: instance.getTarget(new THREE.Vector3(), false) },
-        { position: overview, target: center },
+        fullSphere.center,
+        fullDistance,
         ({ position, target }) => apply(position, target),
         () => current.current.onEntryComplete(),
       );
@@ -89,6 +111,18 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       return;
     }
     if (experiencePhase === 'settling') return;
+    if (extractionFrame?.active) {
+      // Goal extraction reframes along the current view direction; it never turns the camera.
+      if (extractionFrame.positions) {
+        const points = [...extractionFrame.positions.values()].map((position) => new THREE.Vector3(...position));
+        const sphere = new THREE.Box3().setFromPoints(points).getBoundingSphere(new THREE.Sphere());
+        const currentPosition = instance.getPosition(new THREE.Vector3(), false);
+        const currentTarget = instance.getTarget(new THREE.Vector3(), false);
+        const frame = frameSphereAlongView(camera as THREE.PerspectiveCamera, currentPosition, currentTarget, sphere, 1.3);
+        apply(frame.position, frame.target, true);
+      }
+      return;
+    }
     if (initial && lastUniverseView?.intentId === intent.id) {
       apply(lastUniverseView.position, lastUniverseView.target);
       void instance.setFocalOffset(...lastUniverseView.offset.toArray(), false);
@@ -104,7 +138,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     void instance.setFocalOffset(focal.x, focal.y, 0, motionAllowed);
     // Hover/color changes must not steal the camera.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [experiencePhase, intent.id, size.width, size.height, motionAllowed, camera, invalidate, usable]);
+  }, [experiencePhase, intent.id, size.width, size.height, motionAllowed, camera, invalidate, usable, extractionFrame?.active, extractionFrame?.positions]);
 
   useEffect(() => {
     const visibility = () => {
@@ -118,5 +152,5 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   }, [gl, invalidate]);
   useEffect(() => () => { timeline.current?.kill(); }, []);
 
-  return <CameraControls ref={controls} enabled={experiencePhase === 'universe'} makeDefault minDistance={4} maxDistance={240} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={motionAllowed ? 0.16 : 0} draggingSmoothTime={0.06} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
+  return <CameraControls ref={controls} enabled={experiencePhase === 'universe' && !extractionFrame?.active} makeDefault minDistance={4} maxDistance={240} minPolarAngle={0.05} maxPolarAngle={Math.PI - 0.05} smoothTime={motionAllowed ? 0.16 : 0} draggingSmoothTime={0.06} dollySpeed={0.8} truckSpeed={1} azimuthRotateSpeed={0.68} polarRotateSpeed={0.62} mouseButtons={{ left: CameraControlsImpl.ACTION.ROTATE, middle: CameraControlsImpl.ACTION.DOLLY, right: CameraControlsImpl.ACTION.TRUCK, wheel: CameraControlsImpl.ACTION.DOLLY }} touches={{ one: CameraControlsImpl.ACTION.TOUCH_ROTATE, two: CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK, three: CameraControlsImpl.ACTION.TOUCH_TRUCK }} />;
 }

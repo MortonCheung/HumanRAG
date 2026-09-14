@@ -14,7 +14,8 @@ import { NodePointField } from '../../scene/NodePointField';
 import type { SpatialExperiencePhase } from './SpatialExperienceContext';
 import { useSpatialStageStore } from './spatialStageStore';
 import { LibraryPreviewUniverseScene } from '../library/scene/LibraryPreviewUniverseScene';
-import { buildConstellationScene, CONSTELLATION_PRESETS, withAwakeningDelays } from '../../scene/intro/constellationPresets';
+import { buildIntroScene, pickOpeningPreset } from '../../scene/intro/constellationPresets';
+import { buildGraphRevealPlan } from '../../scene/reveal/graphReveal';
 import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
 import { useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
 
@@ -54,7 +55,7 @@ function StageA11y({ model }: { model: SceneModel }) {
   return null;
 }
 
-export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase, onReady, onError, onEntryComplete }: CameraLifecycle & {
+export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase, onReady, onError, onEntryComplete, treeReadOnly }: CameraLifecycle & {
   model: SceneModel;
   intent: CameraIntent;
   onHover: (id: string | null) => void;
@@ -62,6 +63,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
   onMissed: () => void;
   experiencePhase: SpatialExperiencePhase;
   onError: () => void;
+  treeReadOnly: boolean;
 }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const qualityPreference = useKnowledgeStore((state) => state.qualityPreference);
@@ -96,7 +98,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
         <color attach="background" args={['#080a10']} />
         <PerspectiveCamera makeDefault fov={44} near={0.1} far={420} position={[45, 33, 56]} />
         <SpatialSceneRouter model={model} intent={intent} onHover={onHover} onSelect={onSelect}
-          experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} />
+          experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} treeReadOnly={treeReadOnly} />
         <ContextHealth onError={onError} />
         <StageA11y model={model} />
         <SceneReadiness onReady={onReady} />
@@ -106,7 +108,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
   );
 }
 
-function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase, onEntryComplete, motionAllowed }: {
+function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase, onEntryComplete, motionAllowed, treeReadOnly }: {
   model: SceneModel;
   intent: CameraIntent;
   onHover: (id: string | null) => void;
@@ -114,16 +116,37 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
   experiencePhase: SpatialExperiencePhase;
   onEntryComplete: () => void;
   motionAllowed: boolean;
+  treeReadOnly: boolean;
 }) {
   const mode = useSpatialStageStore((state) => state.mode);
   const activePanel = useKnowledgeStore((state) => state.activePanel);
   const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
   const extractionStartedAt = useGoalTreeTransitionStore((state) => state.phaseStartedAt);
   const extractionDraft = useGoalTreeTransitionStore((state) => state.draft);
-  const preset = useRef(CONSTELLATION_PRESETS[Math.floor(Math.random() * CONSTELLATION_PRESETS.length)]).current;
-  const introModel = useMemo(() => buildConstellationScene(model, preset, 'direction-408'), [model, preset]);
-  const awakeningModel = useMemo(() => withAwakeningDelays(model, introModel.nodes.map((node) => node.id)), [introModel.nodes, model]);
-  const openingOrigins = useMemo(() => new Map(introModel.nodes.map((node) => [node.id, node.displayPosition])), [introModel.nodes]);
+  const preset = useRef(pickOpeningPreset()).current;
+  const openingSeedIds = useMemo(() => new Set(preset.seedNodeIds), [preset.seedNodeIds]);
+  const openingReveal = useMemo(
+    () => buildGraphRevealPlan(model, preset.seedNodeIds),
+    [model, preset.seedNodeIds],
+  );
+  const introModel = useMemo(
+    () => buildIntroScene(model, openingReveal),
+    [model, openingReveal],
+  );
+  const awakeningModel = useMemo(
+    () => ({
+      ...model,
+      nodes: model.nodes.map((node) => ({
+        ...node,
+        propagationDelay: openingReveal.nodeDelay.get(node.id) ?? openingReveal.duration,
+      })),
+      edges: model.edges.map((edge) => ({
+        ...edge,
+        propagationDelay: openingReveal.edgeDelay.get(edge.id) ?? openingReveal.duration,
+      })),
+    }),
+    [model, openingReveal],
+  );
   const extractionTreeId = useGoalTreeTransitionStore((state) => state.treeId);
   const extractionLayout = useMemo(
     () => extractionDraft ? buildGoalTreeExtractionLayout(extractionDraft, extractionTreeId) : null,
@@ -131,26 +154,43 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
   );
   const extracting = Boolean(extractionDraft && extractionPhase !== 'idle' && extractionPhase !== 'handoff');
   const extractionActive = Boolean(extractionDraft && extractionPhase !== 'idle');
+  // The camera stays with CameraController during extraction: disabled for the user the whole
+  // time, and reframing along the current view direction once the tree starts forming.
+  const extractionCameraFrame = useMemo(
+    () => extractionActive && extractionLayout
+      ? { active: true, positions: ['forming', 'connecting', 'ready', 'handoff'].includes(extractionPhase) ? extractionLayout.worldPositions : null }
+      : undefined,
+    [extractionActive, extractionLayout, extractionPhase],
+  );
   const extractionSelectedIds = useMemo(() => new Set(extractionDraft?.pointIds ?? []), [extractionDraft]);
+  const extractionReveal = useMemo(() => {
+    if (!extractionDraft) return null;
+    return buildGraphRevealPlan(
+      model,
+      extractionDraft.seedPointIds,
+      new Set(extractionDraft.pointIds),
+    );
+  }, [model, extractionDraft]);
   const extractionState = useMemo(() => extractionDraft && extractionLayout ? {
     phase: extractionPhase,
     phaseStartedAt: extractionStartedAt,
     selectedIds: extractionSelectedIds,
     targetPositions: extractionLayout.worldPositions,
-  } : undefined, [extractionDraft, extractionLayout, extractionPhase, extractionSelectedIds, extractionStartedAt]);
-  if (mode === 'library' || mode === 'tree') return <LibraryPreviewUniverseScene mode={mode} motionAllowed={motionAllowed} />;
+    reveal: extractionReveal ?? undefined,
+  } : undefined, [extractionDraft, extractionLayout, extractionPhase, extractionSelectedIds, extractionStartedAt, extractionReveal]);
+  if (mode === 'library' || mode === 'tree') return <LibraryPreviewUniverseScene mode={mode} motionAllowed={motionAllowed} readOnly={treeReadOnly} />;
   const visibleModel = experiencePhase === 'intro' ? introModel : experiencePhase === 'awakening' || experiencePhase === 'settling' ? awakeningModel : model;
   const anchors = visibleModel.nodes.filter((node) => node.type === 'goal' || node.visualState === 'selected');
   return <>
     {(!extractionActive || extractionPhase === 'highlighting' || extractionPhase === 'detaching') && <BatchedKnowledgeEdges
       model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed}
       extraction={extracting ? { phase: extractionPhase, phaseStartedAt: extractionStartedAt } : undefined} />}
-    <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} openingOrigins={openingOrigins} extraction={extractionState} />
+    <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} extraction={extractionState} />
     <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel && !extractionActive} />
     {!extractionActive && anchors.map((node) => <group key={node.id} position={node.displayPosition}>
       <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
     </group>)}
     {extractionActive && extractionLayout && <GoalTreeExtraction model={visibleModel} layout={extractionLayout} motionAllowed={motionAllowed} />}
-    {!extractionActive && <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} />}
+    <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} openingSeedIds={openingSeedIds} extractionFrame={extractionCameraFrame} />
   </>;
 }
