@@ -52,6 +52,29 @@ function buildFromGraph(): V9PersistedState {
   };
 }
 
+function registerState(state: V9PersistedState): void {
+  initRegistry({
+    libraries: new Map([[state.library.id, state.library]]),
+    trees: new Map([...state.trees, ...state.userTrees].map((tree) => [tree.id, tree])),
+    points: new Map(state.points.map((point) => [point.id, point])),
+    relations: state.relations,
+    memberships: state.memberships,
+  });
+}
+
+/** Restore the canonical knowledge domain after an explicit demo reset. */
+export function resetV9Domain(): SaveResult {
+  const state = buildFromGraph();
+  try {
+    localStorage.setItem(V9_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    registerState(state);
+    return storageError();
+  }
+  registerState(state);
+  return { ok: true };
+}
+
 export function migrateV9(): {
   library: KnowledgeLibrary;
   trees: KnowledgeTree[];
@@ -68,13 +91,7 @@ export function migrateV9(): {
     if (raw) {
       const parsed = JSON.parse(raw) as V9PersistedState;
       if (isPersistedState(parsed)) {
-        initRegistry({
-          libraries: new Map([[parsed.library.id, parsed.library]]),
-          trees: new Map([...parsed.trees, ...parsed.userTrees].map((t) => [t.id, t])),
-          points: new Map(parsed.points.map((p) => [p.id, p])),
-          relations: parsed.relations,
-          memberships: parsed.memberships,
-        });
+        registerState(parsed);
         return {
           library: parsed.library,
           trees: parsed.trees,
@@ -99,13 +116,7 @@ export function migrateV9(): {
     // Ignore storage errors
   }
 
-  initRegistry({
-    libraries: new Map([[state.library.id, state.library]]),
-    trees: new Map([...state.trees, ...state.userTrees].map((t) => [t.id, t])),
-    points: new Map(state.points.map((p) => [p.id, p])),
-    relations: state.relations,
-    memberships: state.memberships,
-  });
+  registerState(state);
 
   return {
     library: state.library,
@@ -140,7 +151,7 @@ export function saveV9State(
     const previous = localStorage.getItem(V9_STORAGE_KEY);
     if (previous && !isPersistedState(JSON.parse(previous))) return { ok: false, error: '本机知识库数据无法读取，原始数据已保留。' };
     localStorage.setItem(V9_STORAGE_KEY, JSON.stringify(state));
-    initRegistry({ libraries: new Map([[library.id, library]]), trees: new Map([...trees, ...userTrees].map((tree) => [tree.id, tree])), points: new Map(points.map((point) => [point.id, point])), relations, memberships });
+    registerState(state);
     return { ok: true };
   } catch {
     return storageError();

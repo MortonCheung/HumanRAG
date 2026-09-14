@@ -15,6 +15,7 @@ interface PracticeSessionSummaryProps {
   returnState?: unknown;
   mode?: PracticeMode;
   canRestart?: boolean;
+  onRemediate?: (questionId: string) => void;
 }
 
 function nodeNameOf(nodeId: string): string {
@@ -27,7 +28,7 @@ const MODE_COPY: Record<PracticeMode, { kicker: string; evidence: string; restar
   exam: { kicker: '考试完成', evidence: '本轮答案现已统一揭示；各知识点只按完整的新题独立作答写入验证证据。', restart: '开始新一轮' },
 };
 
-export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState, mode = 'train', canRestart = true }: PracticeSessionSummaryProps) {
+export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState, mode = 'train', canRestart = true, onRemediate }: PracticeSessionSummaryProps) {
   const copy = MODE_COPY[mode];
   const resultRows = questionIds
     .map((questionId) => ({ question: contentRepository.getQuestion(questionId), answer: answers[questionId] }))
@@ -109,11 +110,9 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
               ? `本次错误最集中在「${recommendedNodeName}」。先完成对应教学单元，再重做错题，确认误区已经关闭。`
               : `本轮未发现新误区。可回看「${recommendedNodeName}」的总结与适用边界，再进入更高难度练习。`}
           </p>
-          {remediationUnitId && (
-            <Link className="text-button text-button--primary" to={`/teach/${remediationUnitId}`}>
-              去教学 <ArrowRight size={14} />
-            </Link>
-          )}
+          {remediationUnitId && recommendedQuestion && (onRemediate
+            ? <button className="text-button text-button--primary" type="button" onClick={() => onRemediate(recommendedQuestion.id)}>带我学 <ArrowRight size={14} /></button>
+            : <Link className="text-button text-button--primary" to={`/teach/${remediationUnitId}`}>带我学 <ArrowRight size={14} /></Link>)}
         </section>
       </div>
 

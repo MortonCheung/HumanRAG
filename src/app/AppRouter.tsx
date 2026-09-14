@@ -4,6 +4,7 @@ import { ROUTES } from './routes';
 import { installRouteTransitionDirection } from './routeTransitions';
 import { SpatialExperienceShell } from '../features/spatial/SpatialExperienceShell';
 import { migrateV9 } from '../domain/knowledge/migration';
+import { loadLibraryHomeRoute } from '../features/library/loadLibraryHomePage';
 
 const teachingPage = async () => ({ Component: (await import('../features/teaching/pages/TeachingSessionPage')).TeachingSessionPage });
 const studyPage = async () => ({ Component: (await import('../features/study/pages/StudyWorkspacePage')).StudyWorkspacePage });
@@ -30,7 +31,7 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route element={<SpatialExperienceShell />} hydrateFallbackElement={initialView}>
       <Route path={ROUTES.root} element={null} />
       <Route path={ROUTES.universe} element={null} />
-      <Route path={ROUTES.library} lazy={async () => ({ Component: (await import('../features/library/pages/LibraryHomePage')).LibraryHomePage })} />
+      <Route path={ROUTES.library} lazy={loadLibraryHomeRoute} />
       <Route path="/library/:libraryId/tree/:treeId" lazy={async () => ({ Component: (await import('../features/knowledge-tree/KnowledgeTreeWorkspace')).KnowledgeTreeWorkspace })}>
         <Route index element={<TreeModeRedirect mode="path" />} />
         <Route path="path" lazy={async () => ({ Component: (await import('../features/knowledge-tree/pages/TreeLearningPathPanel')).TreeLearningPathPanel })} />

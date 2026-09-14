@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { Question } from '../src/data/v6/schemas/questionSchema';
 import { contentRepository } from '../src/services/content/ContentRepository';
+import { tcpExpected, type TcpTask } from '../src/data/v6/handcrafted/tcpLesson';
 
 export const SYSTEM_UNIT_ID = 'tu-knowledge-linear-list';
 export const SYSTEM_NODE_ID = 'knowledge-linear-list';
@@ -16,6 +17,16 @@ export async function expectNoHorizontalOverflow(page: Page) {
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+}
+
+export async function fillTcpResponse(page: Page, task: TcpTask, kind: 'correct' | 'growth-error' = 'correct') {
+  const response = page.locator('.tcp-response');
+  await expect(response).toBeVisible();
+  const values = kind === 'growth-error' ? task.rounds.map((round) => task.initial + round) : tcpExpected(task);
+  const inputs = response.locator('input[type="number"]');
+  await expect(inputs).toHaveCount(values.length);
+  for (let index = 0; index < values.length; index += 1) await inputs.nth(index).fill(String(values[index]));
+  await response.locator(`input[type="radio"][value="${kind === 'growth-error' ? 'growth' : 'rule'}"]`).check();
 }
 
 function chooseWrongOption(question: Question): string[] {

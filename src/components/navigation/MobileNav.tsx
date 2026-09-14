@@ -48,6 +48,7 @@ export function MobileNav() {
               onClick={() => {
                 resetDemoData();
                 setOpen(false);
+                window.location.assign(ROUTES.root);
               }}
               aria-label="重置演示数据"
             >

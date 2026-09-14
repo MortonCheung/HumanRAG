@@ -34,7 +34,7 @@ test.describe('刷题完成规则与结果回写', () => {
     await expect(page.getByRole('heading', { name: /练习「/ })).toBeVisible();
     await expect(page.getByText('正确率', { exact: true })).toBeVisible();
     await expect(page.getByText('错因分布', { exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: /去教学/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: '带我学' })).toBeVisible();
     await expect(page.getByRole('button', { name: /再练一遍/ })).toBeVisible();
     await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem('iteach:v7:progress-delta')))).toBe(true);
   });

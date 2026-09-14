@@ -1,6 +1,6 @@
 # HumanRAG V11 施工记录
 
-状态：施工中，未完成整版验收。基线 `71d4a23c16e9a02d1380f528d44a75ba565a8676`；分支 `feat/v11-humanrag-competition-final`。不合并 main。
+状态：V11 Final 本地施工与验收完成。基线 `71d4a23c16e9a02d1380f528d44a75ba565a8676`；分支 `feat/v11-humanrag-competition-final`。未合并、未推送、未部署；Windows、Safari 与真实触屏设备待实机验收。
 
 ## 执行顺序与门禁
 
@@ -103,3 +103,12 @@
 - Study 支持结构化 `LearningReference` 与 `LearningResource`；TCP 深度样板使用真实 RFC 5681 §3.1 来源，不补写无法核实的 DOI 或标准。
 - 清理未使用的旧统计卡片组件和样式，学习证据页面产物样式由 9.48kB 降至 3.93kB。已人工查看 390、768 知识树和 1440 知识库，核心布局无横向溢出。
 - 40 个文件、210 项单元测试通过；生产构建通过，保留既有 Lottie eval 警告；33 项浏览器测试全部通过。浏览器覆盖问题写入与推荐回流、三种宽度五轮导航、低动态进入、有效视区、Canvas 身份和学习证据回写。
+
+## Batch 14：比赛主链、失败恢复与视觉验收（2026-09-14）
+
+- Universe、Shader、GlobalNav 与 ExplorerInterface 在 Opening CTA 前已经挂载；目标抽取期间并行准备 Library 路由模块与知识树 runtime，失败的 import Promise 会释放缓存，允许原地重试。
+- 自动建树保存失败会终止抽取、恢复完整 Universe、保留原始输入并显示统一错误。统一演示重置同时清除学习问题和 V9 知识域，因此生成一次后可以重置并再次生成同名比赛树。
+- TCP 能力验证每轮取一项未曝光 predict 与一项未曝光 observe；错答汇总的“带我学”携带真实答案与误区，教学后再给下一对全新任务。完整比赛 E2E 从 Opening 开始，实际操作互动示范，再验证 Evidence、个人树和 Universe 的“已独立验证”一致。
+- 新增 1440 × 900 的 15 屏和 390 × 844 的 9 屏可重复视觉矩阵。回看截图修复移动 Verify 网格挤压，并用布局几何断言锁定单栏行为。
+- Task 61 的动效逐项在本机 Chromium 软件渲染环境检查通过；真实 GPU 帧时间、Windows、Safari 和真机触控不在本地完成声明中。
+- 最终完整门禁结果见 `humanrag-v11-final-progress.md`；比赛讲述和操作步骤见 `humanrag-v11-competition-demo.md`。

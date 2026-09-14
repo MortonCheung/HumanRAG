@@ -51,6 +51,14 @@ test.describe('自主学习、带我学与能力验证分工', () => {
     await page.goto('/library/computer/tree/tree-408/practice/session');
     await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('考试');
     await expectNoHorizontalOverflow(page);
+    const layout = await page.evaluate(() => {
+      const nav = document.querySelector('.practice-nav')?.getBoundingClientRect();
+      const stage = document.querySelector('.practice-stage')?.getBoundingClientRect();
+      return nav && stage ? { navWidth: nav.width, navBottom: nav.bottom, stageTop: stage.top } : null;
+    });
+    expect(layout).not.toBeNull();
+    expect(layout!.navWidth).toBeGreaterThanOrEqual(388);
+    expect(layout!.stageTop).toBeGreaterThanOrEqual(layout!.navBottom - 1);
     const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('iteach:v7:practice-session') ?? '{}') as { data?: { mode?: string } });
     expect(persisted.data?.mode).toBe('exam');
   });

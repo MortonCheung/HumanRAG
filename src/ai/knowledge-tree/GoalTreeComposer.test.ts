@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { migrateV9 } from '../../domain/knowledge/migration';
+import { createTree, migrateV9 } from '../../domain/knowledge/migration';
 import { getRegistry } from '../../domain/knowledge/selectors';
 import { composeGoalTree, parseGoalQuery } from './GoalTreeComposer';
 
@@ -58,5 +58,22 @@ describe('GoalTreeComposer', () => {
 
   it('无法命中 Registry 时给出明确失败，不创建臆造节点', () => {
     expect(() => composeGoalTree('火星园艺')).toThrow('还没有找到');
+  });
+
+  it('自动生成结果使用普通的用户 KnowledgeTree，不增加 KnowledgePoint', () => {
+    const before = migrateV9();
+    const existingIds = new Set(before.points.map((point) => point.id));
+    const draft = composeGoalTree('准备 408，网络基础比较弱');
+    const tree = createTree(before.library.id, {
+      identity: { name: '我的 408 路线', description: draft.description, color: '#b1d8ca' },
+      pointIds: draft.pointIds,
+    });
+    const after = migrateV9();
+
+    expect(tree.ownerType).toBe('user');
+    expect(tree.pointIds.every((pointId) => existingIds.has(pointId))).toBe(true);
+    expect(after.points).toHaveLength(before.points.length);
+    expect(after.userTrees).toContainEqual(tree);
+    expect(after.library.treeIds).toContain(tree.id);
   });
 });

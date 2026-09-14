@@ -5,6 +5,8 @@ import { composeGoalTree } from '../ai/knowledge-tree/GoalTreeComposer';
 import { createTree, migrateV9 } from '../domain/knowledge/migration';
 import { useGoalTreeTransitionStore } from '../features/spatial/transitions/goalTreeTransitionStore';
 import { useKnowledgeStore } from '../store/knowledgeStore';
+import { loadLibraryHomePage } from '../features/library/loadLibraryHomePage';
+import { prepareTreeRuntime } from '../features/knowledge-tree/prepareTreeRuntime';
 
 export function GoalLensDrawer() {
   const activePanel = useKnowledgeStore((state) => state.activePanel);
@@ -17,7 +19,7 @@ export function GoalLensDrawer() {
   const [composing, setComposing] = useState(false);
   const open = activePanel === 'lens';
 
-  const handleCompose = (event: FormEvent<HTMLFormElement>) => {
+  const handleCompose = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!prompt.trim() || composing) return;
     setComposing(true);
@@ -26,6 +28,10 @@ export function GoalLensDrawer() {
       const domain = migrateV9();
       const draft = composeGoalTree(prompt);
       beginExtraction(draft);
+      await Promise.all([
+        loadLibraryHomePage(),
+        prepareTreeRuntime(draft),
+      ]);
       const tree = createTree(domain.library.id, {
         identity: { name: draft.name, description: draft.description, color: '#b1d8ca' },
         pointIds: draft.pointIds,
@@ -33,8 +39,8 @@ export function GoalLensDrawer() {
       markTreeReady(tree.id);
       closePanel();
     } catch (failure) {
-      const message = failure instanceof Error ? failure.message : '未能整理知识，请稍后重试。';
-      failExtraction(message);
+      const message = '没能整理这棵知识树。保留了你的输入，可以再试一次。';
+      failExtraction(failure instanceof Error ? failure.message : message);
       setError(message);
       setComposing(false);
     }

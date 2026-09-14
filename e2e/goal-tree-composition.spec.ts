@@ -5,6 +5,10 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   await resetDemoState(page);
   await page.goto('/universe');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const pointIdsBefore = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('iteach:v9:domain') ?? '{}') as { points?: Array<{ id: string }> };
+    return state.points?.map((point) => point.id) ?? [];
+  });
   const stage = page.locator('[data-spatial-stage] canvas');
   await expect(stage).toBeVisible({ timeout: 12_000 });
   const stageIdentity = await stage.evaluateHandle((canvas) => canvas);
@@ -16,6 +20,7 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
 
   await expect(page.getByRole('status')).toContainText(/已找到相关知识|正在分离原有关系/);
   await expect(page).toHaveURL(/\/universe$/);
+  await expect.poll(async () => page.evaluate(() => performance.getEntriesByType('resource').some((entry) => /LibraryHomePage-.*\.js/.test(entry.name)))).toBe(true);
 
   await expect(page).toHaveURL(/\/library$/);
   expect(await stageIdentity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
@@ -26,12 +31,15 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   const stored = await page.evaluate(() => {
     const state = JSON.parse(localStorage.getItem('iteach:v9:domain') ?? '{}') as {
       userTrees?: Array<{ name: string; ownerType: string; pointIds: string[] }>;
+      points?: Array<{ id: string }>;
     };
-    return state.userTrees?.at(-1);
+    return { tree: state.userTrees?.at(-1), pointIds: state.points?.map((point) => point.id) ?? [] };
   });
-  expect(stored?.ownerType).toBe('user');
-  expect(stored?.pointIds).toContain('course-computer-networks');
-  expect(stored?.pointIds).toContain('knowledge-tcp');
+  expect(stored.tree?.ownerType).toBe('user');
+  expect(stored.tree?.pointIds).toContain('course-computer-networks');
+  expect(stored.tree?.pointIds).toContain('knowledge-tcp');
+  expect(stored.tree?.pointIds.every((pointId) => pointIdsBefore.includes(pointId))).toBe(true);
+  expect(stored.pointIds).toEqual(pointIdsBefore);
 
   await page.getByRole('button', { name: '进入知识树' }).click();
   await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-.*\/path$/);
@@ -41,4 +49,29 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   await verification.click();
   await expect(page.getByText('考试进度', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: '暂无可用题目' })).toHaveCount(0);
+});
+
+test('自动建树失败时回到完整 Universe，并保留原始输入供重试', async ({ page }) => {
+  await resetDemoState(page);
+  await page.goto('/universe');
+  await page.getByRole('button', { name: '选择目标' }).click();
+  const prompt = '我要准备 408，网络基础比较弱';
+  await page.getByLabel('你现在想做什么？').fill(prompt);
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === 'iteach:v9:domain') throw new Error('test storage failure');
+      return original.call(this, key, value);
+    };
+  });
+  await page.getByRole('button', { name: '整理相关知识' }).click();
+
+  await expect(page.getByRole('alert')).toHaveText('没能整理这棵知识树。保留了你的输入，可以再试一次。');
+  await expect(page.getByLabel('你现在想做什么？')).toHaveValue(prompt);
+  await expect(page).toHaveURL(/\/universe$/);
+  await expect(page.locator('.goal-extraction-status')).toHaveCount(0);
+  expect(await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('iteach:v9:domain') ?? '{}') as { userTrees?: unknown[] };
+    return state.userTrees?.length ?? 0;
+  })).toBe(0);
 });

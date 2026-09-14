@@ -266,6 +266,7 @@
 }
 @media (max-width: 860px) {
   .practice-session { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr) auto; height: auto; min-height: calc(100dvh - var(--it-nav-height)); overflow: visible; }
+  .practice-session.practice-session--focused { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - var(--it-nav-height)); overflow: visible; }
   .practice-nav { flex-direction: row; align-items: center; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--it-rule); padding: 10px 14px; }
   .practice-nav__kicker { display: none; }
   .practice-nav__grid { grid-template-columns: repeat(10, 34px); grid-template-rows: 1fr; }

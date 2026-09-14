@@ -27,4 +27,11 @@ describe('目标建树转场双就绪门', () => {
     useGoalTreeTransitionStore.getState().begin({ ...draft, name: '新任务' });
     expect(useGoalTreeTransitionStore.getState()).toMatchObject({ phase: 'highlighting', treeId: null, treeReady: false, visualReady: false });
   });
+
+  it('失败会撤回临时选点与交接状态，同时保留错误原因', () => {
+    useGoalTreeTransitionStore.getState().begin(draft);
+    useGoalTreeTransitionStore.getState().markTreeReady('tree-generated');
+    useGoalTreeTransitionStore.getState().fail('保存失败');
+    expect(useGoalTreeTransitionStore.getState()).toMatchObject({ phase: 'idle', draft: null, treeId: null, treeReady: false, visualReady: false, error: '保存失败' });
+  });
 });
