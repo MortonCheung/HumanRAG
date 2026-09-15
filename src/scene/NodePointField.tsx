@@ -13,6 +13,21 @@ import type { LearningState } from '../domain/learning/deriveLearningState';
 const INTRO_DIM_STRENGTH = 0.035;
 const INTRO_DIM_SIZE = 0.72;
 
+export function formationProgress(baseProgress: number, nodeDelay: number) {
+  const stagger = Math.min(0.22, Math.max(0, nodeDelay) * 0.45);
+  return THREE.MathUtils.smoothstep(baseProgress, stagger, Math.min(1, stagger + 0.72));
+}
+
+export function formationPosition(from: [number, number, number], to: [number, number, number], progress: number): [number, number, number] {
+  const smooth = THREE.MathUtils.smootherstep(progress, 0, 1);
+  const lift = Math.sin(smooth * Math.PI) * 1.8;
+  return [
+    THREE.MathUtils.lerp(from[0], to[0], smooth),
+    THREE.MathUtils.lerp(from[1], to[1], smooth) + lift,
+    THREE.MathUtils.lerp(from[2], to[2], smooth),
+  ];
+}
+
 export interface NodeExtractionState {
   phase: ExtractionPhase;
   phaseStartedAt: number;
@@ -122,9 +137,12 @@ export function NodePointField({ model, experiencePhase, motionAllowed, extracti
       const receded = extractionPhase
         ? extractionPhase === 'receding' ? phaseProgress : ['forming', 'connecting', 'ready', 'handoff'].includes(extractionPhase) ? 1 : 0
         : 0;
-      const formed = extractionPhase
+      const baseFormed = extractionPhase
         ? extractionPhase === 'forming' ? phaseProgress : ['connecting', 'ready', 'handoff'].includes(extractionPhase) ? 1 : 0
         : 0;
+      const localFormed = extractionPhase === 'forming'
+        ? formationProgress(baseFormed, revealDelay)
+        : baseFormed;
       const relevanceStrength = extraction ? selected ? 1 + highlighted * 0.38 : 1 - receded : 1;
       const relevanceSize = extraction ? selected ? 1 + highlighted * 0.12 : 1 - receded * 0.32 : 1;
       // Awakening：暗节点在与它连接的边经过后变亮，不是突然生成。
@@ -146,11 +164,7 @@ export function NodePointField({ model, experiencePhase, motionAllowed, extracti
       const extractionTarget = selected ? extraction?.targetPositions.get(model.nodes[index]?.id) : undefined;
       const targetPosition = extraction && canonical
         ? selected && extractionTarget
-          ? [
-              THREE.MathUtils.lerp(canonical[0], extractionTarget[0], formed),
-              THREE.MathUtils.lerp(canonical[1], extractionTarget[1], formed),
-              THREE.MathUtils.lerp(canonical[2], extractionTarget[2], formed),
-            ] as [number, number, number]
+          ? formationPosition(canonical, extractionTarget, localFormed)
           : [canonical[0], canonical[1], canonical[2] - 18 * receded] as [number, number, number]
         : positionTargets.current[index];
       if (targetPosition) {

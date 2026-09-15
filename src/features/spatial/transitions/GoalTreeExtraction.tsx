@@ -9,7 +9,7 @@ import type { SceneModel } from '../../../graph/types';
 import { customTreeFrame } from '../../library-builder/customTreeFraming';
 import { layoutCustomTree, type TreePositionMap } from '../../library-builder/customTreeLayout';
 import { TreePreviewEdges, treeEdgeBuildShader } from '../../library/scene/TreePreviewEdges';
-import { treePreviewAnchor, treeRotationPhase } from '../../library/scene/treePreviewLayout';
+import { buildTreePreviewAnchors, treeRotationPhase } from '../../library/scene/treePreviewLayout';
 import { toCustomEdges, toCustomNodes } from '../../library/treeGraphAdapter';
 import { EXTRACTION_PHASES, extractionPhaseDurationMs, extractionProgress, useGoalTreeTransitionStore, type ExtractionPhase } from './goalTreeTransitionStore';
 
@@ -32,8 +32,10 @@ export function buildGoalTreeExtractionLayout(draft: GoalTreeDraft, treeId?: str
   const offset = customTreeFrame(positions, 1, 1, true).offset;
   const tree = treeId ? registry.trees.get(treeId) : undefined;
   const library = tree ? registry.libraries.get(tree.libraryId) : undefined;
-  const treeIndex = tree && library ? library.treeIds.indexOf(tree.id) : -1;
-  const anchor = treeIndex >= 0 ? treePreviewAnchor(treeIndex) : new THREE.Vector3();
+  const targetTreeIds = tree && library && !library.treeIds.includes(tree.id)
+    ? [...library.treeIds, tree.id]
+    : library?.treeIds ?? [];
+  const anchor = tree ? buildTreePreviewAnchors(targetTreeIds).get(tree.id) ?? new THREE.Vector3() : new THREE.Vector3();
   const rotation = tree ? treeRotationPhase(tree.id) : 0;
   const centeredPositions: TreePositionMap = new Map([...positions].map(([id, position]) => [
     id,

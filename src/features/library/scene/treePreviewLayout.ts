@@ -1,11 +1,25 @@
 import * as THREE from 'three';
 
-export const TREE_PREVIEW_SPACING = 82;
 export const TREE_PREVIEW_ROTATION_SPEED = 0.075;
+export const TREE_RING_SPACING = 72;
+export const TREE_RING_MIN_RADIUS = 38;
 
-/** Library order is persistent, so an appended tree never moves an existing anchor. */
-export function treePreviewAnchor(index: number) {
-  return new THREE.Vector3(index * TREE_PREVIEW_SPACING, 0, 0);
+function ringRadius(count: number) {
+  if (count <= 1) return 0;
+  if (count === 2) return TREE_RING_MIN_RADIUS;
+  return Math.max(TREE_RING_MIN_RADIUS, TREE_RING_SPACING / (2 * Math.sin(Math.PI / count)));
+}
+
+/** Library order maps deterministically onto a count-aware spatial ring. */
+export function treePreviewAnchor(index: number, count: number) {
+  if (count <= 1) return new THREE.Vector3();
+  const radius = ringRadius(count);
+  const angle = -Math.PI / 2 + (index / count) * Math.PI * 2;
+  return new THREE.Vector3(
+    Math.cos(angle) * radius,
+    Math.sin(angle * 2) * 4,
+    Math.sin(angle) * radius,
+  );
 }
 
 /** Give every tree a stable orientation while keeping the shared rotation speed. */
@@ -23,5 +37,5 @@ export function treePreviewRotation(treeId: string, elapsedSeconds: number, rota
 }
 
 export function buildTreePreviewAnchors(treeIds: readonly string[]) {
-  return new Map(treeIds.map((treeId, index) => [treeId, treePreviewAnchor(index)]));
+  return new Map(treeIds.map((treeId, index) => [treeId, treePreviewAnchor(index, treeIds.length)]));
 }

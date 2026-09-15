@@ -30,6 +30,9 @@ const initialState = {
   error: null,
 };
 
+export const GOAL_TREE_STABLE_FRAME_MS = 220;
+export const GOAL_TREE_HANDOFF_MS = 620;
+
 export function canStartGoalTreeHandoff(state: Pick<GoalTreeTransitionState, 'phase' | 'treeReady' | 'visualReady' | 'treeId'>): boolean {
   return state.phase === 'ready' && state.treeReady && state.visualReady && Boolean(state.treeId);
 }
@@ -42,7 +45,7 @@ export function extractionPhaseDurationMs(phase: ExtractionPhase, motionAllowed:
     highlighting: 820,
     detaching: 360,
     receding: 320,
-    forming: 620,
+    forming: 780,
     connecting: 420,
     idle: 0,
     ready: 0,

@@ -4,7 +4,7 @@ import { customTreeFrame } from '../../library-builder/customTreeFraming';
 import { layoutCustomTree } from '../../library-builder/customTreeLayout';
 import { toCustomEdges, toCustomNodes } from '../../library/treeGraphAdapter';
 import { buildGoalTreeExtractionLayout, treeEdgeBuildShader } from './GoalTreeExtraction';
-import { treePreviewAnchor, treeRotationPhase } from '../../library/scene/treePreviewLayout';
+import { buildTreePreviewAnchors, treeRotationPhase } from '../../library/scene/treePreviewLayout';
 import * as THREE from 'three';
 
 beforeEach(() => {
@@ -38,11 +38,13 @@ describe('GoalTreeExtraction', () => {
     });
     const result = buildGoalTreeExtractionLayout({ name: tree.name, description: '', pointIds, seedPointIds: ['knowledge-tcp'], reasons: {} }, tree.id);
     const local = new THREE.Vector3(...result.centeredPositions.get('knowledge-tcp')!);
+    const targetTreeIds = [...state.library.treeIds, tree.id];
+    const targetAnchor = buildTreePreviewAnchors(targetTreeIds).get(tree.id)!;
     const expected = local
       .applyAxisAngle(new THREE.Vector3(0, 1, 0), treeRotationPhase(tree.id))
-      .add(treePreviewAnchor(state.library.treeIds.length));
+      .add(targetAnchor);
 
-    expect(result.anchor.toArray()).toEqual(treePreviewAnchor(state.library.treeIds.length).toArray());
+    expect(result.anchor.toArray()).toEqual(targetAnchor.toArray());
     expect(result.rotation).toBe(treeRotationPhase(tree.id));
     expect(result.worldPositions.get('knowledge-tcp')).toEqual(expected.toArray());
   });

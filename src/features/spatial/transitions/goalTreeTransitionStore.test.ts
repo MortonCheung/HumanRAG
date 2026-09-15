@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { canStartGoalTreeHandoff, useGoalTreeTransitionStore } from './goalTreeTransitionStore';
+import { canStartGoalTreeHandoff, extractionPhaseDurationMs, GOAL_TREE_HANDOFF_MS, GOAL_TREE_STABLE_FRAME_MS, useGoalTreeTransitionStore } from './goalTreeTransitionStore';
 
 const draft = { name: '网络巩固', description: '', pointIds: ['knowledge-tcp'], seedPointIds: ['knowledge-tcp'], reasons: { 'knowledge-tcp': ['薄弱项'] } };
 
 beforeEach(() => useGoalTreeTransitionStore.getState().reset());
 
 describe('目标建树转场双就绪门', () => {
+  it('为成形、停稳帧和镜头交接保留连续的视觉节奏', () => {
+    expect(extractionPhaseDurationMs('forming', true)).toBe(780);
+    expect(GOAL_TREE_STABLE_FRAME_MS).toBe(220);
+    expect(GOAL_TREE_HANDOFF_MS).toBe(620);
+  });
   it('视觉与树数据缺一不可，且只在 ready 阶段允许交接', () => {
     useGoalTreeTransitionStore.getState().begin(draft);
     useGoalTreeTransitionStore.getState().markTreeReady('tree-generated');

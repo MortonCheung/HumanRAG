@@ -8,7 +8,7 @@ import { customTreeFrame } from '../../library-builder/customTreeFraming';
 import { viewportFocalOffset } from '../../../scene/cameraFraming';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { useSpatialViewport } from '../../spatial/SpatialViewport';
-import { useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
+import { GOAL_TREE_HANDOFF_MS, useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
 import { buildPreviewTreeGraph, PreviewTreeGroup, type PreviewTreeGraph } from './PreviewTreeGroup';
 import { buildTreePreviewAnchors } from './treePreviewLayout';
 import { deriveLearningStateFromEvidence } from '../../../domain/learning/deriveLearningState';
@@ -167,8 +167,8 @@ function LibraryPreviewCamera({ mode, selectedTreeId, graphs, anchors, motionAll
       applyCameraState();
       tween.current = gsap.timeline().to(state.current, {
         ...target,
-        duration: 0.42,
-        ease: 'power3.out',
+        duration: GOAL_TREE_HANDOFF_MS / 1000,
+        ease: 'power3.inOut',
         onUpdate: applyCameraState,
       });
       return () => { tween.current?.kill(); };

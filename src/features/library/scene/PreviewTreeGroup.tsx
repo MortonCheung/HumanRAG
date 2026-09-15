@@ -50,6 +50,9 @@ export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = 
   onHoverPoint?: (pointId: string | null) => void;
   learningStates?: ReadonlyMap<string, LearningState>;
 }) {
+  const anchorGroup = useRef<THREE.Group>(null);
+  const anchorInitialized = useRef(false);
+  const initialAnchor = useRef(anchor.clone());
   const rotation = useRef<THREE.Group>(null);
   const wasHeld = useRef(holdRotation);
   const initialized = useRef(false);
@@ -57,6 +60,26 @@ export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = 
   const rotationMotion = useRef({ weight: autoRotate ? 1 : 0 });
   const { gl, invalidate } = useThree();
   const phase = useMemo(() => treeRotationPhase(graph.tree.id), [graph.tree.id]);
+
+  useEffect(() => {
+    const group = anchorGroup.current;
+    if (!group) return;
+    if (!anchorInitialized.current || !motionAllowed) {
+      anchorInitialized.current = true;
+      group.position.copy(anchor);
+      invalidate();
+      return;
+    }
+    const tween = gsap.to(group.position, {
+      x: anchor.x,
+      y: anchor.y,
+      z: anchor.z,
+      duration: 0.72,
+      ease: 'power3.inOut',
+      onUpdate: invalidate,
+    });
+    return () => { tween.kill(); };
+  }, [anchor.x, anchor.y, anchor.z, invalidate, motionAllowed]);
 
   useEffect(() => {
     const tween = gsap.to(rotationMotion.current, {
@@ -102,7 +125,7 @@ export function PreviewTreeGroup({ graph, anchor, motionAllowed, holdRotation = 
   });
 
   return (
-    <group position={anchor} name={`library-preview-tree-${graph.tree.id}`}>
+    <group ref={anchorGroup} position={initialAnchor.current} name={`library-preview-tree-${graph.tree.id}`}>
       <group ref={rotation} rotation-y={phase}>
         <group position={graph.offset}>
           <TreePreviewEdges edges={graph.edges} positions={graph.positions} />

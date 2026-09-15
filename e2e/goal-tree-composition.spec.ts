@@ -16,6 +16,15 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
 
   const prompt = '我要准备 408，网络基础比较弱，数据结构还可以，也对 AI 感兴趣。';
   await page.getByLabel('你现在想做什么？').fill(prompt);
+  await page.evaluate(() => {
+    (window as unknown as { __goalTreeReadyAt?: number }).__goalTreeReadyAt = 0;
+    const recordReady = () => {
+      if (document.querySelector('[data-extraction-phase="ready"]')) {
+        (window as unknown as { __goalTreeReadyAt?: number }).__goalTreeReadyAt ||= performance.now();
+      }
+    };
+    new MutationObserver(recordReady).observe(document.body, { attributes: true, childList: true, subtree: true });
+  });
   await page.getByRole('button', { name: '生成知识树' }).click();
 
   await expect(page.getByRole('status')).toContainText(/找到相关知识了|正在整理关系/);
@@ -23,6 +32,10 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   await expect.poll(async () => page.evaluate(() => performance.getEntriesByType('resource').some((entry) => /LibraryHomePage-.*\.js/.test(entry.name)))).toBe(true);
 
   await expect(page).toHaveURL(/\/library$/);
+  const stableFrameMs = await page.evaluate(() => performance.now() - ((window as unknown as { __goalTreeReadyAt?: number }).__goalTreeReadyAt ?? performance.now()));
+  expect(stableFrameMs).toBeGreaterThanOrEqual(180);
+  expect(stableFrameMs).toBeLessThan(1_000);
+  expect(await page.evaluate(() => history.state?.usr?.fromGoalExtraction)).toBe(true);
   expect(await stageIdentity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
   const selectedTree = page.getByRole('option', { selected: true });
   await expect(selectedTree).toContainText('考研408 · 定向学习');

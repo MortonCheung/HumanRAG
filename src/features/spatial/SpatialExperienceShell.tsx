@@ -13,7 +13,7 @@ import { LandingPage } from '../landing/pages/LandingPage';
 import { SpatialViewportProvider } from './SpatialViewport';
 import { SpatialStageCanvas } from './SpatialStageCanvas';
 import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
-import { canStartGoalTreeHandoff, useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
+import { canStartGoalTreeHandoff, GOAL_TREE_HANDOFF_MS, GOAL_TREE_STABLE_FRAME_MS, useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
 import { useProgressStore } from '../../store/progressStore';
 import { useUserStore } from '../../store/userStore';
 import { deriveLearningStateFromEvidence } from '../../domain/learning/deriveLearningState';
@@ -121,13 +121,24 @@ function SpatialExperience() {
   useEffect(() => {
     const gate = { phase: extractionPhase, treeReady: extractionTreeReady, visualReady: extractionVisualReady, treeId: extractionTreeId };
     if (!canStartGoalTreeHandoff(gate) || !extractionTreeId) return;
-    startExtractionHandoff();
-    selectTree(extractionTreeId);
-    navigate(ROUTES.library, { state: { selectedTreeId: extractionTreeId }, viewTransition: false });
-  }, [extractionPhase, extractionTreeId, extractionTreeReady, extractionVisualReady, navigate, selectTree, startExtractionHandoff]);
+    const handoff = () => {
+      startExtractionHandoff();
+      selectTree(extractionTreeId);
+      navigate(ROUTES.library, {
+        state: { selectedTreeId: extractionTreeId, fromGoalExtraction: true },
+        viewTransition: false,
+      });
+    };
+    if (reducedMotion) {
+      handoff();
+      return;
+    }
+    const timer = window.setTimeout(handoff, GOAL_TREE_STABLE_FRAME_MS);
+    return () => window.clearTimeout(timer);
+  }, [extractionPhase, extractionTreeId, extractionTreeReady, extractionVisualReady, navigate, reducedMotion, selectTree, startExtractionHandoff]);
   useEffect(() => {
     if (extractionPhase !== 'handoff' || !libraryRoute) return;
-    const timer = window.setTimeout(resetExtraction, 420);
+    const timer = window.setTimeout(resetExtraction, GOAL_TREE_HANDOFF_MS + 30);
     return () => window.clearTimeout(timer);
   }, [extractionPhase, libraryRoute, resetExtraction]);
 
@@ -157,7 +168,7 @@ function SpatialExperience() {
           <Link className="text-button text-button--primary" to={ROUTES.library}>打开知识库</Link>
         </div></section>}
         {pendingEntry && !failed && <div className="entry-pending" role="status">正在准备知识空间 <button onClick={() => setPendingEntry(false)}>取消</button></div>}
-        {extractionStatus && <div className="goal-extraction-status" role="status" aria-live="polite">{extractionStatus}</div>}
+        {extractionStatus && <div className="goal-extraction-status" data-extraction-phase={extractionPhase} role="status" aria-live="polite">{extractionStatus}</div>}
       </div>
     </SpatialExperienceContext.Provider>
   );
