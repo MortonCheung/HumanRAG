@@ -1,14 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { resetDemoState } from './helpers';
 
-// 第 55 章：Path / Verify 左侧模型是展示品 —— 树在转，相机锁死，交互锁死。
+// 知识点视图左侧模型是展示品 —— 树在转，相机锁死，交互锁死。
 test.use({ hasTouch: true });
 
-for (const segment of ['path', 'verify'] as const) {
-  test(`${segment}：左侧模型只读（树转、相机不动、选择不变）`, async ({ page }) => {
+test('path：左侧模型只读（树转、相机不动、选择不变）', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await resetDemoState(page);
-    await page.goto(`/library/computer/tree/tree-408/${segment}`);
+    await page.goto('/library/computer/tree/tree-408/path');
 
     const canvas = page.locator('[data-spatial-stage] canvas');
     await expect(canvas).toBeVisible({ timeout: 12_000 });
@@ -59,7 +58,5 @@ for (const segment of ['path', 'verify'] as const) {
       .not.toBe(rotationBefore);
 
     // 右侧仍是正常可用的工作区。
-    const heading = segment === 'path' ? '学习' : '测验';
-    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
-  });
-}
+    await expect(page.getByRole('heading', { name: '知识点' })).toBeVisible();
+});

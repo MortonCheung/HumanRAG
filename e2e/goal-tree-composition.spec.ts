@@ -56,11 +56,10 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
 
   await page.getByRole('button', { name: '进入知识树' }).click();
   await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-.*\/path$/);
-  await page.getByRole('navigation', { name: '知识树页面' }).getByRole('link', { name: '测验' }).click();
-  const verification = page.getByRole('button', { name: /开始测验/ });
-  await expect(verification).toBeEnabled();
-  await verification.click();
-  await expect(page.getByText('考试进度', { exact: false })).toBeVisible();
+  await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
+  await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
+  await page.getByRole('button', { name: '刷题' }).click();
+  await expect(page.getByText('验证进度', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: '暂无可用题目' })).toHaveCount(0);
 });
 

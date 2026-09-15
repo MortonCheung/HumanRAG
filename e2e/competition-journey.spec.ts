@@ -24,7 +24,7 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
   await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
   await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
   await expect(page.getByRole('heading', { name: 'TCP可靠传输', level: 1 })).toBeVisible();
-  await page.getByRole('button', { name: '测验' }).click();
+  await page.getByRole('button', { name: '刷题' }).click();
 
   const firstPair = TCP_TASKS.filter((task) => task.role === 'predict' || task.role === 'observe').slice(0, 2);
   await fillTcpResponse(page, firstPair[0], 'growth-error');

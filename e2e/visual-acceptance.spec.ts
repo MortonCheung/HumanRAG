@@ -76,7 +76,7 @@ test('生成 1440 × 900 比赛视觉验收矩阵', async ({ page }) => {
   await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
   await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
   await shot(page, `${desktopDir}/11-node-detail.png`);
-  await page.getByRole('button', { name: '学习', exact: true }).click();
+  await page.getByRole('button', { name: '自学', exact: true }).click();
   await expect(page).toHaveURL(/\/study$/);
   await expect(page.getByRole('heading', { name: 'TCP可靠传输', level: 1 })).toBeVisible();
   await page.waitForTimeout(450);
@@ -125,7 +125,7 @@ test('生成 390 × 844 核心移动端验收矩阵', async ({ page }) => {
   await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
   await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
   await shot(page, `${mobileDir}/11-node-detail.png`);
-  await page.getByRole('button', { name: '学习', exact: true }).click();
+  await page.getByRole('button', { name: '自学', exact: true }).click();
   await expect(page).toHaveURL(/\/study$/);
   await expect(page.getByRole('heading', { name: 'TCP可靠传输', level: 1 })).toBeVisible();
   await shot(page, `${mobileDir}/12-study.png`);

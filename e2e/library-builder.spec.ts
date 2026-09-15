@@ -32,7 +32,7 @@ test.describe('知识库、知识树与知识点创建', () => {
     await expect(page).toHaveURL(/\/library$/);
     await page.getByRole('button', { name: /进入知识树/ }).click();
     await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-ai\/path$/);
-    await expect(page.getByRole('heading', { name: '学习' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '知识点' })).toBeVisible();
     await expect(canvas).toHaveAttribute('data-tree-scene-mode', 'tree');
     await expect(canvas).toHaveAttribute('data-tree-universe-instance', treeUniverseIdentity!);
     expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);

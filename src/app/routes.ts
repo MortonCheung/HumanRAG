@@ -8,7 +8,7 @@ export const ROUTES = {
   tree: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}`,
   treePath: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/path`,
   treeVerify: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/verify`,
-  // Compatibility URLs. Product navigation uses path / verify.
+  // Compatibility URLs. Product navigation uses the single knowledge-point path.
   treeLearn: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/learn`,
   treePractice: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice`,
   treePracticeSession: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/practice/session`,

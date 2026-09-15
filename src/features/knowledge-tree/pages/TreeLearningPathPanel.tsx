@@ -36,7 +36,7 @@ export function TreeLearningPathPanel() {
   return (
     <section className="tree-panel tree-path-panel">
       <header className="tree-panel__header">
-        <h1>学习</h1>
+        <h1>知识点</h1>
         {recommendation && recommendedPoint && <button className="tree-recommendation" type="button" onClick={() => selectPoint(recommendation.pointId)}>
           <span>建议先学</span><strong>{recommendedPoint.name}</strong><small>{recommendation.reasons.slice(0, 2).join(' ')}</small><ArrowRight size={17} aria-hidden="true" />
         </button>}

@@ -11,6 +11,6 @@ interface WorkspaceScope {
 export function getWorkspaceParent({ kind, libraryId, treeId, pointId }: WorkspaceScope): { to: string; state?: { focusedPointId: string } } {
   if (!libraryId || !treeId) return { to: ROUTES.library };
   if (kind === 'learn') return { to: ROUTES.treePath(libraryId, treeId), ...(pointId ? { state: { focusedPointId: pointId } } : {}) };
-  // A return anchor restores orientation; it must never narrow the parent's pool.
-  return { to: ROUTES.treeVerify(libraryId, treeId), ...(pointId ? { state: { focusedPointId: pointId } } : {}) };
+  // A return anchor restores orientation in the single knowledge-point view.
+  return { to: ROUTES.treePath(libraryId, treeId), ...(pointId ? { state: { focusedPointId: pointId } } : {}) };
 }

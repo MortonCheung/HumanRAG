@@ -39,7 +39,6 @@
 .point-group li button > svg { justify-self: end; color: var(--it-text-faint); transition: transform 180ms var(--it-ease), color 180ms var(--it-ease); }
 .point-group li button:hover > svg { color: var(--it-text); transform: translateX(3px); }
 .tree-panel__empty { padding: 36px 0; color: var(--it-text-faint); font-size: 12px; line-height: 1.7; }
-.tree-verify-panel__start { width: 100%; min-height: 48px; display: grid; grid-template-columns: 20px 1fr; align-items: center; gap: 10px; margin-top: 26px; padding: 0 16px; border-radius: 8px; background: var(--it-text); color: var(--it-bg-deep); font-size: 12px; font-weight: 620; text-align: left; }
 .tree-point-detail { position: absolute; inset: 0; overflow-y: auto; background: rgb(10 13 19 / .99); }
 .tree-workspace-back { margin: 0 0 34px; padding: 7px 0; background: transparent; color: var(--it-text-soft); font-size: 11px; }
 .tree-workspace-back:hover { color: var(--it-text); }

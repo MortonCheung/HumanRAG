@@ -10,9 +10,9 @@ describe('workspace parent navigation', () => {
 
   it('restores a point anchor without filtering the parent question pool', () => {
     expect(getWorkspaceParent({ kind: 'practice', libraryId: 'computer', treeId: 'networks', pointId: 'tcp' }))
-      .toEqual({ to: ROUTES.treeVerify('computer', 'networks'), state: { focusedPointId: 'tcp' } });
+      .toEqual({ to: ROUTES.treePath('computer', 'networks'), state: { focusedPointId: 'tcp' } });
     expect(getWorkspaceParent({ kind: 'practice', libraryId: 'computer', treeId: 'networks' }))
-      .toEqual({ to: ROUTES.treeVerify('computer', 'networks') });
+      .toEqual({ to: ROUTES.treePath('computer', 'networks') });
   });
 
   it('returns a library-wide or unresolved legacy session to the library', () => {

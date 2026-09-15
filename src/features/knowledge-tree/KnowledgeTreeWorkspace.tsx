@@ -15,7 +15,6 @@ import { useProgressStore } from '../../store/progressStore';
 import { useUserStore } from '../../store/userStore';
 import { useLearningQuestionStore } from '../../domain/learning/learningQuestions';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
-import { TreeLocalNav } from './components/TreeLocalNav';
 import './knowledge-tree-workspace.css';
 
 export function KnowledgeTreeWorkspace() {
@@ -36,7 +35,6 @@ export function KnowledgeTreeWorkspace() {
     return { tree, points: treeId ? getPointsForTree(treeId) : [] };
   }, [treeId]);
   const selectedPoint = data.points.find((point) => point.id === selectedPointId);
-  const mode = location.pathname.endsWith('/verify') ? 'verify' : 'path';
   const recommendation = useMemo(
     () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
     [data.points, evidence, learnerId, learningQuestions, remediationTasks],
@@ -52,12 +50,11 @@ export function KnowledgeTreeWorkspace() {
   }
 
   return (
-    <main className="page knowledge-tree-workspace" data-tree-mode={mode} data-selected-point-id={selectedPoint?.id}>
+    <main className="page knowledge-tree-workspace" data-selected-point-id={selectedPoint?.id}>
       <WorkspaceHeader
         title={data.tree.name}
         backLabel="返回知识库"
         onBack={() => navigate(ROUTES.library, { state: { selectedTreeId: treeId }, viewTransition: false })}
-        modes={<TreeLocalNav />}
         primaryAction={data.tree.ownerType === 'user' ? <button className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.pointNewContent(libraryId, treeId))} type="button"><Plus size={16} aria-hidden="true" />新增节点</button> : undefined}
         actions={data.tree.ownerType === 'user'
           ? <button className="context-nav__button" onClick={() => navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'))} type="button">编辑</button>
@@ -65,18 +62,17 @@ export function KnowledgeTreeWorkspace() {
       />
       <div className="knowledge-tree-workspace__body">
         <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`} />
-        <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : mode === 'path' ? '学习' : '测验'}>
+        <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : '知识点'}>
           <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
-          {selectedPoint && <TreePointDetailPanel point={selectedPoint} mode={mode} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
+          {selectedPoint && <TreePointDetailPanel point={selectedPoint} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
         </aside>
       </div>
     </main>
   );
 }
 
-function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evidence, recommendation, onClose }: {
+function TreePointDetailPanel({ point, libraryId, treeId, learnerId, evidence, recommendation, onClose }: {
   point: KnowledgePoint;
-  mode: 'path' | 'verify';
   libraryId: string;
   treeId: string;
   learnerId: string;
@@ -91,7 +87,7 @@ function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evide
     : recommendedActionFor(learningState);
   return (
     <section className="tree-point-detail">
-      <button type="button" className="tree-workspace-back" onClick={onClose}>返回{mode === 'path' ? '学习' : '测验'}</button>
+      <button type="button" className="tree-workspace-back" onClick={onClose}>返回知识点</button>
       <p className="tree-panel-kicker">知识点</p>
       <h1>{point.name}</h1>
       {point.description && <p className="tree-point-detail__description">{point.description}</p>}
@@ -104,9 +100,9 @@ function TreePointDetailPanel({ point, mode, libraryId, treeId, learnerId, evide
       </dl>
       {point.learningObjectives.length > 0 && <div className="tree-point-detail__section"><h2>学习目标</h2><ul>{point.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ul></div>}
       <div className="point-actions" role="group" aria-label="知识点操作">
-        <button type="button" aria-label="学习" className={recommendedAction === 'study' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>学习</strong>{recommendedAction === 'study' && <small>建议</small>}</span></button>
+        <button type="button" aria-label="自学" className={recommendedAction === 'study' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointStudy(libraryId, treeId, point.id))}><BookOpenText size={18} aria-hidden="true" /><span><strong>自学</strong>{recommendedAction === 'study' && <small>建议</small>}</span></button>
         <button type="button" aria-label="带我学" className={recommendedAction === 'teach' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong>{recommendedAction === 'teach' && <small>建议</small>}</span></button>
-        <button type="button" aria-label="测验" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>测验</strong>{recommendedAction === 'verify' && <small>建议</small>}</span></button>
+        <button type="button" aria-label="刷题" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>刷题</strong>{recommendedAction === 'verify' && <small>建议</small>}</span></button>
       </div>
     </section>
   );

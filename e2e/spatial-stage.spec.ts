@@ -19,15 +19,19 @@ test('Universe、Library 与知识树复用同一个 Canvas', async ({ page }) =
   await expect(stage).toHaveAttribute('data-tree-scene-mode', 'tree');
   expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
 
-  await page.getByRole('navigation', { name: '知识树页面' }).getByRole('link', { name: '测验' }).click();
-  await expect(page).toHaveURL(/\/tree-408\/verify$/);
-  expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
-
-  const firstPoint = page.locator('.tree-verify-panel .point-group li').first();
-  await expect(firstPoint).toBeVisible();
-  await firstPoint.getByRole('button').click();
+  await page.getByRole('searchbox', { name: '搜索知识点' }).fill('TCP可靠传输');
+  await page.getByRole('button', { name: /TCP可靠传输/ }).last().click();
   await expect(page.locator('.tree-point-detail')).toBeVisible();
   expect(await identity.evaluate((canvas) => canvas === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
+});
+
+test('旧树级测验地址统一回到知识点视图', async ({ page }) => {
+  await resetDemoState(page);
+  for (const segment of ['verify', 'practice']) {
+    await page.goto(`/library/computer/tree/tree-408/${segment}`);
+    await expect(page).toHaveURL(/\/library\/computer\/tree\/tree-408\/path$/);
+    await expect(page.getByRole('heading', { name: '知识点' })).toBeVisible();
+  }
 });
 
 test('知识库切树只移动共享镜头，不替换 Canvas', async ({ page }) => {
