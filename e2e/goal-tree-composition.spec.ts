@@ -51,6 +51,36 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   await expect(page.getByRole('heading', { name: '暂无可用题目' })).toHaveCount(0);
 });
 
+test('同一个目标重复整理复用同一棵树，不会失败', async ({ page }) => {
+  await resetDemoState(page);
+  // 低动态模式让相位瞬间走完，这个用例只验证「可重复」这个结果。
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const prompt = '我要准备 408，网络基础比较弱';
+  const userTreeIds = () => page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('iteach:v9:domain') ?? '{}') as { userTrees?: Array<{ id: string }> };
+    return state.userTrees?.map((tree) => tree.id) ?? [];
+  });
+  const compose = async () => {
+    await page.goto('/universe');
+    await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
+    await clickPageAction(page, '选择目标');
+    await page.getByLabel('你现在想做什么？').fill(prompt);
+    await page.getByRole('button', { name: '生成知识树' }).click();
+    await expect(page).toHaveURL(/\/library$/, { timeout: 15_000 });
+    await page.waitForTimeout(600);
+  };
+
+  await compose();
+  const first = await userTreeIds();
+  expect(first).toHaveLength(1);
+
+  await compose();
+  // 第二次整理同一个目标必须复用那棵树，而不是撞同名失败或新建第二棵。
+  expect(await userTreeIds()).toEqual(first);
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('option', { selected: true })).toContainText('考研408');
+});
+
 test('自动建树失败时回到完整 Universe，并保留原始输入供重试', async ({ page }) => {
   await resetDemoState(page);
   await page.goto('/universe');

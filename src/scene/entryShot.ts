@@ -10,6 +10,7 @@ export function createEntryShot(from: CameraPose, toTarget: THREE.Vector3, toDis
   const shot = { progress: 0 };
   const pose = { position: new THREE.Vector3(), target: new THREE.Vector3() };
   return gsap.timeline({ onComplete: complete }).to(shot, {
+    // 手册第 11 章指定的入场镜头：方向固定、target 移动、distance 变化，尾部收束。
     progress: 1, duration: 2.15, ease: 'power3.out',
     onUpdate: () => {
       pose.target.lerpVectors(from.target, toTarget, shot.progress);

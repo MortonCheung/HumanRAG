@@ -142,7 +142,7 @@ function SpatialExperience() {
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>
-      <div className={`spatial-experience spatial-experience--${phase}`} aria-busy={!ready && !failed} style={{ viewTransitionName: 'route-page' }}>
+      <div className={`spatial-experience spatial-experience--${phase}${treeWorkspaceReadOnly ? ' spatial-experience--readonly' : ''}`} aria-busy={!ready && !failed} style={{ viewTransitionName: 'route-page' }}>
         <SceneBoundary key={attempt} onError={handleError}>
           <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}

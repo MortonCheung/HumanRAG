@@ -3,6 +3,7 @@ import type { SceneModelInput } from '../../graph/relevance';
 import { knowledgeGraph } from '../../data/knowledgeGraph';
 import { buildSceneModel } from '../../graph/relevance';
 import { buildGraphRevealPlan } from './graphReveal';
+import { OPENING_PRESETS } from '../intro/constellationPresets';
 
 const baseView: SceneModelInput = {
   goalId: null,
@@ -75,7 +76,7 @@ describe('GraphRevealPlan', () => {
       if (sourceAt === undefined || targetAt === undefined) continue;
 
       // BFS 保证相邻节点延迟差不超过一层间距 + 层内展开
-      expect(Math.abs(sourceAt - targetAt)).toBeLessThanOrEqual(0.19 + 0.14 + 0.001);
+      expect(Math.abs(sourceAt - targetAt)).toBeLessThanOrEqual(0.14 + 0.14 + 0.001);
     }
   });
 
@@ -86,5 +87,15 @@ describe('GraphRevealPlan', () => {
 
     expect(plan.duration).toBeGreaterThanOrEqual(lastNode);
     expect(plan.duration).toBeGreaterThanOrEqual(lastEdge);
+  });
+
+  it('每个 Opening preset 的唤醒波都在入场镜头结束前走完（手册第 13 章：Reveal ≈ 1.4–1.9s）', () => {
+    for (const preset of OPENING_PRESETS) {
+      const plan = buildGraphRevealPlan(model, preset.seedNodeIds);
+      // 手册第 5.2 章的 LEVEL_GAP=0.19 会在这张图上拖到 2.41s，超过镜头 2.15s；
+      // 现取 0.14，三个 preset 都落在区间内。
+      expect(plan.duration).toBeGreaterThanOrEqual(1.4);
+      expect(plan.duration).toBeLessThan(1.9);
+    }
   });
 });

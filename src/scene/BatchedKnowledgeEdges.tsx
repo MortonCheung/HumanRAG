@@ -119,11 +119,18 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
     const timer = window.setInterval(invalidate, 1000 / QUALITY_CONFIG[quality].idleFps);
     return () => window.clearInterval(timer);
   }, [motionAllowed, quality, invalidate, uniforms]);
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // 相位必须在首帧绘制前落到 uniform 上：manual 第 0.2 章要求第一帧就是
+    // 「完整但极暗」的 Universe，绝不能被默认 uOpening=0 渲染成一张亮线网。
     if (experiencePhase === 'awakening') {
       uniforms.uRevealTime.value = 0;
       uniforms.uOpening.value = 1;
-    } else if (experiencePhase === 'intro' || experiencePhase === 'universe') {
+    } else if (experiencePhase === 'intro') {
+      // 第一帧就要有完整 Universe，但整张线网必须极暗：走 reveal floor，
+      // 只有 seed 附近的边留下很弱的轮廓，否则第一帧会是一张亮线网。
+      uniforms.uRevealTime.value = 0;
+      uniforms.uOpening.value = 1;
+    } else if (experiencePhase === 'universe') {
       uniforms.uRevealTime.value = 10;
       uniforms.uOpening.value = 0;
     }
@@ -135,7 +142,8 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
       uniforms.uDetach.value = -1;
       uniforms.uUniverseExit.value = 1;
     } else if (extraction.phase === 'highlighting') {
-      uniforms.uDetach.value = -0.05;
+      // highlighting 必须完整保留 Universe（手册第 21 章）：断开留给 detaching。
+      uniforms.uDetach.value = -1;
       uniforms.uUniverseExit.value = 1;
     } else if (extraction.phase === 'detaching') {
       const progress = extractionProgress(extraction.phase, extraction.phaseStartedAt, motionAllowed);

@@ -2,7 +2,7 @@ import { Target, X } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState, type FormEvent } from 'react';
 import { composeGoalTree } from '../ai/knowledge-tree/GoalTreeComposer';
-import { createTree, migrateV9 } from '../domain/knowledge/migration';
+import { createTree, migrateV9, resolveGoalTreeTarget } from '../domain/knowledge/migration';
 import { useGoalTreeTransitionStore } from '../features/spatial/transitions/goalTreeTransitionStore';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { loadLibraryHomePage } from '../features/library/loadLibraryHomePage';
@@ -32,8 +32,10 @@ export function GoalLensDrawer() {
         loadLibraryHomePage(),
         prepareTreeRuntime(draft),
       ]);
-      const tree = createTree(domain.library.id, {
-        identity: { name: draft.name, description: draft.description, color: '#b1d8ca' },
+      // 重复整理同一个目标时复用已有知识树，而不是因为同名直接失败。
+      const target = resolveGoalTreeTarget([...domain.trees, ...domain.userTrees], draft);
+      const tree = 'reuse' in target ? target.reuse : createTree(domain.library.id, {
+        identity: { name: target.name, description: draft.description, color: '#b1d8ca' },
         pointIds: draft.pointIds,
       });
       markTreeReady(tree.id);

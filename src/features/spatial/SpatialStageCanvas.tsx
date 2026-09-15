@@ -18,6 +18,7 @@ import { buildIntroScene, pickOpeningPreset } from '../../scene/intro/constellat
 import { buildGraphRevealPlan } from '../../scene/reveal/graphReveal';
 import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
 import { useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
+import { SPATIAL_CAMERA_FOV } from '../../scene/cameraFraming';
 
 function ContextHealth({ onError }: { onError: () => void }) {
   const { gl } = useThree();
@@ -93,10 +94,17 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
       <Canvas dpr={dpr} frameloop="demand"
         fallback={<div className="scene-recovery"><p>此设备暂不支持三维显示</p><a href="/library">打开知识库</a></div>}
         gl={{ antialias: quality === 'quality', alpha: false, powerPreference: 'high-performance', stencil: false, toneMapping: THREE.ACESFilmicToneMapping }}
-        onPointerMissed={() => mode === 'tree' ? selectTreePoint(null) : onMissed()}
+        onPointerMissed={() => {
+          // Path / Verify 左侧是展示品：点击空白不允许清掉右侧选中（手册第 25 章）。
+          if (mode === 'tree') {
+            if (!treeReadOnly) selectTreePoint(null);
+            return;
+          }
+          onMissed();
+        }}
         onCreated={({ gl }) => { gl.domElement.setAttribute('role', 'img'); }}>
         <color attach="background" args={['#080a10']} />
-        <PerspectiveCamera makeDefault fov={44} near={0.1} far={420} position={[45, 33, 56]} />
+        <PerspectiveCamera makeDefault fov={SPATIAL_CAMERA_FOV} near={0.1} far={420} position={[45, 33, 56]} />
         <SpatialSceneRouter model={model} intent={intent} onHover={onHover} onSelect={onSelect}
           experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} treeReadOnly={treeReadOnly} />
         <ContextHealth onError={onError} />

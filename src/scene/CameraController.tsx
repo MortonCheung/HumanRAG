@@ -1,16 +1,31 @@
 import { CameraControls, CameraControlsImpl } from '@react-three/drei';
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import type gsap from 'gsap';
 import * as THREE from 'three';
 import type { CameraIntent, SceneModel } from '../graph/types';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
-import { applyCameraPose, frameSphereAlongView, freezeCamera, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
+import { applyCameraPose, frameSphereAlongView, freezeCamera, introCameraDistance, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
 import { createEntryShot } from './entryShot';
 import { useSpatialViewport } from '../features/spatial/SpatialViewport';
 
 type View = { position: THREE.Vector3; target: THREE.Vector3; offset: THREE.Vector3; intentId: string };
 let lastUniverseView: View | null = null;
+const poseScratch = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+
+/**
+ * CameraControls 只在 `rest` 时通知外部，入场镜头期间它一直是 `enabled=false`，永远不会 rest——
+ * 只靠事件发布位姿会让验收探针读到入场停止后的旧值（实测整段入场 168 帧全是同一个数）。
+ * 这里改成逐帧发布：CameraControls 用 priority -1 先 `update(delta)`，本帧随后发布，
+ * 于是属性始终等于渲染当帧真正生效的位姿。
+ */
+function publishCameraPose(instance: CameraControlsImpl, domElement: HTMLElement) {
+  const position = instance.getPosition(poseScratch.position, false);
+  const target = instance.getTarget(poseScratch.target, false);
+  domElement.dataset.spatialCamera = [position.x, position.y, position.z, target.x, target.y, target.z]
+    .map((value) => value.toFixed(3)).join(',');
+}
+
 export interface CameraLifecycle {
   onReady: () => void;
   onEntryComplete: () => void;
@@ -28,6 +43,12 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   const { camera, size, invalidate, gl } = useThree();
   const usable = useSpatialViewport();
 
+  // 每渲染帧发布一次真实生效的相机位姿（见 publishCameraPose 注释）。
+  useFrame(() => {
+    const instance = controls.current;
+    if (instance) publishCameraPose(instance, gl.domElement);
+  });
+
   useEffect(() => {
     const instance = controls.current;
     if (!instance) return;
@@ -37,11 +58,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     });
     // Publish the settled pose so spatial E2E can verify camera ownership and
     // direction stability without reading React state or the WebGL scene graph.
-    const publish = () => {
-      const { position, target } = readPose();
-      gl.domElement.dataset.spatialCamera = [position.x, position.y, position.z, target.x, target.y, target.z]
-        .map((value) => value.toFixed(3)).join(',');
-    };
+    const publish = () => publishCameraPose(instance, gl.domElement);
     const remember = () => {
       publish();
       if (current.current.experiencePhase !== 'universe' || current.current.extractionFrame?.active) return;
@@ -94,7 +111,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       // Camera finds the seeds; seeds never move toward the camera.
       const target = introSphere.center.clone();
       const direction = new THREE.Vector3(0.68, 0.38, 0.76).normalize();
-      const introDistance = THREE.MathUtils.clamp(introSphere.radius * 3.1, 13, 46);
+      const introDistance = introCameraDistance(introSphere.radius);
       void instance.setFocalOffset(0, 0, 0, false);
       apply(target.clone().addScaledVector(direction, introDistance), target);
       return;

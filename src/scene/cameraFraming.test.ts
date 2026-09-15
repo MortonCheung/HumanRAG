@@ -2,8 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import CameraControls from 'camera-controls';
 import * as THREE from 'three';
-import { applyCameraPose, freezeCamera, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
+import { applyCameraPose, freezeCamera, introCameraDistance, nodeFocusPose, SPATIAL_CAMERA_FOV, viewportFocalOffset } from './cameraFraming';
 import { usableViewport } from '../features/spatial/SpatialViewport';
+import { buildSceneModel } from '../graph/relevance';
+import type { SceneModelInput } from '../graph/relevance';
+import { OPENING_PRESETS } from './intro/constellationPresets';
 CameraControls.install({ THREE });
 
 describe('continuous camera and effective viewport', () => {
@@ -72,5 +75,46 @@ describe('continuous camera and effective viewport', () => {
     expect((1 - projected.y) * height / 2).toBeCloseTo(rect.top + rect.height / 2, 5);
     expect(controls.getTarget(new THREE.Vector3()).distanceTo(point)).toBeLessThan(1e-8);
     controls.dispose();
+  });
+});
+
+describe('Opening 取景（手册第 10 章 / 第 13 章）', () => {
+  const baseView: SceneModelInput = { goalId: null, selectedNodeId: null, hoveredNodeId: null, learningPath: [], focused: false };
+  const model = buildSceneModel(baseView);
+  const preset = OPENING_PRESETS[0];
+  const seedPoints = model.nodes
+    .filter((node) => preset.seedNodeIds.includes(node.id))
+    .map((node) => new THREE.Vector3(...node.displayPosition));
+  const seedSphere = new THREE.Box3().setFromPoints(seedPoints).getBoundingSphere(new THREE.Sphere());
+
+  it('intro 距离按手册乘数 3.1 计算，且不被上限截断', () => {
+    expect(seedPoints.length).toBe(preset.seedNodeIds.length);
+    expect(seedSphere.radius).toBeGreaterThan(10);
+    // 手册上限 46 会截断这枚距离（实测 seed 簇需要约 61），是"顶栏压住 seed / 移动端溢出"的根因。
+    expect(introCameraDistance(seedSphere.radius)).toBeGreaterThan(46);
+    expect(introCameraDistance(seedSphere.radius)).toBeCloseTo(seedSphere.radius * 3.1, 6);
+  });
+
+  it.each([
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ])('$width × $height 下 seed 全部落在画面内且不压住顶栏', ({ width, height }) => {
+    const navHeight = 64;
+    const camera = new THREE.PerspectiveCamera(SPATIAL_CAMERA_FOV, width / height, 0.1, 420);
+    camera.position.copy(
+      seedSphere.center.clone()
+        .addScaledVector(new THREE.Vector3(0.68, 0.38, 0.76).normalize(), introCameraDistance(seedSphere.radius)),
+    );
+    camera.lookAt(seedSphere.center);
+    camera.updateMatrixWorld(true);
+
+    let top = height;
+    for (const point of seedPoints) {
+      const ndc = point.clone().project(camera);
+      expect(Math.abs(ndc.x)).toBeLessThanOrEqual(1);
+      expect(Math.abs(ndc.y)).toBeLessThanOrEqual(1);
+      top = Math.min(top, ((1 - ndc.y) / 2) * height);
+    }
+    expect(top).toBeGreaterThan(navHeight);
   });
 });

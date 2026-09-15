@@ -1,5 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1392 872" role="img" lang="zh-CN" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="blueprint" data-quality-profile="showcase">
-        <style><![CDATA[
+<svg viewBox="0 0 1060 1180" role="img" lang="zh-CN" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="blueprint" data-quality-profile="showcase" data-view-scale="1" style="transform: translate(0px, 0px) scale(1);" xmlns="http://www.w3.org/2000/svg" data-theme="dark"><style>
 /*
 JetBrains Mono variable WOFF2 subsets from Google Fonts service revision v24.
 These fixed bytes are shared by the viewer and its SVG/raster exports.
@@ -60,7 +59,7 @@ new environment.
 "Author" refers to any designer, engineer, programmer, technical
 writer or other person who contributed to the Font Software.
 
-PERMISSION & CONDITIONS
+PERMISSION &amp; CONDITIONS
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of the Font Software, to use, study, copy, merge, embed, modify,
 redistribute, and sell modified and unmodified copies of the Font
@@ -135,7 +134,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
   
 
     /* ==========================================================
-       THEME VARIABLES — switch by toggling [data-theme] on <html>
+       THEME VARIABLES — switch by toggling [data-theme] on &lt;html&gt;
        ========================================================== */
     :root,
     [data-theme="dark"] {
@@ -682,7 +681,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       padding: 0.75rem;
       padding-bottom: calc(0.75rem + var(--archify-nav-reserve));
     }
-    html[data-present="true"]:not([data-embed="true"]) .diagram-container > svg {
+    html[data-present="true"]:not([data-embed="true"]) .diagram-container &gt; svg {
       flex: 1 1 auto;
       height: 100%;
       min-height: 0;
@@ -1303,7 +1302,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       touch-action: none;
     }
     html[data-preset="blueprint"] .overview-map-surface { border-radius: 0.1rem; }
-    .overview-map-surface > svg {
+    .overview-map-surface &gt; svg {
       width: 100%;
       height: 100%;
       min-width: 0;
@@ -2357,7 +2356,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
     }
     html[data-preset="blueprint"] .node-finder-search { border-radius: 0.18rem; }
-    .node-finder-search > span { color: var(--frontend-stroke); font-size: 0.875rem; }
+    .node-finder-search &gt; span { color: var(--frontend-stroke); font-size: 0.875rem; }
     .node-finder-search:focus-within {
       border-color: var(--frontend-stroke);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--frontend-stroke) 20%, transparent);
@@ -2504,8 +2503,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       border-radius: 0.55rem;
       font-size: 0.75rem;
     }
-    .guided-views > #guided-view-prev,
-    .guided-views > #guided-view-next { min-width: 2.75rem; min-height: 2.75rem; }
+    .guided-views &gt; #guided-view-prev,
+    .guided-views &gt; #guided-view-next { min-width: 2.75rem; min-height: 2.75rem; }
     .guided-views button:disabled { opacity: 0.3; cursor: default; }
     .guided-view-copy {
       min-width: 0;
@@ -2641,8 +2640,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     }
     .guided-story-caption-next strong { color: var(--text-muted); font-weight: 700; }
     html[data-preset="blueprint"] .guided-story-caption { border-radius: 0.2rem; }
-    .guided-views[data-story-beat] .guided-view-copy > #guided-view-label,
-    .guided-views[data-story-beat] .guided-view-copy > #guided-view-note { display: none; }
+    .guided-views[data-story-beat] .guided-view-copy &gt; #guided-view-label,
+    .guided-views[data-story-beat] .guided-view-copy &gt; #guided-view-note { display: none; }
     @keyframes archify-story-caption-in {
       from { opacity: 0; transform: translateY(3px); }
       to { opacity: 1; transform: translateY(0); }
@@ -2784,8 +2783,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-beat-link,
       html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-all,
       html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-trail,
-      html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-copy > #guided-view-label,
-      html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-copy > #guided-view-note { display: none; }
+      html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-copy &gt; #guided-view-label,
+      html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-view-copy &gt; #guided-view-note { display: none; }
       html[data-present="true"]:not([data-embed="true"]) .guided-views[data-playing="true"] .guided-story-caption { margin-top: 0.08rem; }
     }
     .guided-view-chapters {
@@ -2914,8 +2913,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       align-items: center;
       padding: 0.28rem 0.35rem;
     }
-    .guided-views[data-active-view="all"] > #guided-view-prev,
-    .guided-views[data-active-view="all"] > #guided-view-next,
+    .guided-views[data-active-view="all"] &gt; #guided-view-prev,
+    .guided-views[data-active-view="all"] &gt; #guided-view-next,
     .guided-views[data-active-view="all"] .guided-view-beat-link,
     .guided-views[data-active-view="all"] .guided-view-all { display: none; }
     .guided-views[data-active-view="all"] .guided-view-copy {
@@ -2923,7 +2922,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       grid-row: 1;
       padding: 0.1rem 0.55rem;
     }
-    .guided-views[data-active-view="all"] .guided-view-copy > #guided-view-note { display: none; }
+    .guided-views[data-active-view="all"] .guided-view-copy &gt; #guided-view-note { display: none; }
     .guided-views[data-active-view="all"] .guided-view-actions {
       display: block;
       grid-column: 2;
@@ -3224,7 +3223,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       height: 0.65rem;
       transition: transform 0.15s ease;
     }
-    [aria-expanded="true"] > .toolbar-chevron { transform: rotate(180deg); }
+    [aria-expanded="true"] &gt; .toolbar-chevron { transform: rotate(180deg); }
     [data-theme="light"] #theme-icon {
       -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='10' cy='10' r='3.1'/%3E%3Cpath d='M10 2.2v1.4M10 16.4v1.4M2.2 10h1.4M16.4 10h1.4M4.5 4.5l1 1M14.5 14.5l1 1M15.5 4.5l-1 1M5.5 14.5l-1 1'/%3E%3C/g%3E%3C/svg%3E");
       mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'%3E%3Ccircle cx='10' cy='10' r='3.1'/%3E%3Cpath d='M10 2.2v1.4M10 16.4v1.4M2.2 10h1.4M16.4 10h1.4M4.5 4.5l1 1M14.5 14.5l1 1M15.5 4.5l-1 1M5.5 14.5l-1 1'/%3E%3C/g%3E%3C/svg%3E");
@@ -3727,7 +3726,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         scrollbar-width: thin;
         scroll-behavior: smooth;
       }
-      html:not([data-embed="true"]) .diagram-container[data-wide-diagram="true"] > svg {
+      html:not([data-embed="true"]) .diagram-container[data-wide-diagram="true"] &gt; svg {
         min-width: 720px;
       }
       html:not([data-embed="true"]) .diagram-container[data-wide-diagram="true"] .diagram-nav,
@@ -3869,8 +3868,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
       }
-      .guided-views > #guided-view-prev,
-      .guided-views > #guided-view-next {
+      .guided-views &gt; #guided-view-prev,
+      .guided-views &gt; #guided-view-next {
         align-self: center;
         height: 2.75rem;
       }
@@ -3996,7 +3995,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       html[data-present="true"]:not([data-embed="true"]) .guided-view-copy small { display: none; }
       html[data-present="true"]:not([data-embed="true"]) .guided-story-caption small { display: block; }
       html[data-present="true"]:not([data-embed="true"]) .diagram-container { padding: 0.5rem 0.5rem 3.75rem; }
-      html[data-present="true"]:not([data-embed="true"]) .diagram-container[data-wide-diagram="true"] > svg {
+      html[data-present="true"]:not([data-embed="true"]) .diagram-container[data-wide-diagram="true"] &gt; svg {
         width: 720px;
         height: auto;
         min-width: 720px;
@@ -4064,7 +4063,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       opacity: 0.76;
       pointer-events: none;
     }
-    svg .semantic-sigil > * { vector-effect: non-scaling-stroke; }
+    svg .semantic-sigil &gt; * { vector-effect: non-scaling-stroke; }
     svg .semantic-sigil .sigil-fill { fill: currentColor; stroke: none; }
     svg .s-frontend   { color: var(--frontend-stroke); }
     svg .s-backend    { color: var(--backend-stroke); }
@@ -4940,307 +4939,293 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       .source-evidence-beacon,
       svg [data-node-id], svg [data-edge-from], svg [data-detail], svg [data-detail-anchor], svg [data-legend-hit], svg { transition: none !important; }
     }
-  ]]></style><title id="archify-diagram-title">HumanRAG V11 Before · 运行时结构</title>
-        <desc id="archify-diagram-description">收口施工前的真实运行结构：Opening 临时星座、双 CameraControls、系统树重排</desc>
+  </style>
+        <title id="archify-diagram-title">HumanRAG V11 · 目标提取 → 知识树过渡时序</title>
+        <desc id="archify-diagram-description">由 Archify 生成的时序图。</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-default" />
+            <polygon points="0 0, 10 3.5, 0 7" class="m-default"></polygon>
           </marker>
           <marker id="arrowhead-emphasis" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-emphasis" />
+            <polygon points="0 0, 10 3.5, 0 7" class="m-emphasis"></polygon>
           </marker>
           <marker id="arrowhead-security" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-security" />
+            <polygon points="0 0, 10 3.5, 0 7" class="m-security"></polygon>
           </marker>
           <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-dashed" />
+            <polygon points="0 0, 10 3.5, 0 7" class="m-dashed"></polygon>
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" class="c-grid" stroke-width="0.5"/>
+            <path d="M 40 0 L 0 0 0 40" class="c-grid" stroke-width="0.5"></path>
           </pattern>
         </defs>
 
         <!-- Background Grid -->
-        <rect width="100%" height="100%" fill="url(#grid)" />
+        <rect width="100%" height="100%" fill="url(#grid)"></rect>
 
-        <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="Spatial Experience 常驻 Canvas" x="278" y="306" width="1074" height="390" rx="12" class="c-region" stroke-width="1"/>
+        <!-- Time Segments -->
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="0" x="48" y="150" width="964" height="270" rx="10" class="c-lane" stroke-width="1"></rect>
 
-        <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="app_router" data-edge-to="experience_shell" data-edge-label="挂载" data-edge-key="0" data-edge-id="c1" data-composition-points="800,164;800,208" d="M 800 164 L 800 208" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="app_router" data-edge-to="tree_workspace" data-edge-label="lazy route" data-edge-key="1" data-edge-id="c2" data-composition-points="1024,122;1112,122" d="M 1024 122 L 1112 122" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="experience_shell" data-edge-to="global_nav" data-edge-label="导航槽" data-edge-key="2" data-edge-id="c3" data-composition-points="1024,250;1112,250" d="M 1024 250 L 1112 250" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="experience_shell" data-edge-to="stage_canvas" data-edge-label="model + phase" data-edge-key="3" data-edge-id="c4" data-composition-points="800,292;800,336" d="M 800 292 L 800 336" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="constellation_presets" data-edge-to="stage_canvas" data-edge-label="临时子图" data-edge-key="4" data-edge-id="c5" data-composition-points="250,364;576,364" d="M 250 364 L 576 364" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="stage_canvas" data-edge-to="camera_controller" data-edge-label="渲染" data-edge-key="5" data-edge-id="c6" data-composition-points="576,378;547,378;547,506;518,506" d="M 576 378 L 555 378 Q 547 378 547 386 L 547 498 Q 547 506 539 506 L 518 506" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stage_canvas" data-edge-to="batched_edges" data-edge-label="渲染" data-edge-key="6" data-edge-id="c7" data-composition-points="793,420;793,442;681,442;681,464" d="M 793 420 L 793 434 Q 793 442 785 442 L 689 442 Q 681 442 681 450 L 681 464" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stage_canvas" data-edge-to="goal_extraction" data-edge-label="提取期间" data-edge-key="7" data-edge-id="c8" data-composition-points="807,420;807,442;949,442;949,464" d="M 807 420 L 807 434 Q 807 442 815 442 L 941 442 Q 949 442 949 450 L 949 464" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stage_canvas" data-edge-to="node_point_field" data-edge-label="渲染" data-edge-key="8" data-edge-id="c9" data-composition-points="1024,378;1068,378;1068,506;1112,506" d="M 1024 378 L 1060 378 Q 1068 378 1068 386 L 1068 498 Q 1068 506 1076 506 L 1112 506" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="goal_extraction" data-edge-to="transition_store" data-edge-label="驱动相位" data-edge-key="9" data-edge-id="c10" data-composition-points="844,506;815,506;815,634;786,634" d="M 844 506 L 823 506 Q 815 506 815 514 L 815 626 Q 815 634 807 634 L 786 634" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="knowledge_graph" data-edge-to="node_point_field" data-edge-label="nodes + edges" data-edge-key="10" data-edge-id="c11" data-composition-points="1217,720;1217,548" d="M 1217 720 L 1217 548" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="domain_registry" data-edge-to="library_scene" data-edge-key="11" data-edge-id="c12" data-composition-points="250,641;308,641" d="M 250 641 L 308 641" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="stage_canvas" data-edge-to="library_scene" data-edge-key="12" data-edge-id="c13" data-composition-points="576,392;284,392;284,627;308,627" d="M 576 392 L 292 392 Q 284 392 284 400 L 284 619 Q 284 627 292 627 L 308 627" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="1" x="48" y="420" width="964" height="340" rx="10" class="c-lane" stroke-width="1"></rect>
 
-        <!-- Components -->
-        <g id="node-app_router" data-node-id="app_router" data-node-label="AppRouter" tabindex="0" role="button" aria-label="聚焦AppRouter，react-router 路由层, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="react-router 路由层" data-node-context="架构组件">
-          <title>AppRouter · react-router 路由层 · 架构组件</title>
-          <rect x="576" y="80" width="448" height="84" rx="6" class="c-mask"/>
-          <rect x="576" y="80" width="448" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(582 86) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="segment" data-composition-frame-id="2" x="48" y="760" width="964" height="320" rx="10" class="c-lane" stroke-width="1"></rect>
+
+        <!-- Lifelines -->
+        <path d="M 105 142 L 105 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 214 142 L 214 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 323 142 L 323 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 432 142 L 432 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 541 142 L 541 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 650 142 L 650 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 759 142 L 759 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 868 142 L 868 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+        <path d="M 977 142 L 977 1115" class="a-default" stroke-width="0.8" stroke-dasharray="3,7"></path>
+
+        <!-- Activations -->
+
+
+        <!-- Messages -->
+        <g data-edge-from="user" data-edge-to="drawer" data-edge-label="自然语言目标" data-edge-key="0" data-edge-id="e1">
+          <path data-composition-edge-from="user" data-composition-edge-to="drawer" data-composition-edge-id="e1" data-composition-points="112,175;207,175" d="M 112 175 L 207 175" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"></path>
+        <g data-detail="context">
+          <rect x="122.3" y="155" width="74.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="159.5" y="165" class="t-backend" font-size="9" text-anchor="middle">自然语言目标</text>
+        </g>
+        </g>
+
+        <g data-edge-from="drawer" data-edge-to="composer" data-edge-label="解析意图文本" data-edge-key="1" data-edge-id="e2">
+          <path data-composition-edge-from="drawer" data-composition-edge-to="composer" data-composition-edge-id="e2" data-composition-points="221,245;316,245" d="M 221 245 L 316 245" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="231.3" y="225" width="74.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="268.5" y="235" class="t-backend" font-size="9" text-anchor="middle">解析意图文本</text>
+        </g>
+        </g>
+
+        <g data-edge-from="composer" data-edge-to="store" data-edge-label="seedPointIds + pointIds" data-edge-key="2" data-edge-id="e3">
+          <path data-composition-edge-from="composer" data-composition-edge-to="store" data-composition-edge-id="e3" data-composition-points="330,315;643,315" d="M 330 315 L 643 315" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"></path>
+        <g data-detail="context">
+          <rect x="420.7" y="295" width="131.60000000000002" height="16" rx="3" class="c-mask"></rect>
+          <text x="486.5" y="305" class="t-backend" font-size="9" text-anchor="middle">seedPointIds + pointIds</text>
+        </g>
+        </g>
+
+        <g data-edge-from="composer" data-edge-to="reveal" data-edge-label="请求传播计划" data-edge-key="3" data-edge-id="e4">
+          <path data-composition-edge-from="composer" data-composition-edge-to="reveal" data-composition-edge-id="e4" data-composition-points="330,385;425,385" d="M 330 385 L 425 385" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="340.3" y="365" width="74.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="377.5" y="375" class="t-backend" font-size="9" text-anchor="middle">请求传播计划</text>
+        </g>
+        </g>
+
+        <g data-edge-from="reveal" data-edge-to="extract" data-edge-label="分层唤醒顺序" data-edge-key="4" data-edge-id="e5">
+          <path data-composition-edge-from="reveal" data-composition-edge-to="extract" data-composition-edge-id="e5" data-composition-points="439,455;534,455" d="M 439 455 L 534 455" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="449.3" y="435" width="74.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="486.5" y="445" class="t-muted" font-size="9" text-anchor="middle">分层唤醒顺序</text>
+        </g>
+        </g>
+
+        <g data-edge-from="extract" data-edge-to="points" data-edge-label="detach 子图，非选中节点后退" data-edge-key="5" data-edge-id="e6">
+          <path data-composition-edge-from="extract" data-composition-edge-to="points" data-composition-edge-id="e6" data-composition-points="548,525;752,525" d="M 548 525 L 752 525" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="573.8" y="505" width="152.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="650" y="515" class="t-backend" font-size="9" text-anchor="middle">detach 子图，非选中节点后退</text>
+        </g>
+        </g>
+
+        <g data-edge-from="extract" data-edge-to="camera" data-edge-label="沿当前方向重新构图" data-edge-key="6" data-edge-id="e7">
+          <path data-composition-edge-from="extract" data-composition-edge-to="camera" data-composition-edge-id="e7" data-composition-points="548,595;861,595" d="M 548 595 L 861 595" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="651.7" y="575" width="105.60000000000001" height="16" rx="3" class="c-mask"></rect>
+          <text x="704.5" y="585" class="t-backend" font-size="9" text-anchor="middle">沿当前方向重新构图</text>
+        </g>
+        </g>
+
+        <g data-edge-from="camera" data-edge-to="store" data-edge-label="唯一相机所有者" data-edge-key="7" data-edge-id="e8">
+          <path data-composition-edge-from="camera" data-composition-edge-to="store" data-composition-edge-id="e8" data-composition-points="861,665;657,665" d="M 861 665 L 657 665" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="716.6" y="645" width="84.8" height="16" rx="3" class="c-mask"></rect>
+          <text x="759" y="655" class="t-muted" font-size="9" text-anchor="middle">唯一相机所有者</text>
+        </g>
+        </g>
+
+        <g data-edge-from="extract" data-edge-to="store" data-edge-label="custom layout 结果" data-edge-key="8" data-edge-id="e9">
+          <path data-composition-edge-from="extract" data-composition-edge-to="store" data-composition-edge-id="e9" data-composition-points="548,735;643,735" d="M 548 735 L 643 735" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"></path>
+        <g data-detail="context">
+          <rect x="542.7" y="715" width="105.60000000000001" height="16" rx="3" class="c-mask"></rect>
+          <text x="595.5" y="725" class="t-backend" font-size="9" text-anchor="middle">custom layout 结果</text>
+        </g>
+        </g>
+
+        <g data-edge-from="store" data-edge-to="preview" data-edge-label="移交知识树标识" data-edge-key="9" data-edge-id="e10">
+          <path data-composition-edge-from="store" data-composition-edge-to="preview" data-composition-edge-id="e10" data-composition-points="657,805;970,805" d="M 657 805 L 970 805" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="771.1" y="785" width="84.8" height="16" rx="3" class="c-mask"></rect>
+          <text x="813.5" y="795" class="t-backend" font-size="9" text-anchor="middle">移交知识树标识</text>
+        </g>
+        </g>
+
+        <g data-edge-from="preview" data-edge-to="user" data-edge-label="进入知识库并可继续学习" data-edge-key="10" data-edge-id="e11">
+          <path data-composition-edge-from="preview" data-composition-edge-to="user" data-composition-edge-id="e11" data-composition-points="970,875;112,875" d="M 970 875 L 112 875" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"></path>
+        <g data-detail="context">
+          <rect x="477.8" y="855" width="126.4" height="16" rx="3" class="c-mask"></rect>
+          <text x="541" y="865" class="t-muted" font-size="9" text-anchor="middle">进入知识库并可继续学习</text>
+        </g>
+        </g>
+
+        <!-- Segment Labels -->
+        <g data-graph-role="segment-label" data-segment-id="0">
+          <rect x="56" y="128" width="55.6" height="18" rx="3" class="c-mask"></rect>
+          <text x="62" y="141" class="t-dim" font-size="9" font-weight="600">整理目标</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="1">
+          <rect x="56" y="398" width="66" height="18" rx="3" class="c-mask"></rect>
+          <text x="62" y="411" class="t-dim" font-size="9" font-weight="600">提取与过渡</text>
+        </g>
+        <g data-graph-role="segment-label" data-segment-id="2">
+          <rect x="56" y="738" width="66" height="18" rx="3" class="c-mask"></rect>
+          <text x="62" y="751" class="t-dim" font-size="9" font-weight="600">落地知识树</text>
+        </g>
+
+        <!-- Participants -->
+        <g class="relationship-hit-overlay" data-relationship-hit-overlay="" role="group" aria-label="直接关系浏览器"><desc id="archify-relationship-help">使用方向键浏览关系。按 Enter 或空格键固定详情；按 Escape 清除。</desc><g class="relationship-hit-target" data-relationship-hit-key="0" data-relationship-key="0" data-relationship-from="user" data-relationship-to="drawer" data-relationship-id="e1" role="button" tabindex="0" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 1/11 条关系：用户 到 Drawer，自然语言目标。按 Enter 查看详情。"><title>用户 → Drawer · 自然语言目标</title><path data-composition-edge-from="user" data-composition-edge-to="drawer" data-composition-edge-id="e1" data-composition-points="112,175;207,175" d="M 112 175 L 207 175" stroke-width="1.8" class="relationship-hit-rail"></path><path data-composition-edge-from="user" data-composition-edge-to="drawer" data-composition-edge-id="e1" data-composition-points="112,175;207,175" d="M 112 175 L 207 175" stroke-width="1.8" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="1" data-relationship-key="1" data-relationship-from="drawer" data-relationship-to="composer" data-relationship-id="e2" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 2/11 条关系：Drawer 到 Composer，解析意图文本。按 Enter 查看详情。"><title>Drawer → Composer · 解析意图文本</title><path data-composition-edge-from="drawer" data-composition-edge-to="composer" data-composition-edge-id="e2" data-composition-points="221,245;316,245" d="M 221 245 L 316 245" stroke-width="1.4" class="relationship-hit-rail"></path><path data-composition-edge-from="drawer" data-composition-edge-to="composer" data-composition-edge-id="e2" data-composition-points="221,245;316,245" d="M 221 245 L 316 245" stroke-width="1.4" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="2" data-relationship-key="2" data-relationship-from="composer" data-relationship-to="store" data-relationship-id="e3" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 3/11 条关系：Composer 到 Store，seedPointIds + pointIds。按 Enter 查看详情。"><title>Composer → Store · seedPointIds + pointIds</title><path data-composition-edge-from="composer" data-composition-edge-to="store" data-composition-edge-id="e3" data-composition-points="330,315;643,315" d="M 330 315 L 643 315" stroke-width="1.8" class="relationship-hit-rail"></path><path data-composition-edge-from="composer" data-composition-edge-to="store" data-composition-edge-id="e3" data-composition-points="330,315;643,315" d="M 330 315 L 643 315" stroke-width="1.8" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="3" data-relationship-key="3" data-relationship-from="composer" data-relationship-to="reveal" data-relationship-id="e4" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 4/11 条关系：Composer 到 Reveal，请求传播计划。按 Enter 查看详情。"><title>Composer → Reveal · 请求传播计划</title><path data-composition-edge-from="composer" data-composition-edge-to="reveal" data-composition-edge-id="e4" data-composition-points="330,385;425,385" d="M 330 385 L 425 385" stroke-width="1.4" class="relationship-hit-rail"></path><path data-composition-edge-from="composer" data-composition-edge-to="reveal" data-composition-edge-id="e4" data-composition-points="330,385;425,385" d="M 330 385 L 425 385" stroke-width="1.4" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="4" data-relationship-key="4" data-relationship-from="reveal" data-relationship-to="extract" data-relationship-id="e5" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 5/11 条关系：Reveal 到 Extract，分层唤醒顺序。按 Enter 查看详情。"><title>Reveal → Extract · 分层唤醒顺序</title><path data-composition-edge-from="reveal" data-composition-edge-to="extract" data-composition-edge-id="e5" data-composition-points="439,455;534,455" d="M 439 455 L 534 455" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-hit-rail"></path><path data-composition-edge-from="reveal" data-composition-edge-to="extract" data-composition-edge-id="e5" data-composition-points="439,455;534,455" d="M 439 455 L 534 455" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="5" data-relationship-key="5" data-relationship-from="extract" data-relationship-to="points" data-relationship-id="e6" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 6/11 条关系：Extract 到 Points，detach 子图，非选中节点后退。按 Enter 查看详情。"><title>Extract → Points · detach 子图，非选中节点后退</title><path data-composition-edge-from="extract" data-composition-edge-to="points" data-composition-edge-id="e6" data-composition-points="548,525;752,525" d="M 548 525 L 752 525" stroke-width="1.4" class="relationship-hit-rail"></path><path data-composition-edge-from="extract" data-composition-edge-to="points" data-composition-edge-id="e6" data-composition-points="548,525;752,525" d="M 548 525 L 752 525" stroke-width="1.4" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="6" data-relationship-key="6" data-relationship-from="extract" data-relationship-to="camera" data-relationship-id="e7" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 7/11 条关系：Extract 到 Camera，沿当前方向重新构图。按 Enter 查看详情。"><title>Extract → Camera · 沿当前方向重新构图</title><path data-composition-edge-from="extract" data-composition-edge-to="camera" data-composition-edge-id="e7" data-composition-points="548,595;861,595" d="M 548 595 L 861 595" stroke-width="1.4" class="relationship-hit-rail"></path><path data-composition-edge-from="extract" data-composition-edge-to="camera" data-composition-edge-id="e7" data-composition-points="548,595;861,595" d="M 548 595 L 861 595" stroke-width="1.4" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="7" data-relationship-key="7" data-relationship-from="camera" data-relationship-to="store" data-relationship-id="e8" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 8/11 条关系：Camera 到 Store，唯一相机所有者。按 Enter 查看详情。"><title>Camera → Store · 唯一相机所有者</title><path data-composition-edge-from="camera" data-composition-edge-to="store" data-composition-edge-id="e8" data-composition-points="861,665;657,665" d="M 861 665 L 657 665" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-hit-rail"></path><path data-composition-edge-from="camera" data-composition-edge-to="store" data-composition-edge-id="e8" data-composition-points="861,665;657,665" d="M 861 665 L 657 665" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="8" data-relationship-key="8" data-relationship-from="extract" data-relationship-to="store" data-relationship-id="e9" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 9/11 条关系：Extract 到 Store，custom layout 结果。按 Enter 查看详情。"><title>Extract → Store · custom layout 结果</title><path data-composition-edge-from="extract" data-composition-edge-to="store" data-composition-edge-id="e9" data-composition-points="548,735;643,735" d="M 548 735 L 643 735" stroke-width="1.8" class="relationship-hit-rail"></path><path data-composition-edge-from="extract" data-composition-edge-to="store" data-composition-edge-id="e9" data-composition-points="548,735;643,735" d="M 548 735 L 643 735" stroke-width="1.8" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="9" data-relationship-key="9" data-relationship-from="store" data-relationship-to="preview" data-relationship-id="e10" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 10/11 条关系：Store 到 Preview，移交知识树标识。按 Enter 查看详情。"><title>Store → Preview · 移交知识树标识</title><path data-composition-edge-from="store" data-composition-edge-to="preview" data-composition-edge-id="e10" data-composition-points="657,805;970,805" d="M 657 805 L 970 805" stroke-width="1.4" class="relationship-hit-rail"></path><path data-composition-edge-from="store" data-composition-edge-to="preview" data-composition-edge-id="e10" data-composition-points="657,805;970,805" d="M 657 805 L 970 805" stroke-width="1.4" class="relationship-focus-rail"></path></g><g class="relationship-hit-target" data-relationship-hit-key="10" data-relationship-key="10" data-relationship-from="preview" data-relationship-to="user" data-relationship-id="e11" role="button" tabindex="-1" aria-pressed="false" aria-describedby="archify-relationship-help" aria-label="检查第 11/11 条关系：Preview 到 用户，进入知识库并可继续学习。按 Enter 查看详情。"><title>Preview → 用户 · 进入知识库并可继续学习</title><path data-composition-edge-from="preview" data-composition-edge-to="user" data-composition-edge-id="e11" data-composition-points="970,875;112,875" d="M 970 875 L 112 875" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-hit-rail"></path><path data-composition-edge-from="preview" data-composition-edge-to="user" data-composition-edge-id="e11" data-composition-points="970,875;112,875" d="M 970 875 L 112 875" stroke-width="1.4" stroke-dasharray="3,5" class="relationship-focus-rail"></path></g></g><g id="node-user" data-node-id="user" data-node-label="用户" tabindex="0" role="button" aria-label="聚焦用户，时序参与者" aria-pressed="false" data-node-kind="external" data-node-context="时序参与者">
+          <title>用户 · 时序参与者</title>
+          <rect x="62" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="62" y="72" width="86" height="54" rx="6" class="c-external" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(68 78) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"></rect>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"></path>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="800" y="120" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">AppRouter</text>
-        <text data-detail="context" x="800" y="136" class="t-muted" font-size="9" text-anchor="middle">react-router 路由层</text>
+          <text data-node-label="" x="105" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">用户</text>
         </g>
 
-        <g id="node-tree_workspace" data-node-id="tree_workspace" data-node-label="KnowledgeTreeWorkspace" tabindex="0" role="button" aria-label="聚焦KnowledgeTreeWorkspace，知识树工作区, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="知识树工作区" data-node-context="架构组件">
-          <title>KnowledgeTreeWorkspace · 知识树工作区 · 架构组件</title>
-          <rect x="1112" y="80" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="1112" y="80" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(1118 86) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-drawer" data-node-id="drawer" data-node-label="Drawer" tabindex="0" role="button" aria-label="聚焦Drawer，GoalLensDrawer, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="GoalLensDrawer" data-node-context="时序参与者">
+          <title>Drawer · GoalLensDrawer · 时序参与者</title>
+          <rect x="171" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="171" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(177 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1217" y="120" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">KnowledgeTreeWorkspace</text>
-        <text data-detail="context" x="1217" y="136" class="t-muted" font-size="9" text-anchor="middle">知识树工作区</text>
+          <text data-node-label="" data-detail-anchor="" x="214" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Drawer</text>
+          <text data-detail="context" x="214" y="111" class="t-muted" font-size="7" text-anchor="middle">GoalLensDrawer</text>
         </g>
 
-        <g id="node-experience_shell" data-node-id="experience_shell" data-node-label="SpatialExperienceShell" tabindex="0" role="button" aria-label="聚焦SpatialExperienceShell，常驻空间体验 · phase 状态机, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="常驻空间体验 · phase 状态机" data-node-context="架构组件">
-          <title>SpatialExperienceShell · 常驻空间体验 · phase 状态机 · 架构组件</title>
-          <rect x="576" y="208" width="448" height="84" rx="6" class="c-mask"/>
-          <rect x="576" y="208" width="448" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(582 214) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-composer" data-node-id="composer" data-node-label="Composer" tabindex="0" role="button" aria-label="聚焦Composer，GoalTreeComposer, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="GoalTreeComposer" data-node-context="时序参与者">
+          <title>Composer · GoalTreeComposer · 时序参与者</title>
+          <rect x="280" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="280" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(286 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="800" y="248" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SpatialExperienceShell</text>
-        <text data-detail="context" x="800" y="264" class="t-muted" font-size="9" text-anchor="middle">常驻空间体验 · phase 状态机</text>
+          <text data-node-label="" data-detail-anchor="" x="323" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Composer</text>
+          <text data-detail="context" x="323" y="111" class="t-muted" font-size="7" text-anchor="middle">GoalTreeComposer</text>
         </g>
 
-        <g id="node-global_nav" data-node-id="global_nav" data-node-label="GlobalNav" tabindex="0" role="button" aria-label="聚焦GlobalNav，NavigationSlots 导航槽, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="NavigationSlots 导航槽" data-node-context="架构组件">
-          <title>GlobalNav · NavigationSlots 导航槽 · 架构组件</title>
-          <rect x="1112" y="208" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="1112" y="208" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(1118 214) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-reveal" data-node-id="reveal" data-node-label="Reveal" tabindex="0" role="button" aria-label="聚焦Reveal，GraphRevealPlan, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="GraphRevealPlan" data-node-context="时序参与者">
+          <title>Reveal · GraphRevealPlan · 时序参与者</title>
+          <rect x="389" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="389" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(395 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1217" y="248" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GlobalNav</text>
-        <text data-detail="context" x="1217" y="264" class="t-muted" font-size="9" text-anchor="middle">NavigationSlots 导航槽</text>
+          <text data-node-label="" data-detail-anchor="" x="432" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Reveal</text>
+          <text data-detail="context" x="432" y="111" class="t-muted" font-size="7" text-anchor="middle">GraphRevealPlan</text>
         </g>
 
-        <g id="node-constellation_presets" data-node-id="constellation_presets" data-node-label="constellationPresets" tabindex="0" role="button" aria-label="聚焦constellationPresets，临时星座小树 · Math.random, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="临时星座小树 · Math.random" data-node-tag="待移除" data-node-context="架构组件">
-          <title>constellationPresets · 临时星座小树 · Math.random · 架构组件 · 待移除</title>
-          <rect x="40" y="336" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="40" y="336" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(46 342) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-extract" data-node-id="extract" data-node-label="Extract" tabindex="0" role="button" aria-label="聚焦Extract，GoalTreeExtraction, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="GoalTreeExtraction" data-node-context="时序参与者">
+          <title>Extract · GoalTreeExtraction · 时序参与者</title>
+          <rect x="498" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="498" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(504 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="145" y="376" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">constellationPresets</text>
-        <text data-detail="context" x="145" y="392" class="t-muted" font-size="9" text-anchor="middle">临时星座小树 · Math.random</text>
-        <text data-detail="fine" x="145" y="412" class="t-frontend" font-size="7" text-anchor="middle">待移除</text>
+          <text data-node-label="" data-detail-anchor="" x="541" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Extract</text>
+          <text data-detail="context" x="541" y="111" class="t-muted" font-size="7" text-anchor="middle">GoalTreeExtraction</text>
         </g>
 
-        <g id="node-stage_canvas" data-node-id="stage_canvas" data-node-label="SpatialStageCanvas" tabindex="0" role="button" aria-label="聚焦SpatialStageCanvas，唯一 Canvas · 场景路由, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="唯一 Canvas · 场景路由" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>SpatialStageCanvas · 唯一 Canvas · 场景路由 · Spatial Experience 常驻 Canvas</title>
-          <rect x="576" y="336" width="448" height="84" rx="6" class="c-mask"/>
-          <rect x="576" y="336" width="448" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(582 342) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-store" data-node-id="store" data-node-label="Store" tabindex="0" role="button" aria-label="聚焦Store，TransitionStore, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="TransitionStore" data-node-context="时序参与者">
+          <title>Store · TransitionStore · 时序参与者</title>
+          <rect x="607" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="607" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(613 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="800" y="376" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SpatialStageCanvas</text>
-        <text data-detail="context" x="800" y="392" class="t-muted" font-size="9" text-anchor="middle">唯一 Canvas · 场景路由</text>
+          <text data-node-label="" data-detail-anchor="" x="650" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Store</text>
+          <text data-detail="context" x="650" y="111" class="t-muted" font-size="7" text-anchor="middle">TransitionStore</text>
         </g>
 
-        <g id="node-camera_controller" data-node-id="camera_controller" data-node-label="CameraController" tabindex="0" role="button" aria-label="聚焦CameraController，相机控制 #1, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="相机控制 #1" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>CameraController · 相机控制 #1 · Spatial Experience 常驻 Canvas</title>
-          <rect x="308" y="464" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="308" y="464" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(314 470) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-points" data-node-id="points" data-node-label="Points" tabindex="0" role="button" aria-label="聚焦Points，NodePointField, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="NodePointField" data-node-context="时序参与者">
+          <title>Points · NodePointField · 时序参与者</title>
+          <rect x="716" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="716" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(722 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="413" y="504" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">CameraController</text>
-        <text data-detail="context" x="413" y="520" class="t-muted" font-size="9" text-anchor="middle">相机控制 #1</text>
+          <text data-node-label="" data-detail-anchor="" x="759" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Points</text>
+          <text data-detail="context" x="759" y="111" class="t-muted" font-size="7" text-anchor="middle">NodePointField</text>
         </g>
 
-        <g id="node-batched_edges" data-node-id="batched_edges" data-node-label="BatchedKnowledgeEdges" tabindex="0" role="button" aria-label="聚焦BatchedKnowledgeEdges，边批渲染, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="边批渲染" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>BatchedKnowledgeEdges · 边批渲染 · Spatial Experience 常驻 Canvas</title>
-          <rect x="576" y="464" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="576" y="464" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(582 470) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-camera" data-node-id="camera" data-node-label="Camera" tabindex="0" role="button" aria-label="聚焦Camera，CameraController, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="CameraController" data-node-context="时序参与者">
+          <title>Camera · CameraController · 时序参与者</title>
+          <rect x="825" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="825" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(831 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="681" y="504" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">BatchedKnowledgeEdges</text>
-        <text data-detail="context" x="681" y="520" class="t-muted" font-size="9" text-anchor="middle">边批渲染</text>
+          <text data-node-label="" data-detail-anchor="" x="868" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Camera</text>
+          <text data-detail="context" x="868" y="111" class="t-muted" font-size="7" text-anchor="middle">CameraController</text>
         </g>
 
-        <g id="node-goal_extraction" data-node-id="goal_extraction" data-node-label="GoalTreeExtraction" tabindex="0" role="button" aria-label="聚焦GoalTreeExtraction，内嵌相机控制 #2, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="内嵌相机控制 #2" data-node-tag="待收敛" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>GoalTreeExtraction · 内嵌相机控制 #2 · Spatial Experience 常驻 Canvas · 待收敛</title>
-          <rect x="844" y="464" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="844" y="464" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(850 470) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
+        <g id="node-preview" data-node-id="preview" data-node-label="Preview" tabindex="0" role="button" aria-label="聚焦Preview，LibraryPreview, 时序参与者" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="LibraryPreview" data-node-context="时序参与者">
+          <title>Preview · LibraryPreview · 时序参与者</title>
+          <rect x="934" y="72" width="86" height="54" rx="6" class="c-mask"></rect>
+          <rect x="934" y="72" width="86" height="54" rx="6" class="c-frontend" stroke-width="1.5"></rect>
+          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(940 78) scale(0.6875)">
+            <rect x="2" y="3" width="12" height="10" rx="2"></rect>
+            <path d="M2 6.5h12"></path>
+            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"></circle>
+            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"></circle>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="949" y="504" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GoalTreeExtraction</text>
-        <text data-detail="context" x="949" y="520" class="t-muted" font-size="9" text-anchor="middle">内嵌相机控制 #2</text>
-        <text data-detail="fine" x="949" y="540" class="t-frontend" font-size="7" text-anchor="middle">待收敛</text>
-        </g>
-
-        <g id="node-node_point_field" data-node-id="node_point_field" data-node-label="NodePointField" tabindex="0" role="button" aria-label="聚焦NodePointField，节点点云 · openingOrigins 飞行, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="节点点云 · openingOrigins 飞行" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>NodePointField · 节点点云 · openingOrigins 飞行 · Spatial Experience 常驻 Canvas</title>
-          <rect x="1112" y="464" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="1112" y="464" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(1118 470) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1217" y="504" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">NodePointField</text>
-        <text data-detail="context" x="1217" y="520" class="t-muted" font-size="9" text-anchor="middle">节点点云 · openingOrigins 飞行</text>
-        </g>
-
-        <g id="node-domain_registry" data-node-id="domain_registry" data-node-label="Domain Registry" tabindex="0" role="button" aria-label="聚焦Domain Registry，migrateV9 领域注册表, 架构组件" aria-pressed="false" data-node-kind="database" data-node-sublabel="migrateV9 领域注册表" data-node-context="架构组件">
-          <title>Domain Registry · migrateV9 领域注册表 · 架构组件</title>
-          <rect x="40" y="592" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="40" y="592" width="210" height="84" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(46 598) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="145" y="632" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Domain Registry</text>
-        <text data-detail="context" x="145" y="648" class="t-muted" font-size="9" text-anchor="middle">migrateV9 领域注册表</text>
-        </g>
-
-        <g id="node-library_scene" data-node-id="library_scene" data-node-label="LibraryPreviewUniverseScene" tabindex="0" role="button" aria-label="聚焦LibraryPreviewUniverseScene，预览相机控制 #3 · 全部树重排, Spatial Experience 常驻 Canvas" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="预览相机控制 #3 · 全部树重排" data-node-context="Spatial Experience 常驻 Canvas">
-          <title>LibraryPreviewUniverseScene · 预览相机控制 #3 · 全部树重排 · Spatial Experience 常驻 Canvas</title>
-          <rect x="308" y="592" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="308" y="592" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(314 598) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="413" y="632" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LibraryPreviewUniverseScene</text>
-        <text data-detail="context" x="413" y="648" class="t-muted" font-size="9" text-anchor="middle">预览相机控制 #3 · 全部树重排</text>
-        </g>
-
-        <g id="node-transition_store" data-node-id="transition_store" data-node-label="GoalTreeTransitionStore" tabindex="0" role="button" aria-label="聚焦GoalTreeTransitionStore，提取状态机 · zustand, 架构组件" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="提取状态机 · zustand" data-node-context="架构组件">
-          <title>GoalTreeTransitionStore · 提取状态机 · zustand · 架构组件</title>
-          <rect x="576" y="592" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="576" y="592" width="210" height="84" rx="6" class="c-frontend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="frontend" class="semantic-sigil s-frontend" transform="translate(582 598) scale(0.6875)">
-            <rect x="2" y="3" width="12" height="10" rx="2"/>
-            <path d="M2 6.5h12"/>
-            <circle cx="4.1" cy="4.8" r=".7" class="sigil-fill"/>
-            <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="681" y="632" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">GoalTreeTransitionStore</text>
-        <text data-detail="context" x="681" y="648" class="t-muted" font-size="9" text-anchor="middle">提取状态机 · zustand</text>
-        </g>
-
-        <g id="node-knowledge_graph" data-node-id="knowledge_graph" data-node-label="KnowledgeGraph" tabindex="0" role="button" aria-label="聚焦KnowledgeGraph，静态图数据 · 本地 SPACE_SCALE, 架构组件" aria-pressed="false" data-node-kind="database" data-node-sublabel="静态图数据 · 本地 SPACE_SCALE" data-node-context="架构组件">
-          <title>KnowledgeGraph · 静态图数据 · 本地 SPACE_SCALE · 架构组件</title>
-          <rect x="1112" y="720" width="210" height="84" rx="6" class="c-mask"/>
-          <rect x="1112" y="720" width="210" height="84" rx="6" class="c-database" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1118 726) scale(0.6875)">
-            <ellipse cx="8" cy="4" rx="5" ry="2"/>
-            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
-          </g>
-          <text data-node-label="" data-detail-anchor="" x="1217" y="760" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">KnowledgeGraph</text>
-        <text data-detail="context" x="1217" y="776" class="t-muted" font-size="9" text-anchor="middle">静态图数据 · 本地 SPACE_SCALE</text>
-        </g>
-
-        <!-- Connection labels -->
-        <g data-detail="context" data-edge-from="app_router" data-edge-to="experience_shell" data-edge-label="挂载" data-edge-key="0" data-edge-id="c1">
-          <rect x="785" y="168" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="800" y="178" class="t-muted" font-size="8" text-anchor="middle">挂载</text>
-        </g>
-        <g data-detail="context" data-edge-from="app_router" data-edge-to="tree_workspace" data-edge-label="lazy route" data-edge-key="1" data-edge-id="c2">
-          <rect x="1039" y="102" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="1068" y="112" class="t-muted" font-size="8" text-anchor="middle">lazy route</text>
-        </g>
-        <g data-detail="context" data-edge-from="experience_shell" data-edge-to="global_nav" data-edge-label="导航槽" data-edge-key="2" data-edge-id="c3">
-          <rect x="1048.6" y="230" width="38.8" height="14" rx="3" class="c-mask"/>
-          <text x="1068" y="240" class="t-muted" font-size="8" text-anchor="middle">导航槽</text>
-        </g>
-        <g data-detail="context" data-edge-from="experience_shell" data-edge-to="stage_canvas" data-edge-label="model + phase" data-edge-key="3" data-edge-id="c4">
-          <rect x="763.8" y="296" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="800" y="306" class="t-muted" font-size="8" text-anchor="middle">model + phase</text>
-        </g>
-        <g data-detail="context" data-edge-from="constellation_presets" data-edge-to="stage_canvas" data-edge-label="临时子图" data-edge-key="4" data-edge-id="c5">
-          <rect x="388.8" y="344" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="413" y="354" class="t-messagebus" font-size="8" text-anchor="middle">临时子图</text>
-        </g>
-        <g data-detail="context" data-edge-from="stage_canvas" data-edge-to="camera_controller" data-edge-label="渲染" data-edge-key="5" data-edge-id="c6">
-          <rect x="492" y="422" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="507" y="432" class="t-muted" font-size="8" text-anchor="middle">渲染</text>
-        </g>
-        <g data-detail="context" data-edge-from="stage_canvas" data-edge-to="batched_edges" data-edge-label="渲染" data-edge-key="6" data-edge-id="c7">
-          <rect x="722" y="422" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="737" y="432" class="t-muted" font-size="8" text-anchor="middle">渲染</text>
-        </g>
-        <g data-detail="context" data-edge-from="stage_canvas" data-edge-to="goal_extraction" data-edge-label="提取期间" data-edge-key="7" data-edge-id="c8">
-          <rect x="853.8" y="431" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="878" y="441" class="t-muted" font-size="8" text-anchor="middle">提取期间</text>
-        </g>
-        <g data-detail="context" data-edge-from="stage_canvas" data-edge-to="node_point_field" data-edge-label="渲染" data-edge-key="8" data-edge-id="c9">
-          <rect x="1053" y="422" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="1068" y="432" class="t-muted" font-size="8" text-anchor="middle">渲染</text>
-        </g>
-        <g data-detail="context" data-edge-from="goal_extraction" data-edge-to="transition_store" data-edge-label="驱动相位" data-edge-key="9" data-edge-id="c10">
-          <rect x="790.8" y="550" width="48.4" height="14" rx="3" class="c-mask"/>
-          <text x="815" y="560" class="t-muted" font-size="8" text-anchor="middle">驱动相位</text>
-        </g>
-        <g data-detail="context" data-edge-from="knowledge_graph" data-edge-to="node_point_field" data-edge-label="nodes + edges" data-edge-key="10" data-edge-id="c11">
-          <rect x="1180.8" y="700" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="1217" y="710" class="t-muted" font-size="8" text-anchor="middle">nodes + edges</text>
-        </g>
-
-
-
-        <!-- Boundary labels (foreground masks keep routes out of titles) -->
-        <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="Spatial Experience 常驻 Canvas">
-          <rect data-graph-role="structural-frame-label-mask" x="282" y="316" width="172" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="286" y="329" class="t-cloud" font-size="9" font-weight="600">Spatial Experience 常驻 Canvas</text>
+          <text data-node-label="" data-detail-anchor="" x="977" y="94" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Preview</text>
+          <text data-detail="context" x="977" y="111" class="t-muted" font-size="7" text-anchor="middle">LibraryPreview</text>
         </g>
 
         <!-- Legend -->
-        <g data-legend="" data-legend-bridge="">
-          <text x="40" y="836" class="t-primary" font-size="12" font-weight="650">图例</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="前端" data-legend-x="40" data-legend-baseline="856" data-legend-width="63">
-            <rect x="40" y="847" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="856" class="t-muted" font-size="10" font-weight="500">前端</text>
+        <g data-legend="">
+          <text x="40" y="1106" class="t-primary" font-size="12" font-weight="650">图例</text>
+          <g data-legend-semantic-kind="emphasis" data-legend-x="40" data-legend-baseline="1126" data-legend-width="63">
+            <path d="M 40 1123 L 74 1123" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"></path>
+            <text x="83" y="1126" class="t-muted" font-size="10" font-weight="500">请求</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="数据库" data-legend-x="125" data-legend-baseline="856" data-legend-width="73">
-            <rect x="125" y="847" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="147" y="856" class="t-muted" font-size="10" font-weight="500">数据库</text>
+          <g data-legend-semantic-kind="return" data-legend-x="125" data-legend-baseline="1126" data-legend-width="63">
+            <path d="M 125 1123 L 159 1123" class="a-default" stroke-width="1.4" stroke-dasharray="3,5" marker-end="url(#arrowhead)"></path>
+            <text x="168" y="1126" class="t-muted" font-size="10" font-weight="500">返回</text>
+          </g>
+          <g data-legend-semantic-kind="default" data-legend-x="210" data-legend-baseline="1126" data-legend-width="83">
+            <path d="M 210 1123 L 244 1123" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"></path>
+            <text x="253" y="1126" class="t-muted" font-size="10" font-weight="500">默认消息</text>
           </g>
         </g>
       </svg>

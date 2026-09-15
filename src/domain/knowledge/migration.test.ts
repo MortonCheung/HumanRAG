@@ -3,6 +3,7 @@ import {
   normalizeTreeName,
   checkDuplicateTreeName,
   generateAnonymousTreeName,
+  resolveGoalTreeTarget,
   migrateV9, createTree, createPoint, hydratePointDraft, savePointDraft,
   updatePoint, deletePoint, V9_STORAGE_KEY,
 } from './migration';
@@ -52,6 +53,31 @@ describe('generateAnonymousTreeName', () => {
       { id: 't1', libraryId: 'computer', name: '未命名知识树 01', description: '', color: '', ownerType: 'user', pointIds: [], createdAt: '', updatedAt: '' },
     ];
     expect(generateAnonymousTreeName(trees)).toBe('未命名知识树 02');
+  });
+});
+
+describe('resolveGoalTreeTarget', () => {
+  const tree = (id: string, name: string, pointIds: string[]): KnowledgeTree => ({
+    id, libraryId: 'computer', name, description: '', color: '', ownerType: 'user', pointIds, createdAt: '', updatedAt: '',
+  });
+
+  it('同名同范围复用已有树，重复整理同一个目标不会失败', () => {
+    const existing = [tree('t1', '考研408 · 定向学习', ['a', 'b'])];
+    expect(resolveGoalTreeTarget(existing, { name: '考研408 · 定向学习', pointIds: ['b', 'a'] })).toEqual({ reuse: existing[0] });
+  });
+
+  it('名字大小写/空格差异仍算同一棵树', () => {
+    const existing = [tree('t1', 'AI 工程', ['a'])];
+    expect(resolveGoalTreeTarget(existing, { name: '  ai 工程 ', pointIds: ['a'] })).toEqual({ reuse: existing[0] });
+  });
+
+  it('同名但范围不同时保留旧树，新树用同前缀的空名', () => {
+    const existing = [tree('t1', '前端 · 定向学习', ['a']), tree('t2', '前端 · 定向学习 2', ['a', 'b'])];
+    expect(resolveGoalTreeTarget(existing, { name: '前端 · 定向学习', pointIds: ['c'] })).toEqual({ name: '前端 · 定向学习 3' });
+  });
+
+  it('没有同名树时沿用原名称', () => {
+    expect(resolveGoalTreeTarget([], { name: '全新目标', pointIds: ['a'] })).toEqual({ name: '全新目标' });
   });
 });
 

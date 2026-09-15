@@ -191,6 +191,32 @@ export function clearLegacyProfile() {
   }
 }
 
+/**
+ * 目标提取落到哪棵树上。
+ *
+ * GoalTreeComposer 的名称与范围是确定性的，所以同一个目标整理第二次会撞上
+ * `createTree` 的同名校验——用户看到的是「失败」，而不是同一棵树。重复整理
+ * 同一个目标应当复用已有知识树；只有名称相同但范围不同时，才保留旧树并用一个
+ * 同前缀的空名新建，绝不因为重名把整次提取打断。
+ */
+export function resolveGoalTreeTarget(
+  trees: KnowledgeTree[],
+  draft: { name: string; pointIds: string[] },
+): { reuse: KnowledgeTree } | { name: string } {
+  const normalized = normalizeTreeName(draft.name);
+  const wanted = new Set(draft.pointIds);
+  const identical = trees.find(
+    (tree) =>
+      normalizeTreeName(tree.name) === normalized &&
+      tree.pointIds.length === wanted.size &&
+      tree.pointIds.every((pointId) => wanted.has(pointId)),
+  );
+  if (identical) return { reuse: identical };
+  let name = draft.name;
+  for (let index = 2; checkDuplicateTreeName(name, trees); index += 1) name = `${draft.name} ${index}`;
+  return { name };
+}
+
 export interface CreateTreeInput {
   identity: TreeIdentity;
   pointIds?: string[];

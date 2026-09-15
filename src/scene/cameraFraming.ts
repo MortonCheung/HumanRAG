@@ -42,8 +42,7 @@ export function nodeFocusPose(camera: THREE.PerspectiveCamera, point: THREE.Vect
 }
 
 /** Reframe a sphere without turning the camera: the current view direction is kept. */
-export function frameSphereAlongView(
-  camera: THREE.PerspectiveCamera,
+export function frameSphereAlongView(  camera: THREE.PerspectiveCamera,
   currentPosition: THREE.Vector3,
   currentTarget: THREE.Vector3,
   sphere: THREE.Sphere,
@@ -57,4 +56,26 @@ export function frameSphereAlongView(
   const target = sphere.center.clone();
   const position = target.clone().addScaledVector(direction, distance);
   return { position, target };
+}
+
+/** The single perspective camera every spatial route shares. */
+export const SPATIAL_CAMERA_FOV = 44;
+
+/**
+ * Opening 相机距离：以 seed 簇包围球为对象。
+ * 乘数沿用手册第 10 章的 3.1（约等于带 16% 余量的包围球拟合）。
+ * 手册给的上限 46 会把这枚距离截断——实测 seed 簇半径约 19.6、需要 60.9——
+ * 结果是桌面端最上方 seed 钻进顶栏、移动端横向溢出，所以上限放宽到 150。
+ * 见 cameraFraming.test.ts「Opening 取景」。
+ */
+export const INTRO_DISTANCE_MULTIPLIER = 3.1;
+export const INTRO_DISTANCE_MIN = 13;
+export const INTRO_DISTANCE_MAX = 150;
+
+export function introCameraDistance(radius: number) {
+  return THREE.MathUtils.clamp(
+    radius * INTRO_DISTANCE_MULTIPLIER,
+    INTRO_DISTANCE_MIN,
+    INTRO_DISTANCE_MAX,
+  );
 }

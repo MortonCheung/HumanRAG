@@ -33,6 +33,8 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .spatial-experience { position: relative; width: 100%; min-height: 100dvh; overflow: hidden; isolation: isolate; background: var(--it-bg-deep); }
 .spatial-experience > .spatial-canvas-layer { position: fixed; inset: 0; z-index: 0; }
 .spatial-experience--intro > .spatial-canvas-layer { cursor: default; }
+.spatial-experience--readonly > .spatial-canvas-layer,
+.spatial-experience--readonly > .spatial-canvas-layer:active { cursor: default; }
 .spatial-experience--awakening .universe-page { visibility: hidden; }
 .canvas-layer { position: absolute; inset: 0; z-index: 0; cursor: grab; }
 .canvas-layer:active { cursor: grabbing; }

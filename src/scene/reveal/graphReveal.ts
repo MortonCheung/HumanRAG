@@ -98,7 +98,14 @@ export function buildGraphRevealPlan(
   const nodeDelay = new Map<string, number>();
   const edgeDelay = new Map<string, number>();
 
-  const LEVEL_GAP = 0.19;
+  /*
+   * 唤醒波必须在入场镜头（2.15s）结束前走完整张图，否则最后一批节点会在镜头停下
+   * 之后才补亮。手册第 13 章要求 Reveal ≈ 1.4–1.9s；手册第 5.2 章给的 LEVEL_GAP=0.19
+   * 在这张 336 节点 / 646 关系的图上会把 408 preset 拖到 2.41s（实测），违反该验收。
+   * 取 0.14 后：408/ai = 1.86s，frontend = 1.44s，三个 preset 全部落进区间。
+   * LEVEL_SPREAD / EDGE_LEAD 保持手册原值。
+   */
+  const LEVEL_GAP = 0.14;
   const LEVEL_SPREAD = 0.14;
   const EDGE_LEAD = 0.085;
 
