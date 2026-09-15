@@ -11,6 +11,13 @@ import { extractionProgress, type ExtractionPhase } from '../features/spatial/tr
 const ACTIVE = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
 const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0, 7) % 997 / 997;
 
+export function edgeAlpha(edge: SceneEdge, experiencePhase: SpatialExperiencePhase) {
+  const active = ACTIVE.has(edge.visualState);
+  if (experiencePhase === 'intro') return active ? 0.32 : 0.002;
+  if (active) return 0.45;
+  return edge.relationType === 'hierarchy' || edge.relationType === 'practice_for' ? 0.16 : 0.045;
+}
+
 export function selectPulsingEdgeIds(edges: SceneEdge[], budget: number) {
   return new Set([...edges]
     .sort((a, b) => Number(ACTIVE.has(b.visualState)) - Number(ACTIVE.has(a.visualState)) || phaseFor(a.id) - phaseFor(b.id))
@@ -45,22 +52,23 @@ export function buildEdgeGeometry(model: SceneModel, segments: number) {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1));
   geometry.setAttribute('aPhase', new THREE.BufferAttribute(phases, 1));
-  for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay']) geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count), 1));
+  for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay', 'aOpeningSeed']) geometry.setAttribute(name, new THREE.BufferAttribute(new Float32Array(count), 1));
   geometry.computeBoundingSphere();
   return geometry;
 }
 
 const vertexShader = `
-  attribute float aProgress, aPhase, aAlpha, aActive, aDirection, aDelay;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
+  attribute float aProgress, aPhase, aAlpha, aActive, aDirection, aDelay, aOpeningSeed;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay, vOpeningSeed;
   void main() {
     vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection; vDelay=aDelay;
+    vOpeningSeed=aOpeningSeed;
     gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
   }
 `;
 export const synapticPulseShader = `
   uniform float uTime, uMotion, uRevealTime, uOpening, uRevealFloor, uDetach, uUniverseExit;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay, vOpeningSeed;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
     float head=fract(uTime*0.18+vPhase)*1.3-0.15;
@@ -72,7 +80,7 @@ export const synapticPulseShader = `
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
     float travel=clamp((uRevealTime-vDelay)/0.14,0.0,1.0);
     float grown=1.0-smoothstep(travel-0.025,travel+0.025,vProgress);
-    float openingReveal=mix(uRevealFloor,1.0,grown);
+    float openingReveal=max(mix(uRevealFloor,1.0,grown),vOpeningSeed);
     float reveal=mix(1.0,openingReveal,uOpening);
     float centerDistance=abs(vProgress-0.5)*2.0;
     float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);
@@ -81,11 +89,12 @@ export const synapticPulseShader = `
 `;
 
 /** One path batch and one render clock. Camera gestures never stop synaptic transmission. */
-export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, extraction }: {
+export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, extraction, openingSeedEdgeIds }: {
   model: SceneModel;
   experiencePhase: SpatialExperiencePhase;
   motionAllowed: boolean;
   extraction?: { phase: ExtractionPhase; phaseStartedAt: number };
+  openingSeedEdgeIds?: ReadonlySet<string>;
 }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const segments = QUALITY_CONFIG[quality].curveSegments;
@@ -94,23 +103,23 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
   // Appearance changes leave positions, topology and material identity untouched.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uRevealFloor: { value: 0.08 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
+  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uRevealFloor: { value: 0 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
   useLayoutEffect(() => {
     const pulsing = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[quality].activePulseCount);
     let vertex = 0;
     for (const edge of model.edges) {
       const active = ACTIVE.has(edge.visualState);
-      const primary = edge.relationType === 'hierarchy' || edge.relationType === 'practice_for';
       for (let index = 0; index < segments * 2; index += 1) {
-        geometry.getAttribute('aAlpha').setX(vertex, active ? 0.45 : primary ? 0.16 : 0.045);
+        geometry.getAttribute('aAlpha').setX(vertex, edgeAlpha(edge, experiencePhase));
         geometry.getAttribute('aActive').setX(vertex, pulsing.has(edge.id) ? active ? 0.9 : 0.2 : 0);
+        geometry.getAttribute('aOpeningSeed').setX(vertex, openingSeedEdgeIds?.has(edge.id) ? 1 : 0);
         geometry.getAttribute('aDirection').setX(vertex++, edge.direction === 'in' ? -1 : 1);
         geometry.getAttribute('aDelay').setX(vertex - 1, edge.propagationDelay);
       }
     }
-    for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay']) geometry.getAttribute(name).needsUpdate = true;
+    for (const name of ['aAlpha', 'aActive', 'aDirection', 'aDelay', 'aOpeningSeed']) geometry.getAttribute(name).needsUpdate = true;
     invalidate();
-  }, [geometry, model.edges, quality, segments, invalidate]);
+  }, [geometry, model.edges, quality, segments, experiencePhase, openingSeedEdgeIds, invalidate]);
   useEffect(() => {
     uniforms.uMotion.value = motionAllowed ? 1 : 0;
     invalidate();
@@ -122,14 +131,17 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
   useLayoutEffect(() => {
     // 相位必须在首帧绘制前落到 uniform 上：manual 第 0.2 章要求第一帧就是
     // 「完整但极暗」的 Universe，绝不能被默认 uOpening=0 渲染成一张亮线网。
-    if (experiencePhase === 'awakening') {
+    if (experiencePhase === 'intro') {
       uniforms.uRevealTime.value = 0;
       uniforms.uOpening.value = 1;
-    } else if (experiencePhase === 'intro') {
-      // 第一帧就要有完整 Universe，但整张线网必须极暗：走 reveal floor，
-      // 只有 seed 附近的边留下很弱的轮廓，否则第一帧会是一张亮线网。
+      uniforms.uRevealFloor.value = 0;
+    } else if (experiencePhase === 'awakening') {
       uniforms.uRevealTime.value = 0;
       uniforms.uOpening.value = 1;
+      uniforms.uRevealFloor.value = 0;
+    } else if (experiencePhase === 'settling') {
+      uniforms.uOpening.value = 1;
+      uniforms.uRevealFloor.value = 0;
     } else if (experiencePhase === 'universe') {
       uniforms.uRevealTime.value = 10;
       uniforms.uOpening.value = 0;

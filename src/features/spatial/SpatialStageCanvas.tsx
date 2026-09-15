@@ -192,6 +192,7 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
   return <>
     {(!extractionActive || extractionPhase === 'highlighting' || extractionPhase === 'detaching') && <BatchedKnowledgeEdges
       model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed}
+      openingSeedEdgeIds={openingReveal.seedEdgeIds}
       extraction={extracting ? { phase: extractionPhase, phaseStartedAt: extractionStartedAt } : undefined} />}
     <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} extraction={extractionState} />
     <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel && !extractionActive} />

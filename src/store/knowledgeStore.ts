@@ -20,6 +20,7 @@ interface KnowledgeStore {
   phase: AppPhase;
   profile: UserProfile | null;
   selectedGoalId: string | null;
+  nodeFocusOriginGoalId: string | null;
   selectedNodeId: string | null;
   hoveredNodeId: string | null;
   cameraIntent: CameraIntent;
@@ -98,6 +99,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   phase: restored.selectedGoalId ? 'goalFocused' : 'overview',
   profile: restored.profile,
   selectedGoalId: restored.selectedGoalId,
+  nodeFocusOriginGoalId: null,
   selectedNodeId: null,
   hoveredNodeId: null,
   cameraIntent: { id: 'overview:initial', mode: 'overview' },
@@ -123,6 +125,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     persist(profile, goalId, get().qualityPreference);
     set({
       selectedGoalId: goalId,
+      nodeFocusOriginGoalId: null,
       selectedNodeId: null,
       activePanel: null,
       isPathRibbonOpen: false,
@@ -136,14 +139,11 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   selectNode: (nodeId) => {
     const node = nodesById.get(nodeId);
     if (!node) return;
-    const currentGoalId = get().selectedGoalId;
+    const state = get();
     const branchFocusId = branchRootId(nodeId);
-    const branchChanged = branchFocusId !== currentGoalId;
-    if (branchChanged) {
-      persist(get().profile, branchFocusId, get().qualityPreference);
-    }
     set({
       selectedGoalId: branchFocusId,
+      nodeFocusOriginGoalId: state.phase === 'nodeFocused' ? state.nodeFocusOriginGoalId : state.selectedGoalId,
       selectedNodeId: nodeId,
       activePanel: null,
       phase: 'nodeFocused',
@@ -153,22 +153,27 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
-  closeNodeDetail: () => set((state) => ({
-    selectedNodeId: null,
-    hoveredNodeId: null,
-    phase: state.selectedGoalId ? 'goalFocused' : 'overview',
-    relationMode: 'primary',
-    // Return to the user's current goal context; only a root session uses the full overview.
-    cameraIntent: {
-      id: `overview:close:${state.selectionEpoch}:${Date.now()}`,
-      mode: state.selectedGoalId ? 'goal' : 'overview',
-      nodeId: state.selectedGoalId ?? undefined,
-    },
-  })),
+  closeNodeDetail: () => set((state) => {
+    const originGoalId = state.phase === 'nodeFocused' ? state.nodeFocusOriginGoalId : state.selectedGoalId;
+    return {
+      selectedGoalId: originGoalId,
+      nodeFocusOriginGoalId: null,
+      selectedNodeId: null,
+      hoveredNodeId: null,
+      phase: originGoalId ? 'goalFocused' : 'overview',
+      relationMode: 'primary',
+      cameraIntent: {
+        id: `overview:close:${state.selectionEpoch}:${Date.now()}`,
+        mode: originGoalId ? 'goal' : 'overview',
+        nodeId: originGoalId ?? undefined,
+      },
+    };
+  }),
   returnOverview: () => set((state) => {
     persist(state.profile, null, state.qualityPreference);
     return {
       selectedGoalId: null,
+      nodeFocusOriginGoalId: null,
       selectedNodeId: null,
       activePanel: null,
       relationMode: 'primary',
@@ -200,7 +205,8 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
   },
   closeLearningPath: () => set({ isPathRibbonOpen: false }),
   setQualityPreference: (qualityPreference) => set((state) => {
-    persist(state.profile, state.selectedGoalId, qualityPreference);
+    const persistedGoalId = state.phase === 'nodeFocused' ? state.nodeFocusOriginGoalId : state.selectedGoalId;
+    persist(state.profile, persistedGoalId, qualityPreference);
     return {
       qualityPreference,
       resolvedQualityTier: qualityPreference === 'auto' ? state.resolvedQualityTier : qualityPreference,
@@ -217,6 +223,7 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       phase: 'overview',
       profile: null,
       selectedGoalId: null,
+      nodeFocusOriginGoalId: null,
       selectedNodeId: null,
       hoveredNodeId: null,
       cameraIntent: { id: `overview:reset:${Date.now()}`, mode: 'overview' },
