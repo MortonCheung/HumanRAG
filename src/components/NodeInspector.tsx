@@ -139,7 +139,7 @@ export function NodeInspector() {
                 </div>}
                 <div className="node-inspector__scroll">
                   {learningState && <section className="inspector-section inspector-learning-state"><h3>学习状态</h3><strong>{LEARNING_STATE_LABELS[learningState]}</strong></section>}
-                  {recommendation?.pointId === node.id && <section className="inspector-section inspector-recommendation"><h3>为什么建议从这里继续</h3><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
+                  {recommendation?.pointId === node.id && <section className="inspector-section inspector-recommendation"><h3>建议</h3><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
                   {hasEditorialDescription(node.description) && <section className="inspector-section"><h3>概念</h3><p>{node.description}</p></section>}
                   <RelationSection title={`前置知识 ${relations.upstream.length}`} nodes={relations.upstream.slice(0, 6)} onSelect={selectNode} empty="这是当前路径的起点。" />
                   <RelationSection title={`后续知识 ${relations.downstream.length}`} nodes={relations.downstream.slice(0, 6)} onSelect={selectNode} empty="可以从这里延伸到新的技能或练习。" />

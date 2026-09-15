@@ -63,7 +63,7 @@ describe('knowledge tree node creation entry', () => {
     ] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
     render(<RouterProvider router={router} />);
     fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
-    expect(screen.getByText('只读示例').title).toContain('创建自己的知识树');
+    expect(screen.getByText('只读').getAttribute('title')).toBeNull();
     expect(screen.queryByRole('button', { name: '新增节点' })).toBeNull();
     expect(screen.queryByRole('button', { name: '编辑' })).toBeNull();
   });

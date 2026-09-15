@@ -27,7 +27,7 @@ test('自然语言目标整理为一棵可学习、可练习的普通知识树',
   });
   await page.getByRole('button', { name: '生成知识树' }).click();
 
-  await expect(page.getByRole('status')).toContainText(/找到相关知识了|正在整理关系/);
+  await expect(page.getByRole('status')).toContainText('正在整理…');
   await expect(page).toHaveURL(/\/universe$/);
   await expect.poll(async () => page.evaluate(() => performance.getEntriesByType('resource').some((entry) => /LibraryHomePage-.*\.js/.test(entry.name)))).toBe(true);
 

@@ -33,7 +33,7 @@
       "id": "tree_workspace",
       "type": "frontend",
       "label": "KnowledgeTreeWorkspace",
-      "sublabel": "学习 / 测验工作区",
+      "sublabel": "单一知识点工作区",
       "row": 0,
       "col": 4,
       "size": [
@@ -155,7 +155,31 @@
       "label": "GoalTreeComposer",
       "sublabel": "自然语言 → seedPointIds",
       "row": 4,
+      "col": 0,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "goal_extraction",
+      "type": "frontend",
+      "label": "GoalTreeExtraction",
+      "sublabel": "Reveal → Forming → Handoff",
+      "row": 4,
       "col": 1,
+      "size": [
+        210,
+        84
+      ]
+    },
+    {
+      "id": "tree_orbit_layout",
+      "type": "frontend",
+      "label": "TreeOrbitLayout",
+      "sublabel": "确定性三维环 · 共享 anchor",
+      "row": 4,
+      "col": 2,
       "size": [
         210,
         84
@@ -195,6 +219,8 @@
         "camera_controller",
         "reveal_plan",
         "preview_scene",
+        "goal_extraction",
+        "tree_orbit_layout",
         "preview_tree"
       ]
     }
@@ -261,18 +287,24 @@
     {
       "id": "c10",
       "from": "preview_scene",
-      "to": "preview_tree",
-      "label": "每棵树常驻",
+      "to": "tree_orbit_layout",
+      "label": "Library 共享 anchor",
       "labelDy": 40
     },
     {
       "id": "c11",
       "from": "goal_composer",
-      "to": "transition_store",
+      "to": "goal_extraction",
       "label": "draft + seedPointIds"
     },
     {
       "id": "c12",
+      "from": "goal_extraction",
+      "to": "transition_store",
+      "label": "提取相位"
+    },
+    {
+      "id": "c13",
       "from": "transition_store",
       "to": "stage_canvas",
       "label": "提取相位",
@@ -280,10 +312,22 @@
       "toSide": "bottom"
     },
     {
-      "id": "c13",
+      "id": "c14",
       "from": "domain_registry",
       "to": "preview_scene",
       "label": "读取领域"
+    },
+    {
+      "id": "c15",
+      "from": "goal_extraction",
+      "to": "tree_orbit_layout",
+      "label": "目标树共享 anchor"
+    },
+    {
+      "id": "c16",
+      "from": "tree_orbit_layout",
+      "to": "preview_tree",
+      "label": "环形锚点"
     }
   ],
   "cards": [
@@ -293,7 +337,7 @@
       "items": [
         "Opening 从第一帧渲染完整 Universe，只改亮度与传播",
         "全站唯一 CameraController 拥有相机，提取期间用户无法抢占",
-        "系统知识树直接复用 Universe canonical 坐标，不再重新布局",
+        "Goal Extraction 与 Library Preview 共用 TreeOrbitLayout",
         "GraphRevealPlan 同时服务 Opening 与 HumanRAG 目标提取"
       ]
     },
@@ -301,9 +345,9 @@
       "dot": "amber",
       "title": "保留边界",
       "items": [
-        "用户自建树仍允许 layoutCustomTree 自定义布局",
-        "Path / Verify 左侧模型只读：树在转，相机与交互锁死",
-        "次要操作统一收进 ... disclosure，主按钮任何 viewport 完整可见"
+        "系统树复用 canonical 坐标，用户树只在内部节点使用 custom layout",
+        "知识树只呈现知识点，并提供自学、带我学、刷题三个动作",
+        "次要操作统一收进状态连续的 disclosure"
       ]
     }
   ]

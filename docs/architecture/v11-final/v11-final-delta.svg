@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN" data-theme="dark" data-preset="blueprint"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="generator" content="HumanRAG V11 frozen renderer"><title>v11-final-delta</title><style>html,body{margin:0;background:#07111e}body{display:grid;place-items:center;min-height:100vh}svg{display:block;width:min(100vw,1600px);height:auto}</style></head><body><svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1090" viewBox="0 0 1600 1090" role="img" aria-labelledby="title desc" data-theme="dark" data-preset="blueprint">
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1090" viewBox="0 0 1600 1090" role="img" aria-labelledby="title desc" data-theme="dark" data-preset="blueprint">
 
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111e"/><stop offset="1" stop-color="#0b1727"/></linearGradient>
@@ -18,4 +18,4 @@
     <circle cx="94" cy="926" r="5" fill="#64d9c6"/><text x="110" y="931" fill="#eaf5fb" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="650">本轮结构变化</text>
     <circle cx="96" cy="956" r="2.5" fill="#64d9c6"/><text x="110" y="961" fill="#a9c0d1" font-family="Inter, system-ui, sans-serif" font-size="12">TreeOrbitLayout 成为 Goal Extraction 与 Library Preview 的共同几何来源</text><circle cx="96" cy="981" r="2.5" fill="#64d9c6"/><text x="110" y="986" fill="#a9c0d1" font-family="Inter, system-ui, sans-serif" font-size="12">KnowledgeTreeWorkspace 收敛为单一知识点视图，操作统一为自学、带我学、刷题</text><circle cx="96" cy="1006" r="2.5" fill="#64d9c6"/><text x="110" y="1011" fill="#a9c0d1" font-family="Inter, system-ui, sans-serif" font-size="12">Opening 与目标提取继续复用 GraphRevealPlan，并由唯一 CameraController 保持方向连续</text>
   </g>
-</svg></body></html>
+</svg>

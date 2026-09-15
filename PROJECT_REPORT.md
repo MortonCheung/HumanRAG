@@ -1,6 +1,6 @@
 # HumanRAG V11 Final 项目报告
 
-> 报告日期：2026-09-14
+> 报告日期：2026-09-15
 >
 > 工作分支：`feat/v11-humanrag-competition-final`
 >
@@ -23,7 +23,7 @@ HumanRAG 是由知识库、知识树和知识点组织的大学计算机学习�
 
 - Opening、Universe、Library 与知识树使用态共享一个 Canvas 和 WebGL context。开场、抽取、Library 交接和 Tree 内面板切换保持对象身份。
 - 目标组树只选择 Registry 里已有的 KnowledgePoint，并通过与手动建树相同的 `createTree` 事务写成普通用户树；它不生成新知识点，也不修改 canonical Universe 拓扑。
-- Library 同时保留各棵树，选树时由相机移动。进入知识树后，学习路径、能力验证和节点详情只替换右侧面板。
+- Library 将全部树放在同一个自适应三维环中；目标提取和 Library 预览复用同一组环形锚点。进入知识树后只显示知识点列表与节点详情。
 - Study、Teach、Verify 是三条独立工作流。带我学读取真实作答与误区；独立验证只使用未曝光任务，提示后正确和旧题重做不能形成强证据。
 - 学习状态与推荐由统一领域规则推导，在 Welcome、Universe Inspector、知识树、教学、练习与 Evidence 中复用。
 - TCP 样板引用 RFC 5681 §3.1，并明确是无丢包、逐 RTT 的简化教学模型。
@@ -32,9 +32,8 @@ HumanRAG 是由知识库、知识树和知识点组织的大学计算机学习�
 
 - `/`：星座 Opening 与 Universe 苏醒。
 - `/universe`：完整知识空间、搜索、目标和 Inspector。
-- `/library`：系统树与个人树的连续预览空间。
-- `/library/:libraryId/tree/:treeId/path`：知识树学习路径。
-- `/library/:libraryId/tree/:treeId/verify`：知识树能力验证。
+- `/library`：系统树与个人树的三维环形预览空间。
+- `/library/:libraryId/tree/:treeId/path`：知识树的单一知识点视图；旧树级学习、验证与练习路径兼容跳转到此页。
 - `/library/:libraryId/tree/:treeId/point/:pointId/study`：自主学习。
 - `/library/:libraryId/tree/:treeId/point/:pointId/teach`：带我学。
 - `/library/:libraryId/tree/:treeId/point/:pointId/verify`：知识点独立验证。
@@ -45,6 +44,7 @@ HumanRAG 是由知识库、知识树和知识点组织的大学计算机学习�
 - 完整执行记录：`docs/humanrag-v11-final-progress.md`
 - 逐批施工记录：`docs/humanrag-v11-progress.md`
 - 8 分钟比赛流程：`docs/humanrag-v11-competition-demo.md`
+- 最终冻结报告：`docs/humanrag-v11-competition-final-report.md`
 - 可执行主链：`e2e/competition-journey.spec.ts`
 - 可重复视觉矩阵：`e2e/visual-acceptance.spec.ts`
 - 本地截图产物：`output/v11-final/visual-acceptance/`

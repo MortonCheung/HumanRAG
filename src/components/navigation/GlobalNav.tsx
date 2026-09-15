@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
+import { MorphIcon } from 'morphicons/react';
+import { ChevronDown, ChevronUp, MoreHorizontal, X } from 'lucide';
 import { TransitionNavLink as NavLink } from '../../app/pageNavigation';
-import { CaretDown, DotsThree } from '@phosphor-icons/react';
 import { ROUTES } from '../../app/routes';
 import { MOTION } from '../../motion/tokens';
 import { createNavigationHostRef } from './navigationSlots';
@@ -110,7 +111,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
           <button type="button" aria-label="切换页面" className="context-nav__brand" aria-controls="context-nav-app-menu" aria-expanded={appOpen} onClick={() => { setAppOpen((open) => !open); setActionsOpen(false); }}>
             <span className="context-nav__monogram" aria-hidden="true">H</span>
             <span className="context-nav__brand-name">HumanRAG</span>
-            <CaretDown size={12} aria-hidden="true" />
+            <MorphIcon icon={appOpen ? ChevronUp : ChevronDown} size={14} strokeWidth={1.8} spring="snappy" reducedMotion="user" />
           </button>
           <nav id="context-nav-app-menu" className="context-nav__app-menu" aria-label="应用切换" hidden={!wide && !appOpen}>
             <NavLink to={ROUTES.universe} onClick={() => setAppOpen(false)}>知识空间</NavLink>
@@ -128,7 +129,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
           ref={actionMenu}
           className="context-nav__overflow"
         >
-          <button type="button" className="context-nav__button context-nav__more" aria-label="页面操作" aria-controls="context-nav-actions" aria-expanded={actionsOpen} onClick={() => { setActionsOpen((open) => !open); setAppOpen(false); }}><DotsThree size={24} aria-hidden="true" /></button>
+          <button type="button" className="context-nav__button context-nav__more" aria-label="页面操作" aria-controls="context-nav-actions" aria-expanded={actionsOpen} onClick={() => { setActionsOpen((open) => !open); setAppOpen(false); }}><MorphIcon icon={actionsOpen ? X : MoreHorizontal} size={21} strokeWidth={1.8} spring="snappy" reducedMotion="user" /></button>
           <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!actionsOpen} />
         </div>
         <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />

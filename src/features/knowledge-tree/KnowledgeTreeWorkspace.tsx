@@ -58,7 +58,7 @@ export function KnowledgeTreeWorkspace() {
         primaryAction={data.tree.ownerType === 'user' ? <button className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.pointNewContent(libraryId, treeId))} type="button"><Plus size={16} aria-hidden="true" />新增节点</button> : undefined}
         actions={data.tree.ownerType === 'user'
           ? <button className="context-nav__button" onClick={() => navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'))} type="button">编辑</button>
-          : <span className="context-nav__read-only" title="系统示例只读。可在知识库创建自己的知识树，新增和编辑节点。">只读示例</span>}
+          : <span className="context-nav__read-only">只读</span>}
       />
       <div className="knowledge-tree-workspace__body">
         <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`} />
@@ -92,7 +92,7 @@ function TreePointDetailPanel({ point, libraryId, treeId, learnerId, evidence, r
       <h1>{point.name}</h1>
       {point.description && <p className="tree-point-detail__description">{point.description}</p>}
       <p className={`tree-point-detail__state tree-point-detail__state--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</p>
-      {recommendation?.pointId === point.id && <section className="tree-point-detail__recommendation"><h2>为什么建议从这里继续</h2><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
+      {recommendation?.pointId === point.id && <section className="tree-point-detail__recommendation"><h2>建议</h2><ul>{recommendation.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul></section>}
       <dl className="tree-point-detail__facts">
         <div><dt>类型</dt><dd>{point.kind === 'course' ? '课程' : point.kind === 'practice' ? '实践' : '知识点'}</dd></div>
         {point.difficulty && <div><dt>难度</dt><dd>{point.difficulty}</dd></div>}

@@ -30,17 +30,17 @@ test('生成 1440 × 900 比赛视觉验收矩阵', async ({ page }) => {
   await shot(page, `${desktopDir}/03-universe-overview.png`);
 
   // 目标提取的五个相位合计只有约 2.5s（实测 714/375/325/833/270ms），而软件渲染下
-  // 一张 1440×900 截图要 0.4–0.6s：在同一个窗口里连拍两帧会随机错过「正在整理成树」。
+  // 一张 1440×900 截图要 0.4–0.6s：在同一个窗口里连拍两帧会随机错过 forming。
   // 所以每个相位各跑一遍提取，每遍只抓一帧，相位窗口永远有富余。
-  const runExtraction = async (awaitText: string, path: string) => {
+  const runExtraction = async (awaitPhase: string, path: string) => {
     await page.goto('/universe');
     await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 15_000 });
     await clickPageAction(page, '选择目标');
     await page.getByLabel('你现在想做什么？').fill('我要准备 408，网络基础比较弱');
     await page.getByRole('button', { name: '生成知识树' }).click();
     await page.waitForFunction(
-      (text) => document.querySelector('.goal-extraction-status')?.textContent === text,
-      awaitText,
+      (phase) => document.querySelector('.goal-extraction-status')?.getAttribute('data-extraction-phase') === phase,
+      awaitPhase,
       { timeout: 15_000 },
     );
     await page.screenshot({ path, animations: 'allow' });
@@ -51,13 +51,13 @@ test('生成 1440 × 900 比赛视觉验收矩阵', async ({ page }) => {
   await page.getByLabel('你现在想做什么？').fill('我要准备 408，网络基础比较弱');
   await page.getByRole('button', { name: '生成知识树' }).click();
   await page.waitForFunction(
-    (text) => document.querySelector('.goal-extraction-status')?.textContent === text,
-    '找到相关知识了',
+    (phase) => document.querySelector('.goal-extraction-status')?.getAttribute('data-extraction-phase') === phase,
+    'highlighting',
     { timeout: 15_000 },
   );
   await page.screenshot({ path: `${desktopDir}/05-extraction-high-relevance.png`, animations: 'allow' });
 
-  await runExtraction('正在整理成树', `${desktopDir}/06-forming-tree.png`);
+  await runExtraction('forming', `${desktopDir}/06-forming-tree.png`);
   await expect(page).toHaveURL(/\/library$/, { timeout: 15_000 });
   await shot(page, `${desktopDir}/07-library-handoff.png`);
   await page.waitForTimeout(650);

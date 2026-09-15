@@ -15,47 +15,47 @@
     { "id": "drawer", "type": "frontend", "label": "Drawer", "sublabel": "GoalLensDrawer" },
     { "id": "composer", "type": "frontend", "label": "Composer", "sublabel": "GoalTreeComposer" },
     { "id": "reveal", "type": "frontend", "label": "Reveal", "sublabel": "GraphRevealPlan" },
-    { "id": "extract", "type": "frontend", "label": "Extract", "sublabel": "GoalTreeExtraction" },
+    { "id": "forming", "type": "frontend", "label": "Forming", "sublabel": "NodePointField" },
+    { "id": "orbit", "type": "frontend", "label": "Ring Anchor", "sublabel": "TreeOrbitLayout" },
     { "id": "store", "type": "frontend", "label": "Store", "sublabel": "TransitionStore" },
-    { "id": "points", "type": "frontend", "label": "Points", "sublabel": "NodePointField" },
-    { "id": "camera", "type": "frontend", "label": "Camera", "sublabel": "CameraController" },
-    { "id": "preview", "type": "frontend", "label": "Preview", "sublabel": "LibraryPreview" }
+    { "id": "handoff", "type": "frontend", "label": "Handoff", "sublabel": "SpatialExperienceShell" },
+    { "id": "preview", "type": "frontend", "label": "Preview", "sublabel": "Library Orbit" }
   ],
   "segments": [
     { "from": 150, "to": 420, "label": "整理目标" },
-    { "from": 420, "to": 760, "label": "提取与过渡" },
-    { "from": 760, "to": 1080, "label": "落地知识树" }
+    { "from": 420, "to": 760, "label": "Reveal 与 Forming" },
+    { "from": 760, "to": 1080, "label": "共享锚点与移交" }
   ],
   "messages": [
     { "id": "e1", "from": "user", "to": "drawer", "y": 175, "label": "自然语言目标", "variant": "emphasis" },
     { "id": "e2", "from": "drawer", "to": "composer", "y": 245, "label": "解析意图文本" },
-    { "id": "e3", "from": "composer", "to": "store", "y": 315, "label": "seedPointIds + pointIds", "variant": "emphasis" },
+    { "id": "e3", "from": "composer", "to": "store", "y": 315, "label": "draft + seedPointIds", "variant": "emphasis" },
     { "id": "e4", "from": "composer", "to": "reveal", "y": 385, "label": "请求传播计划" },
-    { "id": "e5", "from": "reveal", "to": "extract", "y": 455, "label": "分层唤醒顺序", "variant": "return" },
-    { "id": "e6", "from": "extract", "to": "points", "y": 525, "label": "detach 子图，非选中节点后退" },
-    { "id": "e7", "from": "extract", "to": "camera", "y": 595, "label": "沿当前方向重新构图" },
-    { "id": "e8", "from": "camera", "to": "store", "y": 665, "label": "唯一相机所有者", "variant": "return" },
-    { "id": "e9", "from": "extract", "to": "store", "y": 735, "label": "custom layout 结果", "variant": "emphasis" },
-    { "id": "e10", "from": "store", "to": "preview", "y": 805, "label": "移交知识树标识" },
-    { "id": "e11", "from": "preview", "to": "user", "y": 875, "label": "进入知识库并可继续学习", "variant": "return" }
+    { "id": "e5", "from": "reveal", "to": "forming", "y": 455, "label": "nodeDelay 分层唤醒", "variant": "return" },
+    { "id": "e6", "from": "store", "to": "forming", "y": 525, "label": "highlight → detach → recede → form" },
+    { "id": "e7", "from": "forming", "to": "orbit", "y": 595, "label": "按共享 anchor 完成目标树" },
+    { "id": "e8", "from": "orbit", "to": "store", "y": 665, "label": "visualReady", "variant": "return" },
+    { "id": "e9", "from": "store", "to": "handoff", "y": 735, "label": "Ready 后停稳 220ms", "variant": "emphasis" },
+    { "id": "e10", "from": "handoff", "to": "preview", "y": 805, "label": "同一 Canvas · treeId · held rotation" },
+    { "id": "e11", "from": "preview", "to": "user", "y": 875, "label": "进入 Library 三维环", "variant": "return" }
   ],
   "cards": [
     {
       "dot": "emerald",
       "title": "关键不变式",
       "items": [
-        "提取全程只有一套 CameraController：用户抢不走，方向不翻",
-        "系统树复用 Universe 的 canonical 坐标，不重新 layoutCustomTree",
-        "用户树才允许 custom layout，二者共用同一套工作区"
+        "GoalTreeComposer → Reveal → Forming → Shared Ring Anchor → Handoff → Library Orbit",
+        "提取全程只有一套 CameraController，移交时方向连续",
+        "Goal Extraction 与 Library Preview 使用同一组确定性环形锚点"
       ]
     },
     {
       "dot": "amber",
       "title": "落点",
       "items": [
-        "过渡结果持久化在 TransitionStore，刷新可恢复",
-        "最终交给 LibraryPreview 复用同一个 Canvas",
-        "其余参与者（BatchedKnowledgeEdges、Domain Registry）见 Opening 时序与架构图"
+        "TransitionStore 同时等待 treeReady 与 visualReady",
+        "Ready 停稳 220ms 后，SpatialExperienceShell 才执行移交",
+        "Library Orbit 延续目标树旋转并让其他树平滑重排"
       ]
     }
   ]

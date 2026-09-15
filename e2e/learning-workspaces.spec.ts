@@ -82,7 +82,7 @@ test.describe('学习、带我学与测验分工', () => {
     await page.getByRole('textbox', { name: '搜索输入' }).fill('线性表');
     await page.getByRole('button', { name: '线性表 概念' }).click();
     await expect(page.getByRole('heading', { name: '学习状态' }).locator('..')).toContainText('需要巩固');
-    await expect(page.getByRole('heading', { name: '为什么建议从这里继续' }).locator('..')).toContainText('最近作答尚未通过');
+    await expect(page.getByRole('heading', { name: '建议' }).locator('..')).toContainText('最近作答尚未通过');
   });
 
   test('学习可以留下具体问题，并由同一推荐带回对应知识点', async ({ page }) => {

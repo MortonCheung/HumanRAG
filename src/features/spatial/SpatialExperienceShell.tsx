@@ -142,14 +142,9 @@ function SpatialExperience() {
     return () => window.clearTimeout(timer);
   }, [extractionPhase, libraryRoute, resetExtraction]);
 
-  const extractionStatus = {
-    highlighting: '找到相关知识了',
-    detaching: '正在整理关系',
-    receding: '正在收起其他内容',
-    forming: '正在整理成树',
-    connecting: '正在补上关系',
-    ready: '知识树已生成',
-  }[extractionPhase as Exclude<typeof extractionPhase, 'idle' | 'handoff'>];
+  const extractionStatus = extractionPhase === 'idle' || extractionPhase === 'handoff'
+    ? null
+    : '正在整理…';
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>

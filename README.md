@@ -33,15 +33,14 @@ Playwright 使用独立的 `127.0.0.1:42873` 生产预览端口。视觉验收�
 
 - `/`：星座开场；进入后沿同一 Canvas 苏醒为完整 Universe。
 - `/universe`：完整知识空间、搜索、目标输入和节点 Inspector。
-- `/library`：计算机知识库中的全部系统树与个人树；共享相机在不同树之间移动。
-- `/library/:libraryId/tree/:treeId/path`：知识树学习路径。
-- `/library/:libraryId/tree/:treeId/verify`：知识树能力验证入口。
+- `/library`：计算机知识库中的全部系统树与个人树；所有树位于自适应三维环中，共享相机在树之间移动。
+- `/library/:libraryId/tree/:treeId/path`：知识树的单一知识点视图；旧的树级 `/verify`、`/learn` 与 `/practice` 会回到这里。
 - `/library/:libraryId/tree/:treeId/point/:pointId/study`：自主学习。
 - `/library/:libraryId/tree/:treeId/point/:pointId/teach`：基于真实作答的“带我学”。
 - `/library/:libraryId/tree/:treeId/point/:pointId/verify`：新题独立验证。
 - `/progress`：学习证据、待解决误区与统一下一步建议。
 
-全局导航只保留“知识空间”和“知识库”。教学与验证都从具体知识点进入，同一知识点始终复用同一套学习工作区。
+全局导航只保留“知识空间”和“知识库”。用户从知识点选择“自学 / 带我学 / 刷题”，同一知识点始终复用同一套学习工作区。
 
 ## 核心实现边界
 
@@ -56,6 +55,7 @@ Playwright 使用独立的 `127.0.0.1:42873` 生产预览端口。视觉验收�
 
 - [V11 最终施工方案](docs/humanrag-v11-final-spec.txt)
 - [V11 执行与验收](docs/humanrag-v11-final-progress.md)
+- [V11 比赛最终冻结报告](docs/humanrag-v11-competition-final-report.md)
 - [比赛 8 分钟演示手册](docs/humanrag-v11-competition-demo.md)
 - [逐批施工记录](docs/humanrag-v11-progress.md)
 

@@ -63,7 +63,6 @@ export function GoalLensDrawer() {
             maxLength={240}
             autoFocus
           />
-          <p className="goal-panel__hint">可以补充你的基础、兴趣、擅长或薄弱内容。</p>
           {error && <p className="goal-panel__error" role="alert">{error}</p>}
           <button className="goal-panel__submit" type="submit" disabled={!prompt.trim() || composing}>
             <Target size={16} aria-hidden="true" />{composing ? '正在整理…' : '生成知识树'}
