@@ -61,12 +61,12 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
 
   await expect(page.getByText('已掌握', { exact: true })).toBeVisible();
   await clickPageAction(page, '学习记录');
-  const verified = page.getByRole('heading', { name: '已掌握' }).locator('..');
-  await expect(verified).toContainText('TCP可靠传输');
-  const nextAction = page.locator('.evidence-next');
+  await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
+  const nextAction = page.locator('.learning-dashboard__next');
   await expect(nextAction.locator('strong')).toBeVisible();
   await expect(nextAction).not.toContainText('TCP可靠传输');
-  const latestEvidence = page.locator('.learning-record').first();
+  await page.getByRole('button', { name: '学习档案' }).click();
+  const latestEvidence = page.getByRole('dialog', { name: '学习档案' }).locator('.learning-record').first();
   await latestEvidence.getByText('查看作答与依据').click();
   await expect(latestEvidence.getByRole('link', { name: 'RFC 5681 §3.1 · 逐 RTT 简化教学模型' })).toBeVisible();
 

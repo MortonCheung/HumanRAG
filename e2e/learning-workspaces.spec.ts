@@ -69,8 +69,8 @@ test.describe('学习、带我学与测验分工', () => {
     await submitVerificationQuestion(page, question.id, 'wrong');
 
     await clickPageAction(page, '学习记录');
-    await expect(page.getByRole('heading', { name: '学习记录' })).toBeVisible();
-    await expect(page.getByRole('link', { name: '线性表 巩固' })).toBeVisible();
+    await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
+    await expect(page.getByText('ANSWERS', { exact: true }).locator('..')).toContainText('129');
     await expect(page.getByRole('link', { name: '带我巩固' })).toHaveAttribute('href', pointPath('teach'));
 
     await page.goto('/library/computer/tree/tree-408/path');

@@ -90,7 +90,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     };
   }, [wide, appOpen, actionsOpen]);
 
-  const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '学习记录' : pathname === ROUTES.universe ? '知识空间' : '';
+  const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '我的学习' : pathname === ROUTES.universe ? '知识空间' : '';
 
   return (
     <motion.header

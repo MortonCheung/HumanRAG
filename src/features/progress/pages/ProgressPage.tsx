@@ -1,102 +1,170 @@
-import { useMemo } from 'react';
-import { TransitionLink as Link, usePageNavigate } from '../../../app/pageNavigation';
+import { useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
+import { motion, useReducedMotion } from 'motion/react';
+import { TransitionLink as Link, usePageNavigate } from '../../../app/pageNavigation';
 import { useUserStore } from '../../../store/userStore';
 import { useProgressStore } from '../../../store/progressStore';
 import { contentRepository } from '../../../services/content/ContentRepository';
-import { TCP_FRAGMENTS, TCP_REASONS, TCP_VERSION } from '../../../data/v6/handcrafted/tcpLesson';
 import { MISCONCEPTIONS_BY_ID } from '../../../data/v6/catalogs/misconceptionCatalog';
+import { LEARNER_PROFILES } from '../../../data/v6/catalogs/learnerProfileCatalog';
+import { TCP_FRAGMENTS } from '../../../data/v6/handcrafted/tcpLesson';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
-import type { EvidenceRecord } from '../../../data/v6/schemas/progressSchema';
 import { deriveLearningStateFromEvidence, type LearningState } from '../../../domain/learning/deriveLearningState';
 import { BRANCH_TO_TREE_ID } from '../../../domain/knowledge/catalog';
 import { ROUTES } from '../../../app/routes';
 import { getLearningRecommendation } from '../../../ai/learningRecommendation';
 import { useLearningQuestionStore } from '../../../domain/learning/learningQuestions';
+import { DOMAIN_COLORS } from '../../../design/domainPalette';
+import { MOTION } from '../../../motion/tokens';
+import { buildLearningDashboardSnapshot } from '../learningDashboard';
+import { LearningActivityHeatmap } from '../components/LearningActivityHeatmap';
+import { LearningOverviewScene } from '../components/LearningOverviewScene';
+import { LearningRecordDrawer } from '../components/LearningRecordDrawer';
 import '../progress.css';
 
-const SOURCE = { diagnostic: '尝试', 'guided-practice': '练习', 'independent-check': '测验', practice: '练习' };
-const HELP = { independent: '无提示', hint: '使用提示', demonstration: '示范后完成', unknown: '帮助情况未知' };
-function formatResponse(value: string) {
-  try { const parsed = JSON.parse(value); if (Array.isArray(parsed.values)) return `${parsed.values.join('、')}；${TCP_REASONS.find((reason) => reason.id === parsed.reason)?.text ?? '未记录理由'}`; } catch { /* Old snapshots may contain plain text. */ }
-  return value;
+function misconceptionName(id: string) {
+  return MISCONCEPTIONS_BY_ID.get(id)?.name
+    ?? TCP_FRAGMENTS[id.replace('tcp-', '') as keyof typeof TCP_FRAGMENTS]?.label;
 }
 
-function EvidenceEntry({ record }: { record: EvidenceRecord }) {
-  const fragment = Object.values(TCP_FRAGMENTS).find((item) => item.id === record.fragmentId);
-  return <article className="learning-record">
-    <div className="learning-record__heading"><div><strong>{contentRepository.getNode(record.nodeId)?.name ?? record.nodeId}</strong><span>{SOURCE[record.source]} · {record.result === 'correct' ? '正确' : record.result === 'partial' ? '部分正确' : '需巩固'} · {HELP[record.assistance ?? 'unknown']}{record.firstExposure === false ? ' · 已曝光任务' : record.firstExposure === true ? ' · 首次任务' : ''}</span></div><time dateTime={record.createdAt}>{new Date(record.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</time></div>
-    {record.snapshot && <details><summary>查看作答与依据</summary><div className="learning-record__snapshot"><p>{record.snapshot.stem}</p><dl><dt>你的作答</dt><dd>{formatResponse(record.snapshot.selected)}</dd><dt>当时的判断依据</dt><dd>{record.snapshot.explanation}</dd>{fragment && <><dt>所用片段</dt><dd>{fragment.title}</dd></>}{record.decisionReason && <><dt>下一步选择依据</dt><dd>{record.decisionReason}</dd></>}</dl><span className="learning-record__version">{record.contentVersion ?? '版本未知'}{record.attempt ? ` · 第 ${record.attempt} 轮` : ''}</span>{record.contentVersion === TCP_VERSION && <a href="https://www.rfc-editor.org/rfc/rfc5681.html#section-3.1" target="_blank" rel="noreferrer">RFC 5681 §3.1 · 逐 RTT 简化教学模型</a>}</div></details>}
-  </article>;
+function percent(value: number | null) {
+  return value === null ? '—' : String(Math.round(value * 100));
 }
-
-interface PointEvidenceState {
-  pointId: string;
-  state: LearningState;
-  assisted: boolean;
-}
-
-const STATUS_GROUPS: Array<{ title: string; matches: (item: PointEvidenceState) => boolean }> = [
-  { title: '已掌握', matches: (item) => item.state === 'verified' },
-  { title: '需要巩固', matches: (item) => item.state === 'needs-reinforcement' },
-  { title: '提示后完成', matches: (item) => item.state === 'needs-verification' && item.assisted },
-  { title: '待测验', matches: (item) => (item.state === 'needs-verification' && !item.assisted) || item.state === 'learning' },
-];
 
 export function ProgressPage() {
   const navigate = usePageNavigate();
   const location = useLocation();
+  const reducedMotion = Boolean(useReducedMotion());
   const returnContext = location.state as { returnTo?: string; returnState?: unknown } | null;
   const returnTo = returnContext?.returnTo && /^\/(universe(?:$|[?#])|library(?:\/|$)|teach\/|practice\/)/.test(returnContext.returnTo) ? returnContext.returnTo : '/library';
   const learnerId = useUserStore((state) => state.activeProfileId);
-  const records = useProgressStore((state) => state.evidenceRecords);
+  const answerRecords = useProgressStore((state) => state.answerRecords);
+  const evidenceRecords = useProgressStore((state) => state.evidenceRecords);
+  const misconceptionRecords = useProgressStore((state) => state.misconceptionRecords);
   const tasks = useProgressStore((state) => state.remediationTasks);
   const storageError = useProgressStore((state) => state.storageError);
   const learningQuestions = useLearningQuestionStore((state) => state.questions);
-  const own = useMemo(() => records.filter((record) => record.learnerId === learnerId && record.eventId && record.snapshot), [records, learnerId]);
-  const visible = useMemo(() => own.slice().reverse(), [own]);
-  const pointStates = useMemo(() => [...new Set(visible.map((record) => record.nodeId))].map((pointId) => {
-    const latest = visible.find((record) => record.nodeId === pointId);
-    return {
-      pointId,
-      state: deriveLearningStateFromEvidence(pointId, learnerId, records),
-      assisted: Boolean(latest?.result === 'correct' && (latest.assistance === 'hint' || latest.assistance === 'demonstration' || latest.firstExposure === false)),
-    } satisfies PointEvidenceState;
-  }), [learnerId, records, visible]);
-  const pending = tasks.filter((task) => task.learnerId === learnerId && task.status !== 'done'
-    && own.some((record) => record.misconceptionId === task.misconceptionId && task.unitId === `tu-${record.nodeId}`));
-  const recommendation = useMemo(() => getLearningRecommendation(learnerId), [learnerId, learningQuestions, records, tasks]);
-  const recommendationAction = recommendation
-    ? actionForState(deriveLearningStateFromEvidence(recommendation.pointId, learnerId, records))
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const fallbackActivityEnd = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const recommendation = useMemo(
+    () => getLearningRecommendation(learnerId),
+    [learnerId, learningQuestions, evidenceRecords, tasks],
+  );
+  const dashboard = useMemo(() => buildLearningDashboardSnapshot({
+    learnerId,
+    profiles: LEARNER_PROFILES,
+    answerRecords,
+    evidenceRecords,
+    misconceptionRecords,
+    resolveQuestion: (questionId) => contentRepository.getQuestion(questionId),
+    resolveNode: (nodeId) => contentRepository.getNode(nodeId),
+    resolveMisconceptionName: misconceptionName,
+    recommendation,
+    activityEndDate: fallbackActivityEnd,
+  }), [answerRecords, evidenceRecords, fallbackActivityEnd, learnerId, misconceptionRecords, recommendation]);
+  const recommendationAction = dashboard.recommendation
+    ? actionForState(deriveLearningStateFromEvidence(dashboard.recommendation.pointId, learnerId, evidenceRecords))
     : 'study';
-  return <div className="page">
-    <WorkspaceHeader title="学习记录" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
-    <main className="learning-records">
-      <header className="learning-records__intro"><h1>学习记录</h1><p>这里记录你的作答、提示使用和需要巩固的内容。</p></header>
-      {storageError && <p className="lesson-save-error" role="alert">{storageError}</p>}
-      <section className="evidence-status" aria-labelledby="evidence-status-title"><h2 id="evidence-status-title">当前学习状态</h2><div className="evidence-status__groups">
-        {STATUS_GROUPS.map((group) => { const items = pointStates.filter(group.matches); return <section key={group.title}><h3>{group.title}</h3>{items.length ? items.map((item) => <EvidenceStatusRow key={item.pointId} item={item} />) : <p>暂无</p>}</section>; })}
-      </div></section>
-      <div className="learning-records__body">
-        <div className="learning-records__actions">
-          <section className="evidence-misconceptions"><h2>当前待解决误区</h2>{pending.length ? pending.slice(0, 5).map((task) => {
-            const label = MISCONCEPTIONS_BY_ID.get(task.misconceptionId)?.name ?? TCP_FRAGMENTS[task.misconceptionId.replace('tcp-', '') as keyof typeof TCP_FRAGMENTS]?.label ?? '待巩固的判断';
-            const pointId = task.unitId.replace(/^tu-/, '');
-            return <article key={task.id}><strong>{label}</strong><p>{task.reason}</p><Link className="text-button" to={actionPath(pointId, 'teach')}>带我学 <ArrowRight size={16} /></Link></article>;
-          }) : <p className="progress-empty">当前没有待处理误区。</p>}</section>
-          <section className="evidence-next"><h2>下一步</h2>{recommendation ? <><strong>{contentRepository.getNode(recommendation.pointId)?.name ?? recommendation.pointId}</strong><p>{recommendation.reasons.join(' ')}</p><Link className="text-button text-button--primary" to={actionPath(recommendation.pointId, recommendationAction)}>{recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '再测一次' : '从这里继续'} <ArrowRight size={16} /></Link></> : <p className="progress-empty">当前范围已完成独立验证，可从知识树选择新的方向。</p>}</section>
+  const enter = (index: number) => ({
+    initial: reducedMotion ? false as const : { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: reducedMotion ? 0 : MOTION.duration.content, delay: reducedMotion ? 0 : index * 0.04, ease: MOTION.ease.out },
+  });
+
+  return <div className="page progress-page">
+    <WorkspaceHeader title="我的学习" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
+    <main className="learning-dashboard">
+      <motion.header className="learning-dashboard__profile" {...enter(0)}>
+        <div>
+          <h1>{dashboard.profile.name}</h1>
+          <p><span>{dashboard.profile.major}</span><span>{dashboard.profile.identity}</span><span>目标：{dashboard.profile.goal}</span></p>
         </div>
-        <section className="recent-evidence" aria-labelledby="recent-evidence-title"><h2 id="recent-evidence-title">最近记录</h2>{visible.length ? visible.slice(0, 80).map((record) => <EvidenceEntry key={record.id} record={record} />) : <div className="learning-records__empty"><p>还没有学习记录。</p><Link className="text-button" to="/library">选择知识点 <ArrowRight size={16} /></Link></div>}{visible.length > 80 && <p className="learning-record__legacy">展示最近 80 条；更早的记录仍保留在本地。</p>}</section>
+        <div className="learning-dashboard__profile-actions">
+          <span className="demo-badge">DEMO DATA</span>
+          <LearningRecordDrawer records={dashboard.learningRecords} open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)} />
+        </div>
+      </motion.header>
+      {storageError && <p className="lesson-save-error learning-dashboard__error" role="alert">{storageError}</p>}
+
+      <div className="learning-dashboard__grid">
+        <motion.section className="learning-dashboard__panel learning-dashboard__overall" aria-labelledby="overall-performance-title" {...enter(1)}>
+          <h2 id="overall-performance-title" className="learning-dashboard__kicker">OVERALL PERFORMANCE</h2>
+          <div className="learning-dashboard__accuracy" aria-label={`整体正确率 ${dashboard.totals.accuracy === null ? '暂无' : `${percent(dashboard.totals.accuracy)}%`}`}>
+            {percent(dashboard.totals.accuracy)}{dashboard.totals.accuracy !== null && <span>%</span>}
+          </div>
+          <p className="learning-dashboard__accuracy-label">Overall Accuracy</p>
+          <dl className="learning-dashboard__metric-matrix">
+            <div><dt>ANSWERS</dt><dd>{dashboard.totals.answered}</dd></div>
+            <div><dt>CORRECT</dt><dd>{dashboard.totals.correct}</dd></div>
+            <div><dt>INCORRECT</dt><dd>{dashboard.totals.incorrect}</dd></div>
+            <div><dt>ACTIVE DAYS</dt><dd>{dashboard.totals.activeDays}</dd></div>
+            <div><dt>LONGEST STREAK</dt><dd>{dashboard.totals.longestStreak}</dd></div>
+            <div><dt>KNOWLEDGE POINTS</dt><dd>{dashboard.totals.touchedPoints}</dd></div>
+          </dl>
+        </motion.section>
+
+        <motion.section className="learning-dashboard__panel learning-dashboard__domains" aria-labelledby="domain-performance-title" {...enter(2)}>
+          <div className="learning-dashboard__section-heading">
+            <h2 id="domain-performance-title" className="learning-dashboard__kicker">DOMAIN PERFORMANCE</h2>
+            <span>ALL ANSWERS</span>
+          </div>
+          <div className="learning-dashboard__domain-list">
+            {dashboard.branchStats.map((branch, index) => <article key={branch.branchId} className="learning-dashboard__domain">
+              <div><strong>{branch.name}</strong><span>{branch.answered} answers · {branch.touchedPoints} points</span><b>{percent(branch.accuracy)}{branch.accuracy !== null && '%'}</b></div>
+              <i aria-hidden="true"><motion.span
+                initial={reducedMotion ? false : { width: 0 }}
+                animate={{ width: `${(branch.accuracy ?? 0) * 100}%` }}
+                transition={{ duration: reducedMotion ? 0 : 0.42, delay: reducedMotion ? 0 : 0.08 + index * 0.04, ease: MOTION.ease.out }}
+                style={{ background: DOMAIN_COLORS[branch.branchId] }}
+              /></i>
+            </article>)}
+          </div>
+        </motion.section>
+
+        <motion.section className="learning-dashboard__panel learning-dashboard__space" aria-labelledby="learning-space-title" {...enter(3)}>
+          <div className="learning-dashboard__section-heading">
+            <h2 id="learning-space-title" className="learning-dashboard__kicker">LEARNING SPACE</h2>
+            <span>4 SYSTEM TREES</span>
+          </div>
+          <LearningOverviewScene />
+        </motion.section>
+
+        <motion.section className="learning-dashboard__panel learning-dashboard__activity" aria-labelledby="learning-activity-title" {...enter(4)}>
+          <div className="learning-dashboard__section-heading learning-dashboard__activity-heading">
+            <h2 id="learning-activity-title" className="learning-dashboard__kicker">LEARNING ACTIVITY</h2>
+            <p><span>ACTIVE <b>{dashboard.totals.activeDays}</b> DAYS</span><span>LONGEST <b>{dashboard.totals.longestStreak}</b> DAYS</span></p>
+          </div>
+          <LearningActivityHeatmap activity={dashboard.activity} range={dashboard.activityRange} />
+        </motion.section>
+
+        <motion.section className="learning-dashboard__panel learning-dashboard__attention" aria-labelledby="needs-attention-title" {...enter(5)}>
+          <div className="learning-dashboard__section-heading">
+            <h2 id="needs-attention-title" className="learning-dashboard__kicker">NEEDS ATTENTION</h2>
+            <span>{dashboard.totals.openMisconceptions} OPEN</span>
+          </div>
+          <div className="learning-dashboard__attention-list">
+            {dashboard.attention.length ? dashboard.attention.map((item) => <Link key={item.id} to={actionPath(item.nodeId, 'teach')}>
+              <i aria-hidden="true" /><span><strong>{item.name}</strong><small>{item.nodeName}</small></span><b>{item.occurrences} 次</b>
+            </Link>) : <p>当前没有待处理误区。</p>}
+          </div>
+          <div className="learning-dashboard__next">
+            <span className="learning-dashboard__kicker">NEXT</span>
+            {dashboard.recommendation ? <>
+              <strong>{dashboard.recommendation.pointName}</strong>
+              <p>{dashboard.recommendation.reasons[0]}</p>
+              <Link className="learning-dashboard__cta" to={actionPath(dashboard.recommendation.pointId, recommendationAction)}>
+                {recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '再测一次' : '从这里继续'} <ArrowRight size={16} />
+              </Link>
+            </> : <>
+              <strong>选择新的方向</strong><p>当前范围已完成独立验证。</p>
+              <Link className="learning-dashboard__cta" to={ROUTES.library}>打开知识库 <ArrowRight size={16} /></Link>
+            </>}
+          </div>
+        </motion.section>
       </div>
     </main>
   </div>;
-}
-
-function EvidenceStatusRow({ item }: { item: PointEvidenceState }) {
-  const action = actionForState(item.state);
-  const label = action === 'teach' ? '巩固' : action === 'verify' ? '再测一次' : item.state === 'verified' ? '查看' : '继续学习';
-  return <Link to={actionPath(item.pointId, action)}><span>{contentRepository.getNode(item.pointId)?.name ?? item.pointId}</span><small>{label}</small><ArrowRight size={14} aria-hidden="true" /></Link>;
 }
 
 function actionForState(state: LearningState): 'study' | 'teach' | 'verify' {
