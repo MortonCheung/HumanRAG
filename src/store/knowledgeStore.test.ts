@@ -47,19 +47,25 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
   });
 
-  it('closes detail and returns the camera to the original goal in the same transition', () => {
+  it('closes detail with the exact same full reset state as the top reset action', () => {
     useKnowledgeStore.getState().selectGoal('goal-cs-graduate');
     useKnowledgeStore.getState().selectNode('goal-frontend-engineer');
+    useKnowledgeStore.getState().hoverNode('knowledge-rag');
+    useKnowledgeStore.getState().openPanel('search');
+    useKnowledgeStore.setState({ relationMode: 'all', isPathRibbonOpen: true });
     const focusedIntent = useKnowledgeStore.getState().cameraIntent;
     useKnowledgeStore.getState().closeNodeDetail();
     expect(useKnowledgeStore.getState().cameraIntent).not.toBe(focusedIntent);
-    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('goal');
-    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBe('goal-cs-graduate');
-    expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
+    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBeUndefined();
+    expect(useKnowledgeStore.getState().selectedGoalId).toBeNull();
     expect(useKnowledgeStore.getState().nodeFocusOriginGoalId).toBeNull();
-    expect(useKnowledgeStore.getState().phase).toBe('goalFocused');
+    expect(useKnowledgeStore.getState().phase).toBe('overview');
     expect(useKnowledgeStore.getState().selectedNodeId).toBeNull();
     expect(useKnowledgeStore.getState().hoveredNodeId).toBeNull();
+    expect(useKnowledgeStore.getState().activePanel).toBeNull();
+    expect(useKnowledgeStore.getState().relationMode).toBe('primary');
+    expect(useKnowledgeStore.getState().isPathRibbonOpen).toBe(false);
   });
 
   it('closes detail to the full overview when no goal is active', () => {
@@ -79,8 +85,9 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().nodeFocusOriginGoalId).toBe('goal-cs-graduate');
 
     useKnowledgeStore.getState().closeNodeDetail();
-    expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
-    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBe('goal-cs-graduate');
+    expect(useKnowledgeStore.getState().selectedGoalId).toBeNull();
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
+    expect(useKnowledgeStore.getState().cameraIntent.nodeId).toBeUndefined();
   });
 
   it('clears the transient origin when a durable navigation action takes over', () => {

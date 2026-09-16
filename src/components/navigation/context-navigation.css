@@ -1,7 +1,8 @@
 .context-nav {
   position: fixed;
   inset: 0 0 auto;
-  z-index: 30;
+  z-index: 100;
+  overflow: visible;
   height: var(--it-nav-height, 64px);
   border-bottom: 1px solid var(--it-rule, rgb(224 231 242 / .1));
   background: rgb(11 14 20 / .92);
@@ -21,6 +22,7 @@
   gap: 8px;
   max-width: calc(50vw - 170px);
   transform: translateY(-50%);
+  overflow: visible;
 }
 .context-nav__center {
   position: absolute;
@@ -43,10 +45,11 @@
   align-items: center;
   gap: 6px;
   transform: translateY(-50%);
+  overflow: visible;
 }
 .context-nav__back-slot { min-width: 44px; min-height: 44px; }
 .context-nav__primary-slot { display: flex; align-items: center; flex-shrink: 0; min-width: 44px; min-height: 44px; }
-.context-nav__app, .context-nav__overflow { position: relative; }
+.context-nav__app, .context-nav__overflow { position: relative; overflow: visible; }
 .context-nav__brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 8px; margin-left: -8px; border: 0; border-radius: 9px; background: transparent; color: var(--it-text); font: inherit; font-weight: 650; letter-spacing: -.04em; cursor: pointer; transition: background 180ms ease, color 180ms ease; }
 .context-nav__desktop-brand { display: inline-flex; align-items: center; min-height: 44px; margin-right: 12px; color: var(--it-text); font-weight: 650; letter-spacing: -.04em; text-decoration: none; }
 .context-nav__monogram { display: none; }
@@ -86,6 +89,7 @@
 .context-nav__search:focus-within { outline: 2px solid var(--it-accent); outline-offset: 2px; }
 .context-nav :is(button, a, select):focus-visible { outline: 2px solid var(--it-accent, #b8d4f5); outline-offset: 3px; }
 .context-nav__app-menu, .context-nav__actions-slot {
+  z-index: 2;
   display: flex;
   gap: 4px;
   align-items: center;

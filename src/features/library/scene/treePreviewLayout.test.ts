@@ -23,6 +23,11 @@ describe('library preview universe layout', () => {
     if (count !== 4) expect([...first.values()].some((point) => Math.abs(point.y) > 0.01)).toBe(true);
   });
 
+  it('keeps adjacent previews beyond the shared camera far plane', () => {
+    expect(TREE_RING_SPACING).toBeGreaterThan(420);
+    expect(TREE_RING_MIN_RADIUS).toBeGreaterThanOrEqual(96);
+  });
+
   it('derives a repeatable rotation phase from tree identity', () => {
     expect(treeRotationPhase('tree-ai')).toBe(treeRotationPhase('tree-ai'));
     expect(treeRotationPhase('tree-ai')).not.toBe(treeRotationPhase('tree-408'));

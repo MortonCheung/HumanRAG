@@ -12,6 +12,7 @@ import { useSpatialViewport } from '../features/spatial/SpatialViewport';
 type View = { position: THREE.Vector3; target: THREE.Vector3; offset: THREE.Vector3; intentId: string };
 let lastUniverseView: View | null = null;
 const poseScratch = { position: new THREE.Vector3(), target: new THREE.Vector3() };
+const focalScratch = new THREE.Vector3();
 
 /**
  * CameraControls 只在 `rest` 时通知外部，入场镜头期间它一直是 `enabled=false`，永远不会 rest——
@@ -22,7 +23,10 @@ const poseScratch = { position: new THREE.Vector3(), target: new THREE.Vector3()
 function publishCameraPose(instance: CameraControlsImpl, domElement: HTMLElement) {
   const position = instance.getPosition(poseScratch.position, false);
   const target = instance.getTarget(poseScratch.target, false);
+  const focal = instance.getFocalOffset(focalScratch, false);
   domElement.dataset.spatialCamera = [position.x, position.y, position.z, target.x, target.y, target.z]
+    .map((value) => value.toFixed(3)).join(',');
+  domElement.dataset.spatialFocalOffset = [focal.x, focal.y, focal.z]
     .map((value) => value.toFixed(3)).join(',');
 }
 
@@ -76,7 +80,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     gl.domElement.addEventListener('wheel', takeControl, { capture: true, passive: true });
     instance.addEventListener('rest', remember);
     publish();
-    return () => { remember(); gl.domElement.removeEventListener('pointerdown', takeControl, true); gl.domElement.removeEventListener('wheel', takeControl, true); instance.removeEventListener('rest', remember); delete gl.domElement.dataset.spatialCamera; };
+    return () => { remember(); gl.domElement.removeEventListener('pointerdown', takeControl, true); gl.domElement.removeEventListener('wheel', takeControl, true); instance.removeEventListener('rest', remember); delete gl.domElement.dataset.spatialCamera; delete gl.domElement.dataset.spatialFocalOffset; };
   }, [gl]);
 
   useLayoutEffect(() => {
@@ -145,7 +149,17 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       void instance.setFocalOffset(...lastUniverseView.offset.toArray(), false);
       return;
     }
-    if (intent.mode !== 'node') { void instance.setFocalOffset(0, 0, 0, motionAllowed && !initial); apply(overview, center, !initial); return; }
+    if (intent.mode === 'overview') {
+      // Node Focus 为 Inspector 留出的屏幕偏移必须立即清零；镜头位置本身仍平滑复位。
+      void instance.setFocalOffset(0, 0, 0, false);
+      apply(overview, center, !initial);
+      return;
+    }
+    if (intent.mode === 'goal') {
+      void instance.setFocalOffset(0, 0, 0, motionAllowed && !initial);
+      apply(overview, center, !initial);
+      return;
+    }
     const selected = all.find((node) => node.id === intent.nodeId);
     if (!selected) return;
     const radius = selected.type === 'goal' ? 1.8 : ['course', 'skill', 'direction'].includes(selected.type) ? 0.9 : 0.5;

@@ -153,28 +153,16 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
     });
   },
   hoverNode: (nodeId) => set((state) => state.hoveredNodeId === nodeId ? state : { hoveredNodeId: nodeId }),
-  closeNodeDetail: () => set((state) => {
-    const originGoalId = state.phase === 'nodeFocused' ? state.nodeFocusOriginGoalId : state.selectedGoalId;
-    return {
-      selectedGoalId: originGoalId,
-      nodeFocusOriginGoalId: null,
-      selectedNodeId: null,
-      hoveredNodeId: null,
-      phase: originGoalId ? 'goalFocused' : 'overview',
-      relationMode: 'primary',
-      cameraIntent: {
-        id: `overview:close:${state.selectionEpoch}:${Date.now()}`,
-        mode: originGoalId ? 'goal' : 'overview',
-        nodeId: originGoalId ?? undefined,
-      },
-    };
-  }),
+  closeNodeDetail: () => {
+    get().returnOverview();
+  },
   returnOverview: () => set((state) => {
     persist(state.profile, null, state.qualityPreference);
     return {
       selectedGoalId: null,
       nodeFocusOriginGoalId: null,
       selectedNodeId: null,
+      hoveredNodeId: null,
       activePanel: null,
       relationMode: 'primary',
       isPathRibbonOpen: false,

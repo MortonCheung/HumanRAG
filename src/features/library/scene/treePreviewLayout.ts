@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 export const TREE_PREVIEW_ROTATION_SPEED = 0.075;
-export const TREE_RING_SPACING = 72;
-export const TREE_RING_MIN_RADIUS = 38;
+export const TREE_RING_SPACING = 520;
+export const TREE_RING_MIN_RADIUS = 312;
 
 function ringRadius(count: number) {
   if (count <= 1) return 0;

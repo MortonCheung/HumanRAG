@@ -26,7 +26,10 @@ describe('synaptic geometry and render clock', () => {
     expect(synapticPulseShader).toContain('fract(uTime*0.18+vPhase)');
     expect(synapticPulseShader).toContain('head-directed');
     expect(synapticPulseShader).not.toContain('gl_PointCoord');
-    expect(synapticPulseShader).toContain('max(mix(uRevealFloor,1.0,grown),vOpeningSeed)');
+    expect(synapticPulseShader).toContain('float localTime=uRevealTime-vDelay');
+    expect(synapticPulseShader).toContain('float started=step(0.0,localTime)');
+    expect(synapticPulseShader).toContain('float grown=started*');
+    expect(synapticPulseShader).toContain('max(grown,vOpeningSeed)');
   });
   it('breaks old Universe relations from the middle toward both endpoints', () => {
     expect(synapticPulseShader).toContain('abs(vProgress-0.5)*2.0');
@@ -39,8 +42,8 @@ describe('synaptic geometry and render clock', () => {
 
     expect(edgeAlpha(active, 'intro')).toBeGreaterThanOrEqual(0.25);
     expect(edgeAlpha(active, 'intro')).toBeLessThanOrEqual(0.38);
-    expect(edgeAlpha(hierarchy, 'intro')).toBeLessThanOrEqual(0.004);
-    expect(edgeAlpha(related, 'intro')).toBeLessThanOrEqual(0.002);
+    expect(edgeAlpha(hierarchy, 'intro')).toBe(0);
+    expect(edgeAlpha(related, 'intro')).toBe(0);
     expect(edgeAlpha(hierarchy, 'universe')).toBe(0.16);
     expect(edgeAlpha(related, 'universe')).toBe(0.045);
   });

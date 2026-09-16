@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { formationPosition, formationProgress } from './NodePointField';
+import { formationPosition, formationProgress, openingNodeVisibility } from './NodePointField';
+
+describe('opening node visibility', () => {
+  it('keeps non-seed nodes completely dark for however long Intro remains open', () => {
+    expect(openingNodeVisibility('intro', 0, 30)).toBe(1);
+    expect(openingNodeVisibility('intro', 0.4, 0)).toBe(0);
+    expect(openingNodeVisibility('intro', 0.4, 30)).toBe(0);
+  });
+
+  it('only lights a node after Awakening reaches its propagation delay', () => {
+    expect(openingNodeVisibility('awakening', 0.4, 0.39)).toBe(0);
+    expect(openingNodeVisibility('awakening', 0.4, 0.46)).toBeGreaterThan(0);
+    expect(openingNodeVisibility('awakening', 0.4, 0.52)).toBe(1);
+    expect(openingNodeVisibility('universe', 0.4, 0)).toBe(1);
+  });
+});
 
 describe('goal tree formation motion', () => {
   it('stagger starts later nodes later and still completes every node', () => {

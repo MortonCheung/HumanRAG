@@ -13,7 +13,7 @@ const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(h
 
 export function edgeAlpha(edge: SceneEdge, experiencePhase: SpatialExperiencePhase) {
   const active = ACTIVE.has(edge.visualState);
-  if (experiencePhase === 'intro') return active ? 0.32 : 0.002;
+  if (experiencePhase === 'intro') return active ? 0.32 : 0;
   if (active) return 0.45;
   return edge.relationType === 'hierarchy' || edge.relationType === 'practice_for' ? 0.16 : 0.045;
 }
@@ -78,9 +78,11 @@ export const synapticPulseShader = `
     float pulse=(peak+tail*0.35)*vActive*uMotion;
     float junction=exp(-directed*14.0)+exp(-(1.0-directed)*14.0);
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
-    float travel=clamp((uRevealTime-vDelay)/0.14,0.0,1.0);
-    float grown=1.0-smoothstep(travel-0.025,travel+0.025,vProgress);
-    float openingReveal=max(mix(uRevealFloor,1.0,grown),vOpeningSeed);
+    float localTime=uRevealTime-vDelay;
+    float started=step(0.0,localTime);
+    float travel=clamp(localTime/0.14,0.0,1.0);
+    float grown=started*(1.0-smoothstep(travel-0.025,travel+0.025,vProgress));
+    float openingReveal=max(grown,vOpeningSeed);
     float reveal=mix(1.0,openingReveal,uOpening);
     float centerDistance=abs(vProgress-0.5)*2.0;
     float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);

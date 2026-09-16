@@ -9,9 +9,16 @@ import { LEARNING_STATE_COLORS, neuronAppearance, neuronFragmentShader, neuronVe
 import type { GraphRevealPlan } from './reveal/graphReveal';
 import type { LearningState } from '../domain/learning/deriveLearningState';
 
-/** Intro 中未点亮节点的最低可见度：暗着，但不是不存在。 */
-const INTRO_DIM_STRENGTH = 0.035;
+/** Intro 保留全部节点几何，但未到传播时刻的节点不发光。 */
+const INTRO_DIM_STRENGTH = 0;
 const INTRO_DIM_SIZE = 0.72;
+
+export function openingNodeVisibility(experiencePhase: SpatialExperiencePhase, propagationDelay: number, revealTime: number) {
+  if (experiencePhase === 'intro') return propagationDelay === 0 ? 1 : 0;
+  if (experiencePhase !== 'awakening' && experiencePhase !== 'settling') return 1;
+  if (propagationDelay === 0) return 1;
+  return THREE.MathUtils.smoothstep(revealTime, propagationDelay, propagationDelay + 0.12);
+}
 
 export function formationProgress(baseProgress: number, nodeDelay: number) {
   const stagger = Math.min(0.22, Math.max(0, nodeDelay) * 0.45);
@@ -106,7 +113,8 @@ export function NodePointField({ model, experiencePhase, motionAllowed, extracti
     [sizes, strengths].forEach((attribute) => { attribute.needsUpdate = true; });
     if (experiencePhase === 'awakening') revealTime.current = 0;
     else if (experiencePhase === 'intro' || experiencePhase === 'universe') revealTime.current = 10;
-    settling.current = motionAllowed || Boolean(extraction);
+    // Intro 可以停留任意久：非 Seed 节点必须保持熄灭，直到 Awakening 才开始传播。
+    settling.current = experiencePhase !== 'intro' && (motionAllowed || Boolean(extraction));
     invalidate();
   }, [geometry, model.nodes, hoveredNodeId, experiencePhase, motionAllowed, extraction, invalidate]);
 
@@ -146,13 +154,8 @@ export function NodePointField({ model, experiencePhase, motionAllowed, extracti
       const relevanceStrength = extraction ? selected ? 1 + highlighted * 0.38 : 1 - receded : 1;
       const relevanceSize = extraction ? selected ? 1 + highlighted * 0.12 : 1 - receded * 0.32 : 1;
       // Awakening：暗节点在与它连接的边经过后变亮，不是突然生成。
-      const reveal = opening
-        ? THREE.MathUtils.smoothstep(revealTime.current, delay, delay + 0.12)
-        : 1;
-      const openingFloor = delay === 0 ? 1 : INTRO_DIM_STRENGTH;
-      const visibility = opening
-        ? THREE.MathUtils.lerp(openingFloor, 1, reveal)
-        : 1;
+      const reveal = openingNodeVisibility(experiencePhase, delay, revealTime.current);
+      const visibility = reveal;
       const sizeFloor = delay === 0 ? 1 : INTRO_DIM_SIZE;
       const desiredSize = target.size * (opening ? THREE.MathUtils.lerp(sizeFloor, 1, reveal) : 1) * relevanceSize;
       const desiredStrength = target.strength * visibility * relevanceStrength;

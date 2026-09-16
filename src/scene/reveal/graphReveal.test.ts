@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SceneModelInput } from '../../graph/relevance';
 import { knowledgeGraph } from '../../data/knowledgeGraph';
 import { buildSceneModel } from '../../graph/relevance';
-import { buildGraphRevealPlan } from './graphReveal';
+import { buildGraphRevealPlan, EDGE_LEAD } from './graphReveal';
 import { OPENING_PRESETS } from '../intro/constellationPresets';
 
 const baseView: SceneModelInput = {
@@ -55,6 +55,23 @@ describe('GraphRevealPlan', () => {
 
       expect(edgeAt).toBeLessThanOrEqual(latestNodeAt + 0.03);
     }
+  });
+
+  it('主干边基本走到目标以后，接收节点才开始发亮', () => {
+    const plan = buildGraphRevealPlan(model, ['direction-408', 'goal-cs-graduate']);
+    const seedIds = plan.seedNodeIds;
+    const incomingLead = [...plan.nodeDelay]
+      .filter(([nodeId]) => !seedIds.has(nodeId))
+      .map(([nodeId, nodeAt]) => {
+        const connected = model.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId);
+        const parentAt = Math.min(...connected.map((edge) => plan.edgeDelay.get(edge.id) ?? Infinity));
+        return nodeAt - parentAt;
+      });
+
+    expect(EDGE_LEAD).toBe(0.12);
+    expect(EDGE_LEAD).toBeLessThan(0.14);
+    expect(incomingLead.length).toBeGreaterThan(0);
+    expect(incomingLead.every((lead) => Math.abs(lead - EDGE_LEAD) < 0.001)).toBe(true);
   });
 
   it('未列入允许集合的节点既不亮也不参与传播', () => {
