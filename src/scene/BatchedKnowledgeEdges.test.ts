@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildEdgeGeometry, edgeAlpha, edgeGeometryKey, selectPulsingEdgeIds, synapticPulseShader } from './BatchedKnowledgeEdges';
+import {
+  buildEdgeGeometry,
+  edgeAlpha,
+  edgeGeometryKey,
+  edgeVertexShader,
+  lineRevealMask,
+  openingLineState,
+  selectPulsingEdgeIds,
+  synapticPulseShader,
+} from './BatchedKnowledgeEdges';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
 import { buildSceneModel } from '../graph/relevance';
 
@@ -26,24 +35,53 @@ describe('synaptic geometry and render clock', () => {
     expect(synapticPulseShader).toContain('fract(uTime*0.18+vPhase)');
     expect(synapticPulseShader).toContain('head-directed');
     expect(synapticPulseShader).not.toContain('gl_PointCoord');
-    expect(synapticPulseShader).toContain('float localTime=uRevealTime-vDelay');
-    expect(synapticPulseShader).toContain('float started=step(0.0,localTime)');
-    expect(synapticPulseShader).toContain('float grown=started*');
-    expect(synapticPulseShader).toContain('max(grown,vOpeningSeed)');
+    expect(synapticPulseShader).toContain('uMotion*uPulseGate');
+    expect(synapticPulseShader).not.toContain('localTime');
+    expect(synapticPulseShader).not.toContain('grown');
+  });
+  it('reveals the whole line network with one top-to-bottom screen-space mask', () => {
+    expect(edgeVertexShader).toContain('vScreenY=clip.y/clip.w');
+    expect(synapticPulseShader).toContain('mix(1.15,-1.15,uLineReveal)');
+    expect(synapticPulseShader).toContain('uOpening>0.5?lineMask:1.0');
+    expect(lineRevealMask(0, 1)).toBe(0);
+    expect(lineRevealMask(0, -1)).toBe(0);
+    expect(lineRevealMask(0.5, 0.75)).toBe(1);
+    expect(lineRevealMask(0.5, -0.75)).toBe(0);
+    expect(lineRevealMask(1, 1)).toBe(1);
+    expect(lineRevealMask(1, -1)).toBe(1);
+  });
+  it('waits for the last node, then sweeps lines before opening the pulse gate', () => {
+    const nodes = [{ propagationDelay: 0 }, { propagationDelay: 1.68 }];
+    const before = openingLineState(nodes, 1.89);
+    expect(before.nodeRevealEnd).toBeCloseTo(1.8);
+    expect(before.lineRevealStart).toBeCloseTo(1.9);
+    expect(before.lineReveal).toBe(0);
+    expect(before.pulseGate).toBe(0);
+
+    const during = openingLineState(nodes, 2.21);
+    expect(during.lineReveal).toBeGreaterThan(0);
+    expect(during.lineReveal).toBeLessThan(1);
+    expect(during.pulseGate).toBe(0);
+
+    const swept = openingLineState(nodes, 2.52);
+    expect(swept.lineReveal).toBe(1);
+    expect(swept.pulseGate).toBe(0);
+    expect(openingLineState(nodes, 2.60).pulseGate).toBeGreaterThan(0);
+    expect(openingLineState(nodes, 2.67).pulseGate).toBe(1);
   });
   it('breaks old Universe relations from the middle toward both endpoints', () => {
     expect(synapticPulseShader).toContain('abs(vProgress-0.5)*2.0');
     expect(synapticPulseShader).toContain('smoothstep(uDetach-0.07,uDetach+0.07,centerDistance)');
   });
-  it('keeps only seed relations legible before the opening reveal begins', () => {
+  it('hides every relation during intro and preserves Universe alpha', () => {
     const active = { ...model.edges[0], visualState: 'lensActive' as const };
     const hierarchy = { ...model.edges[0], visualState: 'background' as const, relationType: 'hierarchy' as const };
     const related = { ...model.edges[0], visualState: 'background' as const, relationType: 'related' as const };
 
-    expect(edgeAlpha(active, 'intro')).toBeGreaterThanOrEqual(0.25);
-    expect(edgeAlpha(active, 'intro')).toBeLessThanOrEqual(0.38);
+    expect(edgeAlpha(active, 'intro')).toBe(0);
     expect(edgeAlpha(hierarchy, 'intro')).toBe(0);
     expect(edgeAlpha(related, 'intro')).toBe(0);
+    expect(edgeAlpha(active, 'universe')).toBe(0.45);
     expect(edgeAlpha(hierarchy, 'universe')).toBe(0.16);
     expect(edgeAlpha(related, 'universe')).toBe(0.045);
   });

@@ -4,7 +4,8 @@ import { resetDemoState } from './helpers';
 /**
  * 手册第 0.2 / 第 11 / 第 13 章：Opening 是同一个世界慢慢醒来。
  * 节点位置永远不变，变化的只有明暗、传播和 Camera；入场镜头方向固定、target 移动、
- * distance 变化（缓慢拉开），Reveal ≈ 1.4–1.9s、Camera = 2.15s。
+ * distance 变化（缓慢拉开），Node Reveal ≈ 1.4–1.9s；Camera 在 2.15s 落位，
+ * 等待全局 Line Sweep 与 Pulse Gate 后约 2.70s 交接 Universe。
  *
  * 探针依赖 CameraController 逐帧发布的 `data-spatial-camera`：只在 CameraControls 的 rest
  * 事件上发布会读到入场开始时的静止旧值（入场期间 controls.enabled 为 false，永不 rest），
@@ -14,7 +15,7 @@ import { resetDemoState } from './helpers';
 interface OpeningSample { t: number; distance: number; direction: number[] }
 interface OpeningTrace { phases: { t: number; cls: string }[]; samples: OpeningSample[] }
 
-const TRACE_WINDOW_MS = 3_400;
+const TRACE_WINDOW_MS = 3_800;
 
 function directionCosine(a: number[], b: number[]) {
   return Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
@@ -65,7 +66,7 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
 
   const trace = (await page.evaluate(() => (window as unknown as Record<string, unknown>).__opening)) as OpeningTrace;
 
-  // 阶段顺序：intro → awakening → settling → universe，且入场合计约 2.15s。
+  // 阶段顺序：intro → awakening → settling → universe，且入场合计约 2.70s。
   const order = ['intro', 'awakening', 'settling', 'universe'];
   const seen = order.map((name) => trace.phases.find((entry) => entry.cls.endsWith(`--${name}`)));
   seen.forEach((entry, index) => expect(entry, `缺少阶段 ${order[index]}`).toBeDefined());
@@ -73,8 +74,8 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
     expect(seen[index]!.t).toBeGreaterThan(seen[index - 1]!.t);
   }
   const entryDuration = seen[3]!.t - seen[1]!.t;
-  expect(entryDuration).toBeGreaterThan(1_700);
-  expect(entryDuration).toBeLessThan(2_800);
+  expect(entryDuration).toBeGreaterThan(2_450);
+  expect(entryDuration).toBeLessThan(3_050);
 
   // 相机真的在动：入场期间必须出现多个不同距离，而不是一个静止值。
   const entry = trace.samples.filter((sample) => sample.t >= seen[1]!.t && sample.t <= seen[3]!.t);

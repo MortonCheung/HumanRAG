@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Vector3 } from 'three';
-import { createEntryShot, type CameraPose } from './entryShot';
+import { createEntryShot, ENTRY_CAMERA_MOTION_DURATION, ENTRY_SHOT_DURATION, type CameraPose } from './entryShot';
 
 describe('entry shot handoff', () => {
   it('keeps the view direction fixed and lands on the exact final pose', () => {
@@ -12,6 +12,7 @@ describe('entry shot handoff', () => {
     const complete = vi.fn();
     let visible: CameraPose = from;
     const timeline = createEntryShot(from, toTarget, toDistance, (pose) => { visible = { position: pose.position.clone(), target: pose.target.clone() }; }, complete).pause();
+    expect(timeline.duration()).toBeCloseTo(ENTRY_SHOT_DURATION);
     timeline.progress(0.5);
     expect(visible.position.distanceTo(from.position)).toBeGreaterThan(1);
     // The shot never orbits: the view direction must stay within 0.5 degrees of
@@ -23,9 +24,11 @@ describe('entry shot handoff', () => {
         180) /
       Math.PI;
     expect(midAngleDeg).toBeLessThan(0.5);
-    timeline.progress(1);
+    timeline.time(ENTRY_CAMERA_MOTION_DURATION + 0.25);
     expect(visible.position.distanceTo(finalPosition)).toBeLessThan(0.00001);
     expect(visible.target.distanceTo(toTarget)).toBeLessThan(0.00001);
+    expect(complete).not.toHaveBeenCalled();
+    timeline.progress(1);
     timeline.kill();
     expect(visible.position.distanceTo(finalPosition)).toBeLessThan(0.00001);
     expect(complete).toHaveBeenCalledTimes(1);

@@ -1,7 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import type { SceneEdge, SceneModel } from '../graph/types';
+import type { SceneEdge, SceneModel, SceneNode } from '../graph/types';
 import { buildEdgeCurve } from '../graph/curves';
 import { useKnowledgeStore } from '../store/knowledgeStore';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
@@ -10,10 +10,39 @@ import { extractionProgress, type ExtractionPhase } from '../features/spatial/tr
 
 const ACTIVE = new Set(['upstream', 'downstream', 'path', 'lateral', 'lensActive']);
 const phaseFor = (id: string) => Array.from(id).reduce((hash, c) => (Math.imul(hash, 31) + c.charCodeAt(0)) >>> 0, 7) % 997 / 997;
+export const OPENING_NODE_FADE_SECONDS = 0.12;
+export const OPENING_LINE_PAUSE_SECONDS = 0.10;
+export const OPENING_LINE_SWEEP_SECONDS = 0.62;
+export const OPENING_PULSE_FADE_SECONDS = 0.15;
+export const OPENING_LINE_FEATHER = 0.08;
+
+export function openingLineState(nodes: ReadonlyArray<Pick<SceneNode, 'propagationDelay'>>, elapsed: number) {
+  const nodeRevealEnd = Math.max(0, ...nodes.map((node) => node.propagationDelay)) + OPENING_NODE_FADE_SECONDS;
+  const lineRevealStart = nodeRevealEnd + OPENING_LINE_PAUSE_SECONDS;
+  const lineRevealEnd = lineRevealStart + OPENING_LINE_SWEEP_SECONDS;
+  const pulseGateEnd = lineRevealEnd + OPENING_PULSE_FADE_SECONDS;
+  const rawReveal = THREE.MathUtils.clamp((elapsed - lineRevealStart) / OPENING_LINE_SWEEP_SECONDS, 0, 1);
+  return {
+    nodeRevealEnd,
+    lineRevealStart,
+    lineRevealEnd,
+    pulseGateEnd,
+    // A restrained ease-out responds immediately, then settles gently at the bottom.
+    lineReveal: 1 - (1 - rawReveal) ** 2,
+    pulseGate: THREE.MathUtils.smoothstep(elapsed, lineRevealEnd, pulseGateEnd),
+  };
+}
+
+/** CPU equivalent of the fragment mask, kept small so the visual contract is testable. */
+export function lineRevealMask(reveal: number, screenY: number, feather = OPENING_LINE_FEATHER) {
+  const progress = THREE.MathUtils.clamp(reveal, 0, 1);
+  const sweepHead = THREE.MathUtils.lerp(1.15, -1.15, progress);
+  return THREE.MathUtils.smoothstep(screenY, sweepHead - feather, sweepHead + feather);
+}
 
 export function edgeAlpha(edge: SceneEdge, experiencePhase: SpatialExperiencePhase) {
   const active = ACTIVE.has(edge.visualState);
-  if (experiencePhase === 'intro') return active ? 0.32 : 0;
+  if (experiencePhase === 'intro') return 0;
   if (active) return 0.45;
   return edge.relationType === 'hierarchy' || edge.relationType === 'practice_for' ? 0.16 : 0.045;
 }
@@ -57,36 +86,35 @@ export function buildEdgeGeometry(model: SceneModel, segments: number) {
   return geometry;
 }
 
-const vertexShader = `
-  attribute float aProgress, aPhase, aAlpha, aActive, aDirection, aDelay, aOpeningSeed;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay, vOpeningSeed;
+export const edgeVertexShader = `
+  attribute float aProgress, aPhase, aAlpha, aActive, aDirection;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vScreenY;
   void main() {
-    vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection; vDelay=aDelay;
-    vOpeningSeed=aOpeningSeed;
-    gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    vProgress=aProgress; vPhase=aPhase; vAlpha=aAlpha; vActive=aActive; vDirection=aDirection;
+    vec4 clip=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    vScreenY=clip.y/clip.w;
+    gl_Position=clip;
   }
 `;
 export const synapticPulseShader = `
-  uniform float uTime, uMotion, uRevealTime, uOpening, uRevealFloor, uDetach, uUniverseExit;
-  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vDelay, vOpeningSeed;
+  uniform float uTime, uMotion, uOpening, uLineReveal, uLineRevealFeather, uPulseGate, uDetach, uUniverseExit;
+  varying float vProgress, vPhase, vAlpha, vActive, vDirection, vScreenY;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
     float head=fract(uTime*0.18+vPhase)*1.3-0.15;
     float behind=head-directed;
     float peak=exp(-pow(behind/0.025,2.0));
     float tail=exp(-max(behind,0.0)*24.0)*smoothstep(-0.015,0.015,behind);
-    float pulse=(peak+tail*0.35)*vActive*uMotion;
+    float pulse=(peak+tail*0.35)*vActive*uMotion*uPulseGate;
     float junction=exp(-directed*14.0)+exp(-(1.0-directed)*14.0);
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
-    float localTime=uRevealTime-vDelay;
-    float started=step(0.0,localTime);
-    float travel=clamp(localTime/0.14,0.0,1.0);
-    float grown=started*(1.0-smoothstep(travel-0.025,travel+0.025,vProgress));
-    float openingReveal=max(grown,vOpeningSeed);
-    float reveal=mix(1.0,openingReveal,uOpening);
+    float sweepHead=mix(1.15,-1.15,uLineReveal);
+    float revealFeather=max(uLineRevealFeather,0.001);
+    float lineMask=smoothstep(sweepHead-revealFeather,sweepHead+revealFeather,vScreenY);
+    float reveal=uOpening>0.5?lineMask:1.0;
     float centerDistance=abs(vProgress-0.5)*2.0;
     float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);
-    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.54)*reveal*keep*uUniverseExit);
+    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.68)*reveal*keep*uUniverseExit);
   }
 `;
 
@@ -105,7 +133,14 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
   // Appearance changes leave positions, topology and material identity untouched.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const geometry = useMemo(() => buildEdgeGeometry(model, segments), [key, segments]);
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uMotion: { value: 1 }, uRevealTime: { value: 10 }, uOpening: { value: 0 }, uRevealFloor: { value: 0 }, uDetach: { value: -1 }, uUniverseExit: { value: 1 } }), []);
+  const startsInUniverse = experiencePhase === 'universe';
+  const uniforms = useRef({
+    uTime: { value: 0 }, uMotion: { value: 1 }, uOpening: { value: startsInUniverse ? 0 : 1 },
+    uLineReveal: { value: startsInUniverse ? 1 : 0 }, uLineRevealFeather: { value: OPENING_LINE_FEATHER }, uPulseGate: { value: startsInUniverse ? 1 : 0 },
+    uDetach: { value: -1 }, uUniverseExit: { value: 1 },
+  }).current;
+  const material = useRef<THREE.ShaderMaterial>(null);
+  const openingElapsed = useRef(0);
   useLayoutEffect(() => {
     const pulsing = selectPulsingEdgeIds(model.edges, QUALITY_CONFIG[quality].activePulseCount);
     let vertex = 0;
@@ -123,7 +158,8 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
     invalidate();
   }, [geometry, model.edges, quality, segments, experiencePhase, openingSeedEdgeIds, invalidate]);
   useEffect(() => {
-    uniforms.uMotion.value = motionAllowed ? 1 : 0;
+    const shaderUniforms = material.current?.uniforms ?? uniforms;
+    shaderUniforms.uMotion.value = motionAllowed ? 1 : 0;
     invalidate();
     if (!motionAllowed) return;
     // Demand rendering idles at a modest rate; CameraControls requests full-rate frames during input.
@@ -131,48 +167,55 @@ export function BatchedKnowledgeEdges({ model, experiencePhase, motionAllowed, e
     return () => window.clearInterval(timer);
   }, [motionAllowed, quality, invalidate, uniforms]);
   useLayoutEffect(() => {
-    // 相位必须在首帧绘制前落到 uniform 上：manual 第 0.2 章要求第一帧就是
-    // 「完整但极暗」的 Universe，绝不能被默认 uOpening=0 渲染成一张亮线网。
+    const shaderUniforms = material.current?.uniforms ?? uniforms;
+    // 相位必须在首帧绘制前落到 uniform 上，避免 Opening 的第一帧闪出完整线网。
     if (experiencePhase === 'intro') {
-      uniforms.uRevealTime.value = 0;
-      uniforms.uOpening.value = 1;
-      uniforms.uRevealFloor.value = 0;
+      openingElapsed.current = 0;
+      shaderUniforms.uOpening.value = 1;
+      shaderUniforms.uLineReveal.value = 0;
+      shaderUniforms.uPulseGate.value = 0;
     } else if (experiencePhase === 'awakening') {
-      uniforms.uRevealTime.value = 0;
-      uniforms.uOpening.value = 1;
-      uniforms.uRevealFloor.value = 0;
+      openingElapsed.current = 0;
+      shaderUniforms.uOpening.value = 1;
+      shaderUniforms.uLineReveal.value = 0;
+      shaderUniforms.uPulseGate.value = 0;
     } else if (experiencePhase === 'settling') {
-      uniforms.uOpening.value = 1;
-      uniforms.uRevealFloor.value = 0;
+      shaderUniforms.uOpening.value = 1;
     } else if (experiencePhase === 'universe') {
-      uniforms.uRevealTime.value = 10;
-      uniforms.uOpening.value = 0;
+      shaderUniforms.uOpening.value = 0;
+      shaderUniforms.uLineReveal.value = 1;
+      shaderUniforms.uPulseGate.value = 1;
     }
     invalidate();
   }, [experiencePhase, invalidate, uniforms]);
   useFrame(({ clock }, delta) => {
-    if (motionAllowed) uniforms.uTime.value = clock.elapsedTime;
+    const shaderUniforms = material.current?.uniforms ?? uniforms;
+    if (motionAllowed) shaderUniforms.uTime.value = clock.elapsedTime;
     if (!extraction || extraction.phase === 'idle') {
-      uniforms.uDetach.value = -1;
-      uniforms.uUniverseExit.value = 1;
+      shaderUniforms.uDetach.value = -1;
+      shaderUniforms.uUniverseExit.value = 1;
     } else if (extraction.phase === 'highlighting') {
       // highlighting 必须完整保留 Universe（手册第 21 章）：断开留给 detaching。
-      uniforms.uDetach.value = -1;
-      uniforms.uUniverseExit.value = 1;
+      shaderUniforms.uDetach.value = -1;
+      shaderUniforms.uUniverseExit.value = 1;
     } else if (extraction.phase === 'detaching') {
       const progress = extractionProgress(extraction.phase, extraction.phaseStartedAt, motionAllowed);
-      uniforms.uDetach.value = THREE.MathUtils.lerp(-0.05, 1.05, progress);
-      uniforms.uUniverseExit.value = 1 - progress;
+      shaderUniforms.uDetach.value = THREE.MathUtils.lerp(-0.05, 1.05, progress);
+      shaderUniforms.uUniverseExit.value = 1 - progress;
     } else {
-      uniforms.uDetach.value = 1.05;
-      uniforms.uUniverseExit.value = 0;
+      shaderUniforms.uDetach.value = 1.05;
+      shaderUniforms.uUniverseExit.value = 0;
     }
-    if ((experiencePhase === 'awakening' || experiencePhase === 'settling') && uniforms.uRevealTime.value < 3) {
-      uniforms.uRevealTime.value += Math.min(delta, .05);
+    if ((experiencePhase === 'awakening' || experiencePhase === 'settling') && motionAllowed && openingElapsed.current < 3) {
+      // Keep the reveal clock aligned with the GSAP handoff even on low-frame-rate devices.
+      openingElapsed.current += delta;
+      const opening = openingLineState(model.nodes, openingElapsed.current);
+      shaderUniforms.uLineReveal.value = opening.lineReveal;
+      shaderUniforms.uPulseGate.value = opening.pulseGate;
     }
   });
   useEffect(() => () => geometry.dispose(), [geometry]);
   return <lineSegments geometry={geometry} raycast={() => null}>
-    <shaderMaterial vertexShader={vertexShader} fragmentShader={synapticPulseShader} uniforms={uniforms} transparent depthWrite={false} toneMapped={false} />
+    <shaderMaterial ref={material} vertexShader={edgeVertexShader} fragmentShader={synapticPulseShader} uniforms={uniforms} transparent depthWrite={false} toneMapped={false} />
   </lineSegments>;
 }
