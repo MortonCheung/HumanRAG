@@ -40,7 +40,6 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
   const step = store.currentStepId ? contentRepository.getTeachingStep(store.currentStepId) : undefined;
   const questionIds = step?.questionIds ?? [];
   const submitted = questionIds.length > 0 && questionIds.every((id) => store.answers.some((entry) => entry.questionId === id && entry.stepId === step?.id && entry.attempt === store.attempt));
-  const canAdvance = questionIds.length === 0 || submitted;
   const diagnosticAnswers = store.answers.filter((entry) => entry.stepKind === 'diagnostic');
   const guidedAnswers = store.answers.filter((entry) => entry.stepKind === 'guided-practice');
   const checkAnswers = store.answers.filter((entry) => entry.stepKind === 'independent-check' && entry.attempt === store.attempt);
@@ -52,7 +51,9 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
   };
   const misconceptionName = context.guidedMisconceptionId ? MISCONCEPTIONS.find((entry) => entry.id === context.guidedMisconceptionId)?.name : undefined;
   const nodeName = unit ? contentRepository.getNode(unit.nodeId)?.name ?? unit.title : routeUnit?.title ?? '当前知识点';
-  const decision = step && unit ? (!submitted && step.kind === 'diagnostic'
+  const decision = step && unit ? (step.kind === 'summary' && store.incompleteStepIds.length > 0
+    ? '你可以继续浏览总结；未提交的题目不会生成掌握证据，本轮只记录为未完成。'
+    : !submitted && step.kind === 'diagnostic'
     ? `先用当前诊断题定位「${nodeName}」的前置缺口，作答前不提供讲解。`
     : !submitted && step.kind === 'guided-practice'
       ? '现在把刚才的示范迁移到新条件；答错时只定位具体误区，再决定是否补教。'
@@ -79,7 +80,7 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
           </div>
         </section> : <p>正在恢复本次学习。</p>}
       </div>
-      {store.status !== 'finished' && step && <footer className="teach-stage__footer"><span className="teach-stage__hint" role={error ? 'alert' : undefined}>{error || (submitted ? '本步作答已记录' : '')}</span>{questionIds.length > 0 && !submitted ? <button className="text-button text-button--primary" type="button" onClick={() => { const result = store.submitCurrentStep(selections); setError(result.ok ? '' : result.missing ? `还有 ${result.missing} 道题未作答。` : '记录未保存，请重试。'); }}>提交答案</button> : <button className="text-button text-button--primary" type="button" disabled={!canAdvance} onClick={store.advance}>下一步 <ArrowRight size={16} /></button>}</footer>}
+      {store.status !== 'finished' && step && <footer className="teach-stage__footer"><span className="teach-stage__hint" role={error ? 'alert' : undefined}>{error || (submitted ? '本步作答已记录' : '')}</span>{questionIds.length > 0 && !submitted ? <div><button className="text-button text-button--ghost" type="button" onClick={() => { setError(''); store.advance(); }}>下一步 <ArrowRight size={16} /></button><button className="text-button text-button--primary" type="button" onClick={() => { const result = store.submitCurrentStep(selections); setError(result.ok ? '' : result.missing ? `还有 ${result.missing} 道题未作答。` : '记录未保存，请重试。'); }}>提交答案</button></div> : <button className="text-button text-button--primary" type="button" onClick={store.advance}>下一步 <ArrowRight size={16} /></button>}</footer>}
       </main>
     </div>}
   </div>;

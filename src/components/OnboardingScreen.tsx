@@ -10,7 +10,6 @@ export function OnboardingScreen() {
   const profile = useKnowledgeStore((state) => state.profile);
   const submitProfile = useKnowledgeStore((state) => state.submitProfile);
   const [draft, setDraft] = useState<UserProfile>(profile ?? { major: '', identity: '', goal: '' });
-  const [errors, setErrors] = useState<Partial<Record<keyof UserProfile, string>>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -19,18 +18,9 @@ export function OnboardingScreen() {
 
   const update = (key: keyof UserProfile, value: string) => {
     setDraft((current) => ({ ...current, [key]: value }));
-    if (errors[key]) setErrors((current) => ({ ...current, [key]: undefined }));
   };
 
   const submit = async () => {
-    const nextErrors: Partial<Record<keyof UserProfile, string>> = {};
-    if (!draft.major.trim()) nextErrors.major = '请填写你的专业';
-    if (!draft.identity.trim()) nextErrors.identity = '请填写你当前的身份';
-    if (!draft.goal.trim()) nextErrors.goal = '请填写你准备抵达的目标';
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
-      return;
-    }
     setSubmitting(true);
     await submitProfile({
       major: draft.major.trim(),
@@ -68,12 +58,11 @@ export function OnboardingScreen() {
           </div>
 
           <form onSubmit={(event) => { event.preventDefault(); void submit(); }} noValidate>
-            <Field label="专业" value={draft.major} placeholder="例如：软件工程" error={errors.major} onChange={(value) => update('major', value)} />
-            <Field label="当前身份" value={draft.identity} placeholder="例如：本科生" error={errors.identity} onChange={(value) => update('identity', value)} />
+            <Field label="专业（可选）" value={draft.major} placeholder="例如：软件工程" onChange={(value) => update('major', value)} />
+            <Field label="当前身份（可选）" value={draft.identity} placeholder="例如：本科生" onChange={(value) => update('identity', value)} />
             <label className="field-block">
-              <span>学习目标</span>
-              <textarea value={draft.goal} onChange={(event) => update('goal', event.target.value)} placeholder="例如：计算机考研408" rows={3} maxLength={160} aria-invalid={Boolean(errors.goal)} />
-              {errors.goal && <small className="field-error">{errors.goal}</small>}
+              <span>学习目标（可选）</span>
+              <textarea value={draft.goal} onChange={(event) => update('goal', event.target.value)} placeholder="例如：计算机考研408" rows={3} maxLength={160} />
             </label>
 
             <div className="goal-shortcuts" aria-label="快捷目标">
@@ -95,12 +84,11 @@ export function OnboardingScreen() {
   );
 }
 
-function Field({ label, value, placeholder, error, onChange }: { label: string; value: string; placeholder: string; error?: string; onChange: (value: string) => void }) {
+function Field({ label, value, placeholder, onChange }: { label: string; value: string; placeholder: string; onChange: (value: string) => void }) {
   return (
     <label className="field-block">
       <span>{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={80} aria-invalid={Boolean(error)} />
-      {error && <small className="field-error">{error}</small>}
+      <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} maxLength={80} />
     </label>
   );
 }

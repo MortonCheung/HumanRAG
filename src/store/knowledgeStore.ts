@@ -62,7 +62,7 @@ function readPersisted(): PersistedState {
       ? v7.qualityPreference as QualityPreference
       : 'auto';
     return {
-      profile: v7.profile?.major && v7.profile.identity && v7.profile.goal ? v7.profile : null,
+      profile: v7.profile && typeof v7.profile.major === 'string' && typeof v7.profile.identity === 'string' && typeof v7.profile.goal === 'string' ? v7.profile : null,
       selectedGoalId: v7.selectedGoalId && nodesById.has(v7.selectedGoalId) ? v7.selectedGoalId : null,
       qualityPreference,
     };
@@ -72,7 +72,7 @@ function readPersisted(): PersistedState {
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as Partial<PersistedState>;
     const selectedGoalId = parsed.selectedGoalId && nodesById.has(parsed.selectedGoalId) ? parsed.selectedGoalId : null;
-    const profile = parsed.profile?.major && parsed.profile.identity && parsed.profile.goal ? parsed.profile : null;
+    const profile = parsed.profile && typeof parsed.profile.major === 'string' && typeof parsed.profile.identity === 'string' && typeof parsed.profile.goal === 'string' ? parsed.profile : null;
     const migrated = { profile, selectedGoalId, qualityPreference: 'auto' as const };
     saveDomain(DOMAIN_KEYS.knowledge, migrated);
     localStorage.removeItem('knowledge-universe:v4');

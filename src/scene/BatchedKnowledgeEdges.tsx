@@ -27,16 +27,17 @@ export function openingLineState(nodes: ReadonlyArray<Pick<SceneNode, 'propagati
     lineRevealStart,
     lineRevealEnd,
     pulseGateEnd,
-    // A restrained ease-out responds immediately, then settles gently at the bottom.
-    lineReveal: 1 - (1 - rawReveal) ** 2,
+    // Smoothstep keeps both ends quiet while letting the middle of the sheet catch up.
+    lineReveal: rawReveal * rawReveal * (3 - 2 * rawReveal),
     pulseGate: THREE.MathUtils.smoothstep(elapsed, lineRevealEnd, pulseGateEnd),
   };
 }
 
 /** CPU equivalent of the fragment mask, kept small so the visual contract is testable. */
-export function lineRevealMask(reveal: number, screenY: number, feather = OPENING_LINE_FEATHER) {
+export function lineRevealMask(reveal: number, screenY: number, feather = OPENING_LINE_FEATHER, phase = 0.5) {
   const progress = THREE.MathUtils.clamp(reveal, 0, 1);
-  const sweepHead = THREE.MathUtils.lerp(1.15, -1.15, progress);
+  const phaseStagger = (phase - 0.5) * 0.12 * (1 - progress);
+  const sweepHead = THREE.MathUtils.lerp(1.15, -1.15, progress) + phaseStagger;
   return THREE.MathUtils.smoothstep(screenY, sweepHead - feather, sweepHead + feather);
 }
 
@@ -101,20 +102,22 @@ export const synapticPulseShader = `
   varying float vProgress, vPhase, vAlpha, vActive, vDirection, vScreenY;
   void main() {
     float directed=vDirection<0.0?1.0-vProgress:vProgress;
-    float head=fract(uTime*0.18+vPhase)*1.3-0.15;
+    float head=fract(uTime*0.21+vPhase)*1.3-0.15;
     float behind=head-directed;
-    float peak=exp(-pow(behind/0.025,2.0));
-    float tail=exp(-max(behind,0.0)*24.0)*smoothstep(-0.015,0.015,behind);
-    float pulse=(peak+tail*0.35)*vActive*uMotion*uPulseGate;
+    float peak=exp(-pow(behind/0.032,2.0));
+    float tail=exp(-max(behind,0.0)*18.0)*smoothstep(-0.015,0.015,behind);
+    float pulse=(peak+tail*0.46)*vActive*uMotion*uPulseGate;
+    float breathing=(0.5+0.5*sin(uTime*1.1+vPhase*6.283))*0.035*vActive*uMotion*uPulseGate;
     float junction=exp(-directed*14.0)+exp(-(1.0-directed)*14.0);
     vec3 color=mix(vec3(0.46,0.62,0.72),vec3(0.90,0.98,1.0),min(1.0,pulse));
-    float sweepHead=mix(1.15,-1.15,uLineReveal);
+    float phaseStagger=(vPhase-0.5)*0.12*(1.0-uLineReveal);
+    float sweepHead=mix(1.15,-1.15,uLineReveal)+phaseStagger;
     float revealFeather=max(uLineRevealFeather,0.001);
     float lineMask=smoothstep(sweepHead-revealFeather,sweepHead+revealFeather,vScreenY);
     float reveal=uOpening>0.5?lineMask:1.0;
     float centerDistance=abs(vProgress-0.5)*2.0;
     float keep=smoothstep(uDetach-0.07,uDetach+0.07,centerDistance);
-    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.68)*reveal*keep*uUniverseExit);
+    gl_FragColor=vec4(color,(vAlpha*(0.75+junction*0.25)+pulse*0.86+breathing)*reveal*keep*uUniverseExit);
   }
 `;
 

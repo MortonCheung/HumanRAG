@@ -119,6 +119,7 @@
   background: var(--it-surface);
 }
 .teach-stage__hint { color: var(--it-text-faint); font-size: 12px; }
+.teach-stage__footer > div { display: flex; align-items: center; gap: 10px; }
 
 .stage-block__kicker { margin: 0 0 18px; color: var(--it-text-faint); font-size: 12px; letter-spacing: .03em; }
 .stage-block__title { max-width: 850px; margin: 0 0 32px; font-size: clamp(28px, 3.4vw, 46px); font-weight: 520; letter-spacing: -.035em; line-height: 1.3; text-wrap: balance; }

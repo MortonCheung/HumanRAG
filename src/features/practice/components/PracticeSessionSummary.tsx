@@ -22,6 +22,15 @@ function nodeNameOf(nodeId: string): string {
   return contentRepository.getNode(nodeId)?.name ?? nodeId;
 }
 
+export function practiceResultStats(questionIds: string[], answers: Record<string, PracticeAnswer>) {
+  const answeredCount = questionIds.filter((questionId) => answers[questionId] !== undefined).length;
+  const correctCount = questionIds.filter((questionId) => answers[questionId]?.correct).length;
+  const wrongCount = answeredCount - correctCount;
+  const unansweredCount = questionIds.length - answeredCount;
+  const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+  return { answeredCount, correctCount, wrongCount, unansweredCount, accuracy };
+}
+
 const MODE_COPY: Record<PracticeMode, { kicker: string; evidence: string; restart: string }> = {
   train: { kicker: '训练完成', evidence: '训练作答已写回学习记录，用于发现需要巩固的部分。', restart: '再练一遍' },
   verify: { kicker: '验证完成', evidence: '本轮答案现已统一揭示；完整的新题独立作答将作为本次验证证据。', restart: '换一组新题' },
@@ -33,8 +42,7 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
   const resultRows = questionIds
     .map((questionId) => ({ question: contentRepository.getQuestion(questionId), answer: answers[questionId] }))
     .filter((entry) => entry.question && entry.answer);
-  const correctCount = resultRows.filter((entry) => entry.answer?.correct).length;
-  const accuracy = questionIds.length > 0 ? Math.round((correctCount / questionIds.length) * 100) : 0;
+  const { answeredCount, correctCount, wrongCount, unansweredCount, accuracy } = practiceResultStats(questionIds, answers);
   const wrongRows = resultRows.filter((entry) => !entry.answer?.correct);
 
   const reasons = Array.from(
@@ -76,7 +84,8 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
           <span>正确率</span>
         </div>
         <div><strong>{correctCount}</strong><span>回答正确</span></div>
-        <div><strong>{questionIds.length - correctCount}</strong><span>回答错误</span></div>
+        <div><strong>{wrongCount}</strong><span>回答错误</span></div>
+        <div><strong>{unansweredCount}</strong><span>未作答</span></div>
         <div><strong>{questionIds.length}</strong><span>本次题量</span></div>
       </div>
       <div className="practice-result__bar" aria-label={`正确率 ${accuracy}%`}>
@@ -98,7 +107,7 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
               ))}
             </div>
           ) : (
-            <p className="practice-result__empty">本次没有错误项，未发现新的误区。</p>
+            <p className="practice-result__empty">{answeredCount > 0 ? '本次没有错误项，未发现新的误区。' : '本次没有已提交作答，不生成错因分析。'}</p>
           )}
         </section>
 
@@ -108,7 +117,9 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
           <p>
             {wrongRows.length > 0
               ? `本次错误最集中在「${recommendedNodeName}」。先完成对应教学单元，再重做错题，确认误区已经关闭。`
-              : `本轮未发现新误区。可回看「${recommendedNodeName}」的总结与适用边界，再进入更高难度练习。`}
+              : answeredCount > 0
+                ? `本轮未发现新误区。可回看「${recommendedNodeName}」的总结与适用边界，再进入更高难度练习。`
+                : '本次没有已提交作答，因此不生成补学推荐。'}
           </p>
           {remediationUnitId && recommendedQuestion && (onRemediate
             ? <button className="text-button text-button--primary" type="button" onClick={() => onRemediate(recommendedQuestion.id)}>带我学 <ArrowRight size={14} /></button>

@@ -110,8 +110,8 @@ export const usePracticeStore = create<PracticeState>((set, get) => {
     finish: () => {
       const state = get();
       const missing = state.questionIds.filter((id) => !state.answers[id]).length;
-      if (state.status !== 'active' || state.questionIds.length === 0 || missing || state.learnerId !== useUserStore.getState().activeProfileId) return { ok: false, missing };
-      return { ok: save({ ...state, status: 'finished' }), missing: 0 };
+      if (state.status !== 'active' || state.questionIds.length === 0 || state.learnerId !== useUserStore.getState().activeProfileId) return { ok: false, missing };
+      return { ok: save({ ...state, status: 'finished' }), missing };
     },
     resetSession: () => { removeDomain(DOMAIN_KEYS.practice); set({ ...empty(), learnerId: useUserStore.getState().activeProfileId, sessions: {}, storageError: null }); },
   };

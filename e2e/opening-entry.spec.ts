@@ -3,8 +3,8 @@ import { resetDemoState } from './helpers';
 
 /**
  * 手册第 0.2 / 第 11 / 第 13 章：Opening 是同一个世界慢慢醒来。
- * 节点位置永远不变，变化的只有明暗、传播和 Camera；入场镜头方向固定、target 移动、
- * distance 变化（缓慢拉开），Node Reveal ≈ 1.4–1.9s；Camera 在 2.15s 落位，
+ * 节点位置永远不变，变化的只有明暗、传播和 Camera；点击前 Camera 小幅往返，点击后
+ * 沿世界 Y 轴环绕 118° 并拉开，Node Reveal ≈ 1.4–1.9s；Camera 在 2.15s 落位，
  * 等待全局 Line Sweep 与 Pulse Gate 后约 2.70s 交接 Universe。
  *
  * 探针依赖 CameraController 逐帧发布的 `data-spatial-camera`：只在 CameraControls 的 rest
@@ -15,13 +15,14 @@ import { resetDemoState } from './helpers';
 interface OpeningSample { t: number; distance: number; direction: number[] }
 interface OpeningTrace { phases: { t: number; cls: string }[]; samples: OpeningSample[] }
 
-const TRACE_WINDOW_MS = 3_800;
+const INTRO_OBSERVE_MS = 1_200;
+const TRACE_WINDOW_MS = 5_000;
 
 function directionCosine(a: number[], b: number[]) {
   return Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
 }
 
-test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻', async ({ page }) => {
+test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe 并稳定交接', async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -30,7 +31,7 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
   await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 12_000 });
 
   await page.evaluate(() => {
-    const window_ms = 3400;
+    const window_ms = 5000;
     const experience = document.querySelector('.spatial-experience')!;
     const canvas = document.querySelector('[data-spatial-stage] canvas');
     const phases: { t: number; cls: string }[] = [];
@@ -61,8 +62,9 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
     (window as unknown as Record<string, unknown>).__opening = { phases, samples };
   });
 
+  await page.waitForTimeout(INTRO_OBSERVE_MS);
   await page.getByRole('button', { name: '进入知识空间' }).click();
-  await page.waitForTimeout(TRACE_WINDOW_MS + 200);
+  await page.waitForTimeout(TRACE_WINDOW_MS - INTRO_OBSERVE_MS + 300);
 
   const trace = (await page.evaluate(() => (window as unknown as Record<string, unknown>).__opening)) as OpeningTrace;
 
@@ -77,15 +79,26 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
   expect(entryDuration).toBeGreaterThan(2_450);
   expect(entryDuration).toBeLessThan(3_050);
 
-  // 相机真的在动：入场期间必须出现多个不同距离，而不是一个静止值。
+  // 点击前只有有限的空间视差，既不是静止画面，也不是持续转圈。
+  const intro = trace.samples.filter((sample) => sample.t < seen[1]!.t);
+  expect(intro.length).toBeGreaterThan(2);
+  const introDirection = intro[0].direction;
+  const introAngles = intro.map((sample) => (Math.acos(directionCosine(introDirection, sample.direction)) * 180) / Math.PI);
+  expect(Math.max(...introAngles)).toBeGreaterThan(0.25);
+  expect(Math.max(...introAngles)).toBeLessThan(6);
+
+  // 入场期间必须出现多个不同距离，而不是一个静止值。
   const entry = trace.samples.filter((sample) => sample.t >= seen[1]!.t && sample.t <= seen[3]!.t);
   expect(new Set(entry.map((sample) => Math.round(sample.distance * 2))).size).toBeGreaterThan(4);
 
-  // 方向固定：整段入场不允许绕圈（手册第 11 章）。
+  // Shot 从点击瞬间的真实 pose 接管，首帧不能跳回静态初始角度。
   const incoming = entry[0].direction;
-  for (const sample of entry) {
-    expect((Math.acos(directionCosine(incoming, sample.direction)) * 180) / Math.PI).toBeLessThan(8);
-  }
+  const lastIntro = intro[intro.length - 1];
+  expect((Math.acos(directionCosine(lastIntro.direction, incoming)) * 180) / Math.PI).toBeLessThan(6);
+
+  // 中段到末段必须明显绕开原视角，让完整知识空间从侧面展开。
+  const entryAngles = entry.map((sample) => (Math.acos(directionCosine(incoming, sample.direction)) * 180) / Math.PI);
+  expect(Math.max(...entryAngles)).toBeGreaterThan(35);
 
   // 缓慢拉开：距离单调不回头，且最终明显大于 seed 取景。
   for (let index = 1; index < entry.length; index += 1) {
@@ -98,8 +111,10 @@ test('入场镜头从 seed 取景缓慢拉开到完整 Universe，方向不翻',
   const peakDistance = Math.max(...trace.samples.map((sample) => sample.distance));
   expect(peakDistance / seedDistance).toBeGreaterThan(1.5);
 
-  // 落位后不再漂移：universe 之后相机必须已经停在终点附近。
-  for (const sample of trace.samples.filter((item) => item.t > seen[3]!.t)) {
+  // 落位后不再漂移：universe 之后距离与方向都停在终点附近。
+  const universe = trace.samples.filter((item) => item.t > seen[3]!.t + 100);
+  for (const sample of universe) {
     expect(Math.abs(sample.distance - last)).toBeLessThan(4);
+    expect((Math.acos(directionCosine(universe[0].direction, sample.direction)) * 180) / Math.PI).toBeLessThan(1);
   }
 });

@@ -21,14 +21,16 @@ describe('practiceStore：完成条件', () => {
     useProgressStore.setState({ answerRecords: [], evidenceRecords: [], misconceptionRecords: [], remediationTasks: [], masteryByNode: [], taskExposures: [], storageError: null });
   });
 
-  it('题目未全部作答时拒绝结束，并返回缺题数', () => {
+  it('题目未全部作答时允许结束，只统计缺题且不伪造证据', () => {
     const questionIds = questionIdsForNode('knowledge-linear-list').slice(0, 2);
     expect(questionIds).toHaveLength(2);
     usePracticeStore.getState().startSession('test-incomplete', questionIds);
     usePracticeStore.getState().submitAnswer(questionIds[0], correctSelection(questionIds[0]));
 
-    expect(usePracticeStore.getState().finish()).toEqual({ ok: false, missing: 1 });
-    expect(usePracticeStore.getState().status).toBe('active');
+    expect(usePracticeStore.getState().finish()).toEqual({ ok: true, missing: 1 });
+    expect(usePracticeStore.getState().status).toBe('finished');
+    expect(Object.keys(usePracticeStore.getState().answers)).toEqual([questionIds[0]]);
+    expect(useProgressStore.getState().answerRecords).toHaveLength(1);
   });
 
   it('全部作答后允许结束并返回成功', () => {
@@ -40,6 +42,17 @@ describe('practiceStore：完成条件', () => {
 
     expect(usePracticeStore.getState().finish()).toEqual({ ok: true, missing: 0 });
     expect(usePracticeStore.getState().status).toBe('finished');
+  });
+
+  it('结束时保留未提交 draft，但不把它转成作答或证据', () => {
+    const questionIds = questionIdsForNode('knowledge-linear-list').slice(0, 2);
+    usePracticeStore.getState().startSession('test-draft', questionIds);
+    usePracticeStore.getState().setDraft(questionIds[1], correctSelection(questionIds[1]));
+
+    expect(usePracticeStore.getState().finish()).toEqual({ ok: true, missing: 2 });
+    expect(usePracticeStore.getState().drafts[questionIds[1]]).toBeTruthy();
+    expect(usePracticeStore.getState().answers).toEqual({});
+    expect(useProgressStore.getState().answerRecords).toEqual([]);
   });
 
   it('空会话不能被标记为完成', () => {

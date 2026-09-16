@@ -4,6 +4,7 @@ import type { TeachingStep, TeachingNextRule } from '../data/v6/schemas/teaching
 import { TEACHING_STEPS_BY_ID, TEACHING_UNITS } from '../data/v6/generators/generateTeachingUnit';
 import { getQuestion } from '../data/v6/generators/generateQuestionVariants';
 import { useTeachingStore } from './teachingStore';
+import { useProgressStore } from './progressStore';
 
 function stepOf(kind: TeachingStep['kind'], nextRules: TeachingNextRule[]): TeachingStep {
   return {
@@ -91,6 +92,33 @@ function submitStep(choose: (questionId: string) => string) {
 describe('教学会话：复测与终止', () => {
   beforeEach(() => {
     useTeachingStore.getState().resetSession();
+    useProgressStore.setState({ answerRecords: [], evidenceRecords: [], misconceptionRecords: [], remediationTasks: [], masteryByNode: [], taskExposures: [], storageError: null });
+  });
+
+  it('允许无作答浏览完整教学，但只记录未完成且不生成证据', () => {
+    const unit = TEACHING_UNITS[0];
+    useTeachingStore.getState().startSession(unit.id);
+
+    useTeachingStore.getState().advance(); // objective → diagnostic
+    expect(currentStep()?.kind).toBe('diagnostic');
+    useTeachingStore.getState().advance(); // no evidence → explanation
+    expect(currentStep()?.kind).toBe('explanation');
+    useTeachingStore.getState().advance(); // worked-example
+    useTeachingStore.getState().advance(); // guided-practice
+    expect(currentStep()?.kind).toBe('guided-practice');
+    useTeachingStore.getState().advance(); // no evidence → independent-check
+    expect(currentStep()?.kind).toBe('independent-check');
+    useTeachingStore.getState().advance(); // no evidence → summary
+    expect(currentStep()?.kind).toBe('summary');
+    useTeachingStore.getState().advance(); // finish without mastery
+
+    const state = useTeachingStore.getState();
+    expect(state.status).toBe('finished');
+    expect(state.outcome).toBe('incomplete');
+    expect(state.answers).toEqual([]);
+    expect(state.incompleteStepIds).toHaveLength(3);
+    expect(useProgressStore.getState().answerRecords).toEqual([]);
+    expect(useProgressStore.getState().evidenceRecords).toEqual([]);
   });
 
   it('弱诊断进入含前置补充的正式讲解，不误入独立检查复教回路', () => {

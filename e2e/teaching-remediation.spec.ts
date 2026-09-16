@@ -26,6 +26,23 @@ test.describe('教学复教、重测与终止', () => {
     await expect(page.getByRole('heading', { name: '独立检查' })).toHaveCount(0);
   });
 
+  test('未答题也能继续浏览，结束时不生成学习证据或掌握结论', async ({ page }) => {
+    const unit = systemUnit();
+    const steps = unit.stepIds.map((id) => contentRepository.getTeachingStep(id)!);
+    await page.goto(`/teach/${SYSTEM_UNIT_ID}`);
+    const progressBefore = await page.evaluate(() => localStorage.getItem('iteach:v7:progress-delta'));
+
+    for (const kind of ['objective', 'diagnostic', 'explanation', 'worked-example', 'guided-practice', 'independent-check', 'summary'] as const) {
+      const step = steps.find((entry) => entry.kind === kind)!;
+      await expect(page.getByRole('heading', { name: step.title })).toBeVisible();
+      await page.getByRole('button', { name: /下一步/ }).click();
+    }
+
+    await expect(page.getByRole('heading', { name: '本轮学习未完成' })).toBeVisible();
+    await expect(page.getByText('未提交的题目没有生成作答、误区或掌握证据')).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('iteach:v7:progress-delta'))).toBe(progressBefore);
+  });
+
   test('独立检查连续失败后终止，不播放掌握完成反馈', async ({ page }) => {
     const unit = systemUnit();
     const steps = unit.stepIds.map((id) => contentRepository.getTeachingStep(id)!);

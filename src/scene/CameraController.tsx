@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import type { CameraIntent, SceneModel } from '../graph/types';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 import { applyCameraPose, frameSphereAlongView, freezeCamera, introCameraDistance, nodeFocusPose, viewportFocalOffset } from './cameraFraming';
-import { createEntryShot } from './entryShot';
+import { createEntryShot, introOrbitDirection } from './entryShot';
 import { useSpatialViewport } from '../features/spatial/SpatialViewport';
 
 type View = { position: THREE.Vector3; target: THREE.Vector3; offset: THREE.Vector3; intentId: string };
@@ -42,14 +42,23 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   const controls = useRef<CameraControlsImpl>(null);
   const previousPhase = useRef<SpatialExperiencePhase | null>(null);
   const timeline = useRef<gsap.core.Timeline | null>(null);
+  const introOrbit = useRef<{ target: THREE.Vector3; direction: THREE.Vector3; distance: number; startedAt: number | null } | null>(null);
+  const introPosition = useRef(new THREE.Vector3());
   const current = useRef({ model, intent, experiencePhase, onEntryComplete, openingSeedIds, extractionFrame });
   current.current = { model, intent, experiencePhase, onEntryComplete, openingSeedIds, extractionFrame };
   const { camera, size, invalidate, gl } = useThree();
   const usable = useSpatialViewport();
 
   // 每渲染帧发布一次真实生效的相机位姿（见 publishCameraPose 注释）。
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const instance = controls.current;
+    const orbit = introOrbit.current;
+    if (instance && current.current.experiencePhase === 'intro' && motionAllowed && orbit) {
+      if (orbit.startedAt === null) orbit.startedAt = clock.elapsedTime;
+      const direction = introOrbitDirection(orbit.direction, clock.elapsedTime - orbit.startedAt);
+      introPosition.current.copy(direction).multiplyScalar(orbit.distance).add(orbit.target);
+      applyCameraPose(instance, introPosition.current, orbit.target, false);
+    }
     if (instance) publishCameraPose(instance, gl.domElement);
   });
 
@@ -116,10 +125,13 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       const target = introSphere.center.clone();
       const direction = new THREE.Vector3(0.68, 0.38, 0.76).normalize();
       const introDistance = introCameraDistance(introSphere.radius);
+      introOrbit.current = { target, direction, distance: introDistance, startedAt: null };
+      const openingDirection = introOrbitDirection(direction, 0);
       void instance.setFocalOffset(0, 0, 0, false);
-      apply(target.clone().addScaledVector(direction, introDistance), target);
+      apply(target.clone().addScaledVector(openingDirection, introDistance), target);
       return;
     }
+    introOrbit.current = null;
     if (experiencePhase === 'awakening') {
       const shotTimeline = createEntryShot(
         { position: instance.getPosition(new THREE.Vector3(), false), target: instance.getTarget(new THREE.Vector3(), false) },

@@ -32,6 +32,7 @@ export function TeachingCompletionEvidence({
   onRestart,
 }: TeachingCompletionEvidenceProps) {
   const isExhausted = outcome === 'remediation-exhausted';
+  const isIncomplete = outcome === 'incomplete';
   const prerequisites = unit.prerequisiteNodeIds
     .map((nodeId) => contentRepository.getTeachingUnitForNode(nodeId))
     .filter((entry): entry is TeachingUnit => entry !== undefined);
@@ -51,7 +52,7 @@ export function TeachingCompletionEvidence({
   const trace = [
     {
       label: '诊断',
-      value: diagnostic.total > 0 ? `${diagnostic.correct}/${diagnostic.total}，正确率 ${diagnostic.percentage}%` : '已完成，无诊断题',
+      value: diagnostic.total > 0 ? `${diagnostic.correct}/${diagnostic.total}，正确率 ${diagnostic.percentage}%` : completedKinds.has('diagnostic') ? '未提交作答，不生成诊断证据' : '未进入本步骤',
       state: completedKinds.has('diagnostic') ? 'done' : 'skipped',
     },
     {
@@ -66,19 +67,19 @@ export function TeachingCompletionEvidence({
     },
     {
       label: '练习',
-      value: guided.total > 0 ? `${guided.correct}/${guided.total}，正确率 ${guided.percentage}%` : '本路径未安排引导题',
+      value: guided.total > 0 ? `${guided.correct}/${guided.total}，正确率 ${guided.percentage}%` : completedKinds.has('guided-practice') ? '未提交作答，不生成练习证据' : '本路径未进入引导练习',
       state: completedKinds.has('guided-practice') ? 'done' : 'skipped',
     },
     {
       label: '纠错',
       value: completedKinds.has('remediation')
         ? `已执行针对性复教${misconceptionNames.length > 0 ? `，处理 ${misconceptionNames.length} 类误区` : ''}`
-        : '掌握检查达标，无需触发补救讲解',
+        : isIncomplete ? '没有完整作答证据，不触发补救判断' : '掌握检查达标，无需触发补救讲解',
       state: completedKinds.has('remediation') ? 'remediated' : 'not-needed',
     },
     {
       label: '掌握确认',
-      value: check.total > 0 ? `${check.correct}/${check.total}，正确率 ${check.percentage}%` : '已完成总结确认',
+      value: check.total > 0 ? `${check.correct}/${check.total}，正确率 ${check.percentage}%` : isIncomplete ? '未提交独立检查，不生成掌握证据' : '已完成总结确认',
       state: completedKinds.has('summary') ? 'done' : 'skipped',
     },
   ] as const;
@@ -92,6 +93,14 @@ export function TeachingCompletionEvidence({
             <h2 className="stage-block__title" id="teaching-completion-title">建议先补前置知识</h2>
             <p className="teaching-completion__lead">
               经过两轮复教仍未达到掌握标准，本轮不记为掌握完成。建议先回到前置教学单元巩固基础，再重新学习本节。
+            </p>
+          </div>
+        ) : isIncomplete ? (
+          <div>
+            <p className="stage-block__kicker">本轮结束</p>
+            <h2 className="stage-block__title" id="teaching-completion-title">本轮学习未完成</h2>
+            <p className="teaching-completion__lead">
+              你已浏览本轮教学内容；未提交的题目没有生成作答、误区或掌握证据，可随时重新开始并完成验证。
             </p>
           </div>
         ) : (

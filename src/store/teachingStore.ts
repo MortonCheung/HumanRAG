@@ -54,6 +54,7 @@ interface PersistedTeaching {
   unitId: string | null;
   currentStepId: string | null;
   completedStepIds: string[];
+  incompleteStepIds?: string[];
   attempt: number;
   remediationCount: number;
   outcome: TeachingOutcome;
@@ -74,7 +75,7 @@ export interface SessionAnswer {
 }
 
 /** 会话结束原因：掌握完成 / 补救耗尽 / 尚未结束。 */
-export type TeachingOutcome = 'mastered' | 'remediation-exhausted' | null;
+export type TeachingOutcome = 'mastered' | 'remediation-exhausted' | 'incomplete' | null;
 
 interface TeachingState {
   tcp: TcpSession | null;
@@ -90,6 +91,8 @@ interface TeachingState {
   unitId: string | null;
   currentStepId: string | null;
   completedStepIds: string[];
+  /** 已浏览但没有完整作答证据的步骤；不能据此判定掌握或误区。 */
+  incompleteStepIds: string[];
   /** 本会话已提交的作答，按提交顺序排列（含历史 attempt，作为证据保留）。 */
   answers: SessionAnswer[];
   status: 'idle' | 'active' | 'finished';
@@ -116,6 +119,7 @@ function persist(state: TeachingState): boolean {
     unitId: state.unitId,
     currentStepId: state.currentStepId,
     completedStepIds: state.completedStepIds,
+    incompleteStepIds: state.incompleteStepIds,
     attempt: state.attempt,
     remediationCount: state.remediationCount,
     outcome: state.outcome,
@@ -133,6 +137,7 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
   unitId: persisted?.unitId ?? null,
   currentStepId: persisted?.currentStepId ?? null,
   completedStepIds: persisted?.completedStepIds ?? [],
+  incompleteStepIds: persisted?.incompleteStepIds ?? [],
   answers: persisted?.answers ?? [],
   status: persisted?.unitId ? (persisted.outcome ? 'finished' : 'active') : 'idle',
   attempt: persisted?.attempt ?? 1,
@@ -258,6 +263,7 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
       unitId,
       currentStepId: firstStepId,
       completedStepIds: [],
+      incompleteStepIds: [],
       answers: [],
       status: 'active',
       attempt: 1,
@@ -270,6 +276,7 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
       unitId,
       currentStepId: firstStepId,
       completedStepIds: [],
+      incompleteStepIds: [],
       answers: [],
       status: 'active',
       attempt: 1,
@@ -349,7 +356,13 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
     const step = state.currentStepId ? contentRepository.getTeachingStep(state.currentStepId) : undefined;
     if (!step) return;
 
-    if ((step.questionIds ?? []).some((id) => !state.answers.some((answer) => answer.questionId === id && answer.stepId === step.id && answer.attempt === state.attempt))) return;
+    const questionIds = step.questionIds ?? [];
+    const hasCompleteEvidence = questionIds.length === 0 || questionIds.every((id) => state.answers.some(
+      (answer) => answer.questionId === id && answer.stepId === step.id && answer.attempt === state.attempt,
+    ));
+    const incompleteStepIds = hasCompleteEvidence
+      ? state.incompleteStepIds.filter((stepId) => stepId !== step.id)
+      : Array.from(new Set([...state.incompleteStepIds, step.id]));
 
     const diagnosticAnswers = state.answers.filter((entry) => entry.stepKind === 'diagnostic');
     const guidedAnswers = state.answers.filter((entry) => entry.stepKind === 'guided-practice');
@@ -370,12 +383,20 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
       remediationCount: state.remediationCount,
     };
 
-    const nextStepId = resolveNextStepId(step, context);
+    const unit = state.unitId ? contentRepository.getTeachingUnit(state.unitId) : undefined;
+    const summaryStepId = unit?.stepIds.find((stepId) => contentRepository.getTeachingStep(stepId)?.kind === 'summary');
+    const browseNextStepId = step.kind === 'independent-check'
+      ? summaryStepId
+      : [...step.nextRules].reverse().find((rule) => rule.condition.kind === 'always')?.next;
+    const nextStepId = hasCompleteEvidence
+      ? resolveNextStepId(step, context)
+      : browseNextStepId ?? resolveNextStepId(step, context);
     const completed = Array.from(new Set([...state.completedStepIds, step.id]));
 
-    const mastered = nextStepId === 'end';
+    const mastered = nextStepId === 'end' && incompleteStepIds.length === 0;
+    const incomplete = nextStepId === 'end' && incompleteStepIds.length > 0;
     const remediationExhausted = nextStepId === REMEDIATION_EXHAUSTED_NEXT;
-    const finished = mastered || remediationExhausted;
+    const finished = mastered || incomplete || remediationExhausted;
     const nextStep = !finished ? contentRepository.getTeachingStep(nextStepId) : undefined;
 
     let attempt = state.attempt;
@@ -397,12 +418,15 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
       ? 'mastered'
       : remediationExhausted
         ? 'remediation-exhausted'
-        : null;
+        : incomplete
+          ? 'incomplete'
+          : null;
 
     const next = {
       ...state,
       currentStepId: finished ? step.id : nextStepId,
       completedStepIds: completed,
+      incompleteStepIds,
       status: (finished ? 'finished' : 'active') as TeachingState['status'],
       attempt,
       remediationCount,
@@ -412,6 +436,7 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
     set({
       currentStepId: next.currentStepId,
       completedStepIds: completed,
+      incompleteStepIds,
       status: next.status,
       attempt,
       remediationCount,
@@ -429,6 +454,7 @@ export const useTeachingStore = create<TeachingState>((set, get) => ({
       unitId: null,
       currentStepId: null,
       completedStepIds: [],
+      incompleteStepIds: [],
       answers: [],
       status: 'idle',
       attempt: 1,

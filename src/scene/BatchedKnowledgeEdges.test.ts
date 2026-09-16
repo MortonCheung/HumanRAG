@@ -32,8 +32,13 @@ describe('synaptic geometry and render clock', () => {
     expect(edgeGeometryKey({ ...model, edges: model.edges.map((edge) => ({ ...edge, visualState: 'path' as const })) })).toBe(edgeGeometryKey(model));
   });
   it('evaluates energy along path progress rather than moving point geometry', () => {
-    expect(synapticPulseShader).toContain('fract(uTime*0.18+vPhase)');
+    expect(synapticPulseShader).toContain('fract(uTime*0.21+vPhase)');
     expect(synapticPulseShader).toContain('head-directed');
+    expect(synapticPulseShader).toContain('behind/0.032');
+    expect(synapticPulseShader).toContain('max(behind,0.0)*18.0');
+    expect(synapticPulseShader).toContain('tail*0.46');
+    expect(synapticPulseShader).toContain('pulse*0.86+breathing');
+    expect(synapticPulseShader).toContain('sin(uTime*1.1+vPhase*6.283)');
     expect(synapticPulseShader).not.toContain('gl_PointCoord');
     expect(synapticPulseShader).toContain('uMotion*uPulseGate');
     expect(synapticPulseShader).not.toContain('localTime');
@@ -41,7 +46,8 @@ describe('synaptic geometry and render clock', () => {
   });
   it('reveals the whole line network with one top-to-bottom screen-space mask', () => {
     expect(edgeVertexShader).toContain('vScreenY=clip.y/clip.w');
-    expect(synapticPulseShader).toContain('mix(1.15,-1.15,uLineReveal)');
+    expect(synapticPulseShader).toContain('(vPhase-0.5)*0.12*(1.0-uLineReveal)');
+    expect(synapticPulseShader).toContain('mix(1.15,-1.15,uLineReveal)+phaseStagger');
     expect(synapticPulseShader).toContain('uOpening>0.5?lineMask:1.0');
     expect(lineRevealMask(0, 1)).toBe(0);
     expect(lineRevealMask(0, -1)).toBe(0);
@@ -49,6 +55,11 @@ describe('synaptic geometry and render clock', () => {
     expect(lineRevealMask(0.5, -0.75)).toBe(0);
     expect(lineRevealMask(1, 1)).toBe(1);
     expect(lineRevealMask(1, -1)).toBe(1);
+    expect(lineRevealMask(0, 1, undefined, 0)).toBe(0);
+    expect(lineRevealMask(0, -1, undefined, 1)).toBe(0);
+    expect(lineRevealMask(1, 1, undefined, 0)).toBe(1);
+    expect(lineRevealMask(1, -1, undefined, 1)).toBe(1);
+    expect(lineRevealMask(0.5, 0.04, undefined, 0)).not.toBe(lineRevealMask(0.5, 0.04, undefined, 1));
   });
   it('waits for the last node, then sweeps lines before opening the pulse gate', () => {
     const nodes = [{ propagationDelay: 0 }, { propagationDelay: 1.68 }];
@@ -59,8 +70,7 @@ describe('synaptic geometry and render clock', () => {
     expect(before.pulseGate).toBe(0);
 
     const during = openingLineState(nodes, 2.21);
-    expect(during.lineReveal).toBeGreaterThan(0);
-    expect(during.lineReveal).toBeLessThan(1);
+    expect(during.lineReveal).toBeCloseTo(0.5);
     expect(during.pulseGate).toBe(0);
 
     const swept = openingLineState(nodes, 2.52);
