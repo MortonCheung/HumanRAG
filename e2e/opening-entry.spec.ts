@@ -5,7 +5,7 @@ import { resetDemoState } from './helpers';
  * 手册第 0.2 / 第 11 / 第 13 章：Opening 是同一个世界慢慢醒来。
  * 节点位置永远不变，变化的只有明暗、传播和 Camera；点击前 Camera 小幅往返，点击后
  * 沿世界 Y 轴环绕 118° 并拉开，Node Reveal ≈ 1.4–1.9s；Camera 在 2.15s 落位，
- * 等待全局 Line Sweep 与 Pulse Gate 后约 2.70s 交接 Universe。
+ * 等待局部 Connection Weaving 与 Pulse Gate 后约 2.70s 交接 Universe。
  *
  * 探针依赖 CameraController 逐帧发布的 `data-spatial-camera`：只在 CameraControls 的 rest
  * 事件上发布会读到入场开始时的静止旧值（入场期间 controls.enabled 为 false，永不 rest），

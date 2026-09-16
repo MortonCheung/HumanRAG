@@ -1,16 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildOpeningEdgeTimeline,
+  buildOpeningEdgeTiming,
   buildEdgeGeometry,
   edgeAlpha,
   edgeGeometryKey,
   edgeVertexShader,
-  lineRevealMask,
-  openingLineState,
+  nodeReadyAt,
+  OPENING_EDGE_BUILD_MAX_SECONDS,
+  OPENING_EDGE_BUILD_MIN_SECONDS,
+  OPENING_EDGE_QUEUE_MAX_SECONDS,
+  OPENING_EDGE_QUEUE_MIN_SECONDS,
+  OPENING_NODE_FADE_SECONDS,
+  openingEdgeRevealMask,
+  openingPulseGate,
   selectPulsingEdgeIds,
   synapticPulseShader,
 } from './BatchedKnowledgeEdges';
 import { QUALITY_CONFIG } from '../performance/qualityPolicy';
 import { buildSceneModel } from '../graph/relevance';
+import { buildGraphRevealPlan } from './reveal/graphReveal';
+import { OPENING_PRESETS } from './intro/constellationPresets';
 
 describe('synaptic geometry and render clock', () => {
   const model = buildSceneModel({ goalId: null, selectedNodeId: null, hoveredNodeId: null, learningPath: [], focused: false });
@@ -22,7 +32,8 @@ describe('synaptic geometry and render clock', () => {
     expect([positions.getX(0), positions.getY(0), positions.getZ(0)]).toEqual(source.displayPosition.map(Math.fround));
     expect(progress.getX(0)).toBe(0);
     expect(progress.getX(11)).toBe(1);
-    expect(geometry.getAttribute('aOpeningSeed').count).toBe(positions.count);
+    expect(geometry.getAttribute('aDelay').count).toBe(positions.count);
+    expect(geometry.getAttribute('aRevealDuration').count).toBe(positions.count);
     expect(positions.count).toBe(model.edges.length * 12);
     geometry.dispose();
   });
@@ -44,43 +55,88 @@ describe('synaptic geometry and render clock', () => {
     expect(synapticPulseShader).not.toContain('localTime');
     expect(synapticPulseShader).not.toContain('grown');
   });
-  it('reveals the whole line network with one top-to-bottom screen-space mask', () => {
-    expect(edgeVertexShader).toContain('vScreenY=clip.y/clip.w');
-    expect(synapticPulseShader).toContain('(vPhase-0.5)*0.12*(1.0-uLineReveal)');
-    expect(synapticPulseShader).toContain('mix(1.15,-1.15,uLineReveal)+phaseStagger');
-    expect(synapticPulseShader).toContain('uOpening>0.5?lineMask:1.0');
-    expect(lineRevealMask(0, 1)).toBe(0);
-    expect(lineRevealMask(0, -1)).toBe(0);
-    expect(lineRevealMask(0.5, 0.75)).toBe(1);
-    expect(lineRevealMask(0.5, -0.75)).toBe(0);
-    expect(lineRevealMask(1, 1)).toBe(1);
-    expect(lineRevealMask(1, -1)).toBe(1);
-    expect(lineRevealMask(0, 1, undefined, 0)).toBe(0);
-    expect(lineRevealMask(0, -1, undefined, 1)).toBe(0);
-    expect(lineRevealMask(1, 1, undefined, 0)).toBe(1);
-    expect(lineRevealMask(1, -1, undefined, 1)).toBe(1);
-    expect(lineRevealMask(0.5, 0.04, undefined, 0)).not.toBe(lineRevealMask(0.5, 0.04, undefined, 1));
+  it('uses per-edge timing and grows every relation symmetrically from both endpoints', () => {
+    expect(edgeVertexShader).toContain('aDelay');
+    expect(edgeVertexShader).toContain('aRevealDuration');
+    expect(synapticPulseShader).toContain('uOpeningElapsed');
+    expect(synapticPulseShader).toContain('abs(vProgress - 0.5)');
+    expect(synapticPulseShader).toContain('started*step(0.999,local)');
+    expect(edgeVertexShader).not.toContain('vScreenY');
+    expect(synapticPulseShader).not.toContain('vScreenY');
+    expect(synapticPulseShader).not.toContain('sweepHead');
+    expect(synapticPulseShader).not.toContain('uLineReveal');
+
+    const timing = buildOpeningEdgeTiming('edge-mask', 0.2, 0.4);
+    expect(openingEdgeRevealMask(timing.startAt - 0.001, timing, 0)).toBe(0);
+    expect(openingEdgeRevealMask(timing.startAt - 0.001, timing, 1)).toBe(0);
+    const halfway = timing.startAt + timing.buildDuration / 2;
+    expect(openingEdgeRevealMask(halfway, timing, 0.2)).toBeCloseTo(openingEdgeRevealMask(halfway, timing, 0.8));
+    expect(openingEdgeRevealMask(timing.endAt, timing, 0.5)).toBe(1);
   });
-  it('waits for the last node, then sweeps lines before opening the pulse gate', () => {
-    const nodes = [{ propagationDelay: 0 }, { propagationDelay: 1.68 }];
-    const before = openingLineState(nodes, 1.89);
-    expect(before.nodeRevealEnd).toBeCloseTo(1.8);
-    expect(before.lineRevealStart).toBeCloseTo(1.9);
-    expect(before.lineReveal).toBe(0);
-    expect(before.pulseGate).toBe(0);
 
-    const during = openingLineState(nodes, 2.21);
-    expect(during.lineReveal).toBeCloseTo(0.5);
-    expect(during.pulseGate).toBe(0);
+  it('waits for both endpoint nodes, then applies deterministic bounded queue and build timing', () => {
+    expect(nodeReadyAt(0)).toBe(0);
+    expect(nodeReadyAt(0.4)).toBeCloseTo(0.4 + OPENING_NODE_FADE_SECONDS);
 
-    const swept = openingLineState(nodes, 2.52);
-    expect(swept.lineReveal).toBe(1);
-    expect(swept.pulseGate).toBe(0);
-    expect(openingLineState(nodes, 2.60).pulseGate).toBeGreaterThan(0);
-    expect(openingLineState(nodes, 2.67).pulseGate).toBe(1);
+    const first = buildOpeningEdgeTiming('edge-a', 0.2, 0.7);
+    const repeated = buildOpeningEdgeTiming('edge-a', 0.2, 0.7);
+    const different = buildOpeningEdgeTiming('edge-b', 0.2, 0.7);
+    expect(first).toEqual(repeated);
+    expect([different.queueDelay, different.buildDuration]).not.toEqual([first.queueDelay, first.buildDuration]);
+    expect(first.eligibleAt).toBeCloseTo(Math.max(nodeReadyAt(0.2), nodeReadyAt(0.7)));
+    expect(first.startAt).toBeGreaterThanOrEqual(first.sourceReadyAt);
+    expect(first.startAt).toBeGreaterThanOrEqual(first.targetReadyAt);
+    expect(first.queueDelay).toBeGreaterThanOrEqual(OPENING_EDGE_QUEUE_MIN_SECONDS);
+    expect(first.queueDelay).toBeLessThanOrEqual(OPENING_EDGE_QUEUE_MAX_SECONDS);
+    expect(first.buildDuration).toBeGreaterThanOrEqual(OPENING_EDGE_BUILD_MIN_SECONDS);
+    expect(first.buildDuration).toBeLessThanOrEqual(OPENING_EDGE_BUILD_MAX_SECONDS);
+  });
+
+  it('lets seed-to-seed relations queue immediately without waiting for node fade', () => {
+    const timing = buildOpeningEdgeTiming('seed-edge', 0, 0);
+    expect(timing.sourceReadyAt).toBe(0);
+    expect(timing.targetReadyAt).toBe(0);
+    expect(timing.eligibleAt).toBe(0);
+    expect(timing.startAt).toBeGreaterThanOrEqual(OPENING_EDGE_QUEUE_MIN_SECONDS);
+  });
+
+  it('derives the pulse gate from the last completed edge and stays inside the 2.70s handoff', () => {
+    for (const preset of OPENING_PRESETS) {
+      const reveal = buildGraphRevealPlan(model, preset.seedNodeIds);
+      const openingModel = {
+        ...model,
+        nodes: model.nodes.map((node) => ({
+          ...node,
+          propagationDelay: reveal.nodeDelay.get(node.id) ?? reveal.duration,
+        })),
+      };
+      const timeline = buildOpeningEdgeTimeline(openingModel);
+      const timings = [...timeline.edgeTimings.values()];
+      expect(timeline.networkReadyAt).toBeCloseTo(Math.max(...timings.map((timing) => timing.endAt)));
+      for (const timing of timings) {
+        expect(timing.startAt).toBeGreaterThanOrEqual(timing.sourceReadyAt);
+        expect(timing.startAt).toBeGreaterThanOrEqual(timing.targetReadyAt);
+        expect(timing.queueDelay).toBeGreaterThanOrEqual(OPENING_EDGE_QUEUE_MIN_SECONDS);
+        expect(timing.queueDelay).toBeLessThanOrEqual(OPENING_EDGE_QUEUE_MAX_SECONDS);
+        expect(timing.buildDuration).toBeGreaterThanOrEqual(OPENING_EDGE_BUILD_MIN_SECONDS);
+        expect(timing.buildDuration).toBeLessThanOrEqual(OPENING_EDGE_BUILD_MAX_SECONDS);
+      }
+      expect(openingPulseGate(timeline, timeline.networkReadyAt)).toBe(0);
+      expect(openingPulseGate(timeline, timeline.pulseStart)).toBe(0);
+      expect(openingPulseGate(timeline, timeline.pulseEnd)).toBe(1);
+      expect(timeline.pulseEnd).toBeLessThan(2.70);
+    }
+  });
+
+  it('fails clearly when an edge endpoint is missing instead of revealing it early', () => {
+    const firstEdge = model.edges[0];
+    expect(() => buildOpeningEdgeTimeline({
+      nodes: model.nodes.filter((node) => node.id !== firstEdge.source),
+      edges: [firstEdge],
+    })).toThrow(/missing endpoint/);
   });
   it('breaks old Universe relations from the middle toward both endpoints', () => {
-    expect(synapticPulseShader).toContain('abs(vProgress-0.5)*2.0');
+    expect(synapticPulseShader).toContain('abs(vProgress - 0.5)*2.0');
     expect(synapticPulseShader).toContain('smoothstep(uDetach-0.07,uDetach+0.07,centerDistance)');
   });
   it('hides every relation during intro and preserves Universe alpha', () => {
