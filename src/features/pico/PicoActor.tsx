@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { PicoFace, PicoMotion } from './picoTypes';
+import { PICO_CALIBRATION, PICO_CAMERA } from './picoCalibration';
 
 const MODEL_PATH = '/models/Pico.glb';
 
@@ -36,8 +37,8 @@ function CompanionFace({ face }: { face: PicoFace }) {
     invalidate();
   }, [face, invalidate, texture]);
   useEffect(() => () => texture.dispose(), [texture]);
-  return <mesh position={[0, 0.28, 0.54]}>
-    <planeGeometry args={[0.44, 0.22]} />
+  return <mesh position={PICO_CALIBRATION.facePosition} rotation={PICO_CALIBRATION.faceRotation}>
+    <planeGeometry args={PICO_CALIBRATION.faceSize} />
     <meshBasicMaterial map={texture} transparent toneMapped={false} />
   </mesh>;
 }
@@ -66,7 +67,7 @@ export function PicoModel({ face, motion = 'idle', motionNonce = 0, motionAllowe
     if (!motionAllowed) {
       action.current = null;
       if (actor.current) {
-        actor.current.position.set(0, -0.56, 0);
+        actor.current.position.set(...PICO_CALIBRATION.visualOffset);
         actor.current.rotation.set(0, 0, 0);
       }
       invalidate();
@@ -98,7 +99,7 @@ export function PicoModel({ face, motion = 'idle', motionNonce = 0, motionAllowe
     if (!group || !current || !motionAllowed) return;
     const progress = THREE.MathUtils.clamp((performance.now() - current.startedAt) / current.duration, 0, 1);
     const pulse = Math.sin(progress * Math.PI);
-    group.position.set(0, -0.56, 0);
+    group.position.set(...PICO_CALIBRATION.visualOffset);
     group.rotation.set(0, 0, 0);
     if (current.kind === 'idle') {
       group.position.y += pulse * 0.035;
@@ -116,13 +117,13 @@ export function PicoModel({ face, motion = 'idle', motionNonce = 0, motionAllowe
     }
     if (progress < 1) invalidate();
     else {
-      group.position.set(0, -0.56, 0);
+      group.position.set(...PICO_CALIBRATION.visualOffset);
       group.rotation.set(0, 0, 0);
       action.current = null;
     }
   });
 
-  return <group ref={actor} position={[0, -0.56, 0]} rotation={[0, 0, 0]} scale={1.05} dispose={null}>
+  return <group ref={actor} position={PICO_CALIBRATION.visualOffset} rotation={[0, 0, 0]} scale={PICO_CALIBRATION.visualScale} dispose={null}>
     <primitive object={object} dispose={null} />
     <CompanionFace face={face} />
   </group>;
@@ -134,7 +135,7 @@ export function PicoActor({ face, motion = 'idle', motionNonce = 0, motionAllowe
   motionNonce?: number;
   motionAllowed?: boolean;
 }) {
-  return <ActorBoundary><Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0, 0.25, 3.1], fov: 30 }} gl={{ alpha: true, antialias: true }}>
+  return <ActorBoundary><Canvas frameloop="demand" dpr={[1, 1.5]} camera={PICO_CAMERA} gl={{ alpha: true, antialias: true }}>
     <ambientLight intensity={2.2} />
     <directionalLight position={[2, 3, 4]} intensity={2.8} color="#d8f5ff" />
     <Suspense fallback={null}><PicoModel face={face} motion={motion} motionNonce={motionNonce} motionAllowed={motionAllowed} /></Suspense>
