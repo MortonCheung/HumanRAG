@@ -6,6 +6,15 @@ export function AskPicoButton({ context, label = '问问 Pico', className = '' }
   label?: string;
   className?: string;
 }) {
-  const ask = usePicoStore((state) => state.ask);
-  return <button type="button" className={`ask-pico-button ${className}`.trim()} aria-label={`${label}：${context.title}`} onClick={() => ask(context)}>{label}</button>;
+  const askAndSend = usePicoStore((state) => state.askAndSend);
+  const busy = usePicoStore((state) => state.busy);
+  const cooldownUntil = usePicoStore((state) => state.cooldownUntil);
+  const disabled = busy || Date.now() < cooldownUntil;
+  return <button
+    type="button"
+    className={`ask-pico-button ${className}`.trim()}
+    aria-label={`${label}：${context.title}`}
+    disabled={disabled}
+    onClick={() => { void askAndSend(context); }}
+  >{label}</button>;
 }

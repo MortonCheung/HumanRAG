@@ -7,7 +7,7 @@ export type PicoPresence = 'docked' | 'traveling' | 'perched' | 'returning';
 export type PicoMotion = 'idle' | 'attention' | 'hop' | 'wobble' | 'turn';
 
 export type PicoConversationItem =
-  | { id: string; role: 'user'; content: string; contextVersion: number }
+  | { id: string; role: 'user'; content: string; contextVersion: number; contextTitle?: string; contextExcerpt?: string }
   | { id: string; role: 'assistant'; content: string; contextVersion: number; source: ChatSource }
   | { id: string; role: 'context'; content: string; contextVersion: number };
 
@@ -38,5 +38,7 @@ export interface PicoState {
   dockImmediately: () => void;
   setPageContext: (context: PicoPageContext) => void;
   ask: (context: PicoExplicitContext) => void;
+  askAndSend: (context: PicoExplicitContext) => Promise<void>;
   send: (text: string) => Promise<void>;
+  sendPicoMessage: (context: PicoExplicitContext | null, text: string) => Promise<void>;
 }

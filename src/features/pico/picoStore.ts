@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatMessage } from '../../ai/chat/contracts';
 import { sendChat } from '../../ai/chat/chatClient';
 import type { PicoConversationItem, PicoState } from './picoTypes';
+import { defaultPromptForExplicitContext, explicitContextExcerpt } from './askPrompts';
 
 let sequence = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now()}-${sequence++}`;
@@ -79,18 +80,38 @@ export const usePicoStore = create<PicoState>((set, get) => ({
     set((state) => ({ explicitContext, open: true, focusNonce: state.focusNonce + 1, motion: 'attention', motionNonce: state.motionNonce + 1 }));
     settleReaction(get().motionNonce, 700);
   },
+  // 原子入口：设置 Explicit Context → 打开 Dock → 直接用这一次的 context 构造请求。
+  // 不经过下一次 get() 找 context，避免 explicitContext / busy / contextVersion 的时序依赖。
+  askAndSend: async (explicitContext) => {
+    const state = get();
+    if (!state.pageContext || state.busy || Date.now() < state.cooldownUntil) return;
+    set((current) => ({ explicitContext, open: true, focusNonce: current.focusNonce + 1, motion: 'attention', motionNonce: current.motionNonce + 1 }));
+    await get().sendPicoMessage(explicitContext, defaultPromptForExplicitContext(explicitContext));
+  },
   send: async (raw) => {
+    const state = get();
+    if (!raw.trim() || state.busy || Date.now() < state.cooldownUntil) return;
+    await get().sendPicoMessage(state.explicitContext, raw);
+  },
+  sendPicoMessage: async (explicitContext, raw) => {
     const message = raw.trim();
     const state = get();
     if (!message || !state.pageContext || state.busy || Date.now() < state.cooldownUntil) return;
     const contextVersion = state.contextVersion;
-    const userItem: PicoConversationItem = { id: nextId('user'), role: 'user', content: message, contextVersion };
+    const userItem: PicoConversationItem = {
+      id: nextId('user'),
+      role: 'user',
+      content: message,
+      contextVersion,
+      contextTitle: explicitContext?.title,
+      contextExcerpt: explicitContext ? explicitContextExcerpt(explicitContext) : undefined,
+    };
     const history: ChatMessage[] = state.messages
       .filter((item): item is Extract<PicoConversationItem, { role: 'user' | 'assistant' }> => item.contextVersion === contextVersion && item.role !== 'context')
       .slice(-8)
       .map(({ role, content }) => ({ role, content }));
     set((current) => ({ messages: [...current.messages, userItem], busy: true, face: 'thinking', motion: 'attention', motionNonce: current.motionNonce + 1 }));
-    const result = await sendChat({ mode: 'pico', message, history, pageContext: state.pageContext, explicitContext: state.explicitContext ?? undefined });
+    const result = await sendChat({ mode: 'pico', message, history, pageContext: state.pageContext, explicitContext: explicitContext ?? undefined });
     if (get().contextVersion !== contextVersion) {
       set({ busy: false, face: 'idle' });
       return;

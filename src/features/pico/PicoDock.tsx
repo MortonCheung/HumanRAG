@@ -76,7 +76,7 @@ export function PicoDock() {
           {messages.length === 0 && <div className="pico-dock__empty"><strong>一起看当前内容</strong><p>指出你卡住的一句、一步或一道题，我会优先结合当前页面回答。</p></div>}
           {messages.map((item) => item.role === 'context'
             ? <div className="pico-context-change" key={item.id}><span>{item.content}</span></div>
-            : <article key={item.id} data-source={item.role === 'assistant' ? item.source : undefined} className={`pico-message pico-message--${item.role}`}><span>{item.role === 'user' ? '你' : 'Pico'}</span><p>{item.content}</p>{item.role === 'assistant' && item.source === 'mock' && <small>演示回复</small>}</article>)}
+            : <article key={item.id} data-source={item.role === 'assistant' ? item.source : undefined} className={`pico-message pico-message--${item.role}`}><span>{item.role === 'user' ? '你' : 'Pico'}</span>{item.role === 'user' && item.contextTitle && <div className="pico-message__quote" title={item.contextExcerpt}>引用 · {item.contextTitle}</div>}<p>{item.content}</p>{item.role === 'assistant' && item.source === 'mock' && <small>演示回复</small>}</article>)}
           {busy && <div className="pico-thinking" role="status">Pico 正在整理当前内容…</div>}
           <div ref={end} />
         </div>

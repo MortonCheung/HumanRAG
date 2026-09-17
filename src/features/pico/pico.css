@@ -23,6 +23,7 @@
 .pico-message p { margin: 8px 0 0; color: var(--it-text); font-size: 13px; line-height: 1.75; white-space: pre-wrap; }
 .pico-message--user { padding-left: 34px; text-align: right; }
 .pico-message--user p { color: var(--it-text-soft); }
+.pico-message__quote { max-width: 320px; margin: 8px 0 0 auto; padding: 6px 10px; border-left: 2px solid var(--it-accent); background: var(--it-surface); color: var(--it-text-faint); font: 10px/1.5 var(--it-mono); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pico-message small { display: block; margin-top: 8px; color: var(--it-text-faint); font: 9px/1 var(--it-mono); }
 .pico-context-change { display: flex; align-items: center; gap: 10px; padding: 18px 0 8px; color: var(--it-text-faint); font: 9px/1.4 var(--it-mono); text-align: center; }
 .pico-context-change::before, .pico-context-change::after { content: ''; height: 1px; flex: 1; background: var(--it-rule); }
