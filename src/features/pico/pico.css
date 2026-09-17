@@ -3,6 +3,8 @@
 .root-workspace__route { width: 100%; min-width: 0; transition: width 360ms var(--it-ease); }
 .pico-actor-host { position: fixed; z-index: 129; right: 20px; bottom: 20px; width: 84px; height: 84px; padding: 0; overflow: hidden; border: 1px solid var(--it-rule-strong); border-radius: 50%; background: var(--it-surface-raised); box-shadow: 0 10px 34px rgb(0 0 0 / .3); transition: top 220ms var(--it-ease), right 220ms var(--it-ease), bottom 220ms var(--it-ease), width 220ms var(--it-ease), height 220ms var(--it-ease), border-color 160ms var(--it-ease); }
 .pico-actor-host:hover { border-color: var(--it-accent); }
+.root-workspace:has(.teach-session--focused) .pico-actor-host:not(.is-open),
+.root-workspace:has(.practice-session--focused) .pico-actor-host:not(.is-open) { bottom: 112px; }
 .pico-actor-host.is-open { top: calc(var(--it-nav-height) + 8px); right: calc(var(--pico-dock-width) - 76px); bottom: auto; width: 66px; height: 66px; border-color: transparent; background: transparent; box-shadow: none; pointer-events: none; }
 .pico-actor-host canvas { display: block; width: 100% !important; height: 100% !important; }
 .pico-actor-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--it-accent); font: 600 18px/1 var(--it-mono); }
