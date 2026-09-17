@@ -22,6 +22,7 @@ export const ROUTES = {
   pointNewContent: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/points/new/content`,
   pointNewPlace: (libraryId: string, treeId: string) => `/library/${libraryId}/tree/${treeId}/points/new/place`,
   progress: '/progress',
+  tutor: '/tutor',
   legacyTeachUnit: (unitId: string) => `/teach/${unitId}`,
   legacyPracticeSession: (sessionId: string) => `/practice/session/${sessionId}`,
 } as const;

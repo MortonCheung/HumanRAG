@@ -25,6 +25,10 @@ import { resolveLearnerProfile } from '../../../domain/learning/resolveLearnerPr
 import '../progress.css';
 import { useLocation } from 'react-router-dom';
 import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { useLearnerContextBundle } from '../../../ai/context/useLearnerContextBundle';
+import { sendChat } from '../../../ai/chat/chatClient';
+import { AI_SUBMISSION_COOLDOWN_MS, type ChatResult } from '../../../ai/chat/contracts';
+import { buildInsightSignature, cachedInsight, cacheInsight, selectInsightContextBlocks } from '../learningInsight';
 
 function misconceptionName(id: string) {
   return MISCONCEPTIONS_BY_ID.get(id)?.name
@@ -50,6 +54,10 @@ export function ProgressPage() {
   const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [insightState, setInsightState] = useState<{ signature: string; result: ChatResult } | null>(null);
+  const [insightBusy, setInsightBusy] = useState(false);
+  const [insightCooldownUntil, setInsightCooldownUntil] = useState(0);
+  const { bundle: learnerContext } = useLearnerContextBundle();
   const fallbackActivityEnd = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const profiles = useMemo(() => LEARNER_PROFILES.map((profile) => (
     profile.id === learnerId ? resolveLearnerProfile(profile, profileOverride) : profile
@@ -75,6 +83,30 @@ export function ProgressPage() {
     : 'study';
   const picoContext = useMemo(() => ({ key: 'progress:overview', route: location.pathname, pageType: 'progress' as const, title: '我的学习' }), [location.pathname]);
   usePicoPageContext(picoContext);
+  const insightSignature = buildInsightSignature({
+    learnerId,
+    answered: dashboard.totals.answered,
+    correct: dashboard.totals.correct,
+    openMisconceptions: dashboard.totals.openMisconceptions,
+    recommendationPointId: dashboard.recommendation?.pointId,
+  });
+  const visibleInsight = insightState?.signature === insightSignature ? insightState.result : cachedInsight(insightSignature);
+  const generateInsight = async () => {
+    if (insightBusy || Date.now() < insightCooldownUntil) return;
+    const cached = cachedInsight(insightSignature);
+    if (cached) {
+      setInsightState({ signature: insightSignature, result: cached });
+      return;
+    }
+    setInsightBusy(true);
+    const result = await sendChat({ mode: 'insight', baseContext: learnerContext.base, contextBlocks: selectInsightContextBlocks(learnerContext) });
+    cacheInsight(insightSignature, result);
+    setInsightState({ signature: insightSignature, result });
+    setInsightBusy(false);
+    const until = Date.now() + AI_SUBMISSION_COOLDOWN_MS;
+    setInsightCooldownUntil(until);
+    window.setTimeout(() => setInsightCooldownUntil((current) => current === until ? 0 : current), AI_SUBMISSION_COOLDOWN_MS);
+  };
   const enter = (index: number) => ({
     initial: reducedMotion ? false as const : { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },
@@ -176,6 +208,8 @@ export function ProgressPage() {
               <strong>选择新的方向</strong><p>当前范围已完成独立验证。</p>
               <Link className="learning-dashboard__cta" to={ROUTES.library}>打开知识库 <ArrowRight size={16} /></Link>
             </>}
+            <button className="learning-dashboard__insight-trigger" type="button" disabled={insightBusy || Date.now() < insightCooldownUntil} onClick={generateInsight}>{insightBusy ? '正在生成…' : '生成学习洞察'}</button>
+            {visibleInsight && <div className="learning-dashboard__insight" aria-live="polite"><p>{visibleInsight.text}</p>{visibleInsight.source === 'mock' && <small>演示回复</small>}</div>}
           </div>
         </motion.section>
       </div>

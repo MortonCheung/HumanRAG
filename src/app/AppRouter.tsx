@@ -61,6 +61,7 @@ const router = createBrowserRouter(createRoutesFromElements(
         <Route path="/library/:libraryId/tree/:treeId/points/new/place" lazy={async () => ({ Component: (await import('../features/knowledge-point-builder/pages/PointPlacementPage')).PointPlacementPage })} />
       </Route>
       <Route path={ROUTES.progress} lazy={async () => ({ Component: (await import('../features/progress/pages/ProgressPage')).ProgressPage })} />
+      <Route path={ROUTES.tutor} lazy={async () => ({ Component: (await import('../features/tutor/pages/TutorPage')).TutorPage })} />
       <Route path="/teach/:unitId" lazy={teachingPage} />
       <Route path="/practice/session/:sessionId" lazy={practicePage} />
     </Route>

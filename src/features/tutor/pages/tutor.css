@@ -1,0 +1,26 @@
+.tutor-page { height: 100dvh; overflow: hidden; }
+.tutor-workspace { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: min(100%, 920px); height: calc(100dvh - var(--it-nav-height)); margin: 0 auto; padding: 34px 30px 22px; }
+.tutor-heading { padding-bottom: 24px; border-bottom: 1px solid var(--it-rule); }
+.tutor-heading > p { margin: 0 0 8px; color: var(--it-text-faint); font: 9px/1 var(--it-mono); letter-spacing: .13em; }
+.tutor-heading h1 { margin: 0; font-size: 31px; font-weight: 520; letter-spacing: -.035em; }
+.tutor-heading span { display: block; margin-top: 8px; color: var(--it-text-soft); font-size: 13px; }
+.tutor-conversation { min-height: 0; overflow-y: auto; padding: 8px 0 26px; }
+.tutor-empty { padding: 52px 0; border-bottom: 1px solid var(--it-rule); }
+.tutor-empty strong { font-size: 17px; font-weight: 540; }
+.tutor-empty p { max-width: 60ch; margin: 10px 0 0; color: var(--it-text-soft); font-size: 13px; line-height: 1.75; }
+.tutor-message { max-width: 840px; padding: 23px 0; border-bottom: 1px solid var(--it-rule-soft); }
+.tutor-message > span { color: var(--it-text-faint); font: 9px/1 var(--it-mono); letter-spacing: .09em; }
+.tutor-message > p { margin: 9px 0 0; color: var(--it-text); font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+.tutor-message--user { max-width: 680px; margin-left: auto; padding-left: 40px; text-align: right; }
+.tutor-message--user > p { color: var(--it-text-soft); }
+.tutor-message footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 11px; }
+.tutor-message small { color: var(--it-text-faint); font: 9px/1.3 var(--it-mono); }
+.tutor-busy { margin: 18px 0; color: var(--it-text-faint); font-size: 12px; }
+.tutor-composer { padding-top: 14px; border-top: 1px solid var(--it-rule); }
+.tutor-composer > label { display: block; margin-bottom: 8px; color: var(--it-text-faint); font: 9px/1 var(--it-mono); }
+.tutor-composer > div { display: grid; grid-template-columns: minmax(0, 1fr) 42px; align-items: end; gap: 10px; }
+.tutor-composer textarea { min-height: 62px; max-height: 150px; resize: none; padding: 12px 14px; border: 1px solid var(--it-control-border); border-radius: var(--it-radius-input); outline: none; background: var(--it-surface); color: var(--it-text); font-family: inherit; font-size: 14px; line-height: 1.55; }
+.tutor-composer textarea:focus { border-color: var(--it-accent); }
+.tutor-composer button { display: grid; place-items: center; width: 42px; height: 42px; border-radius: var(--it-radius-button); background: var(--it-accent); color: #081015; }
+.tutor-composer button:disabled { opacity: .35; }
+@media (max-width: 700px) { .tutor-workspace { padding: 24px 18px 16px; }.tutor-heading h1 { font-size: 27px; }.tutor-page { height: 100dvh; }.tutor-message--user { padding-left: 18px; } }

@@ -105,11 +105,12 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     };
   }, [desktopNav, inlineActions, appOpen, actionsOpen]);
 
-  const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '我的学习' : pathname === ROUTES.universe ? '知识空间' : '';
+  const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '我的学习' : pathname === ROUTES.tutor ? 'AI导师' : pathname === ROUTES.universe ? '知识空间' : '';
   const topLevel = [
     { to: ROUTES.universe, label: '知识空间', active: pathname === ROUTES.root || pathname === ROUTES.universe },
     { to: ROUTES.library, label: '知识库', active: pathname === ROUTES.library || pathname.startsWith(`${ROUTES.library}/`) },
     { to: ROUTES.progress, label: '我的学习', active: pathname === ROUTES.progress },
+    { to: ROUTES.tutor, label: 'AI导师', active: pathname === ROUTES.tutor },
   ] as const;
 
   return (

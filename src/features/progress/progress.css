@@ -113,6 +113,11 @@
 .learning-dashboard__cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 33px; padding: 0 13px; border-radius: var(--it-radius-button); background: var(--it-accent); color: #081015; font-size: 11px; font-weight: 650; text-decoration: none; transition: filter 160ms var(--it-ease), transform 140ms var(--it-ease); }
 .learning-dashboard__cta:hover { color: #081015; filter: brightness(1.06); transform: translateY(-1px); }
 .learning-dashboard__cta:active { transform: translateY(1px); }
+.learning-dashboard__insight-trigger { display: block; margin-top: 10px; padding: 0; background: transparent; color: var(--it-accent); font-size: 10px; text-decoration: underline; text-underline-offset: 4px; }
+.learning-dashboard__insight-trigger:disabled { color: var(--it-text-faint); }
+.learning-dashboard__insight { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--it-rule-soft); }
+.learning-dashboard__insight p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--it-text-soft); font-size: 10px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.learning-dashboard__insight small { display: block; margin-top: 5px; color: var(--it-text-faint); font: 8px/1 var(--it-mono); }
 
 .learning-record-backdrop { position: fixed; z-index: 120; inset: var(--it-nav-height) 0 0; background: rgb(4 6 10 / .64); backdrop-filter: blur(3px); }
 .learning-record-drawer {

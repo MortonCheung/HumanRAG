@@ -36,7 +36,7 @@ export async function clickPageAction(page: Page, name: string) {
   await target.click();
 }
 
-export async function openProductArea(page: Page, name: '知识空间' | '知识库' | '我的学习') {
+export async function openProductArea(page: Page, name: '知识空间' | '知识库' | '我的学习' | 'AI导师') {
   const navigation = page.getByRole('navigation', { name: '应用切换', includeHidden: true });
   const target = navigation.getByRole('link', { name, exact: true, includeHidden: true });
   if (!await target.isVisible()) await page.getByRole('button', { name: '切换页面' }).click();

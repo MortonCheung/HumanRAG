@@ -26,15 +26,16 @@ export function RootChromeShell() {
   const visibility = useMemo(() => ({ revealOpeningChrome }), [revealOpeningChrome]);
   const concealed = location.pathname === ROUTES.root && revealedOpeningKey !== location.key;
   const picoOpen = usePicoStore((state) => state.open);
+  const picoVisible = location.pathname !== ROUTES.tutor;
 
   return (
     <AppHistoryProvider>
       <SpatialViewportProvider>
         <ChromeVisibilityContext.Provider value={visibility}>
           <GlobalNav concealed={concealed} />
-          <div className="root-workspace" data-pico-open={picoOpen || undefined}>
+          <div className="root-workspace" data-pico-open={(picoVisible && picoOpen) || undefined}>
             <div className="root-workspace__route"><Outlet /></div>
-            <Suspense fallback={null}><LazyPicoDock /></Suspense>
+            {picoVisible && <Suspense fallback={null}><LazyPicoDock /></Suspense>}
           </div>
         </ChromeVisibilityContext.Provider>
       </SpatialViewportProvider>
