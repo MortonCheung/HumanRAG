@@ -20,6 +20,8 @@ import { buildLearningDashboardSnapshot } from '../learningDashboard';
 import { LearningActivityHeatmap } from '../components/LearningActivityHeatmap';
 import { LearningOverviewScene } from '../components/LearningOverviewScene';
 import { LearningRecordDrawer } from '../components/LearningRecordDrawer';
+import { ProfileEditorDrawer } from '../components/ProfileEditorDrawer';
+import { resolveLearnerProfile } from '../../../domain/learning/resolveLearnerProfile';
 import '../progress.css';
 
 function misconceptionName(id: string) {
@@ -34,6 +36,9 @@ function percent(value: number | null) {
 export function ProgressPage() {
   const reducedMotion = Boolean(useReducedMotion());
   const learnerId = useUserStore((state) => state.activeProfileId);
+  const profileOverride = useUserStore((state) => state.profileOverrides[learnerId]);
+  const updateProfile = useUserStore((state) => state.updateProfile);
+  const resetProfileOverride = useUserStore((state) => state.resetProfileOverride);
   const answerRecords = useProgressStore((state) => state.answerRecords);
   const evidenceRecords = useProgressStore((state) => state.evidenceRecords);
   const misconceptionRecords = useProgressStore((state) => state.misconceptionRecords);
@@ -41,14 +46,18 @@ export function ProgressPage() {
   const storageError = useProgressStore((state) => state.storageError);
   const learningQuestions = useLearningQuestionStore((state) => state.questions);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const fallbackActivityEnd = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const profiles = useMemo(() => LEARNER_PROFILES.map((profile) => (
+    profile.id === learnerId ? resolveLearnerProfile(profile, profileOverride) : profile
+  )), [learnerId, profileOverride]);
   const recommendation = useMemo(
     () => getLearningRecommendation(learnerId),
     [learnerId, learningQuestions, evidenceRecords, tasks],
   );
   const dashboard = useMemo(() => buildLearningDashboardSnapshot({
     learnerId,
-    profiles: LEARNER_PROFILES,
+    profiles,
     answerRecords,
     evidenceRecords,
     misconceptionRecords,
@@ -57,7 +66,7 @@ export function ProgressPage() {
     resolveMisconceptionName: misconceptionName,
     recommendation,
     activityEndDate: fallbackActivityEnd,
-  }), [answerRecords, evidenceRecords, fallbackActivityEnd, learnerId, misconceptionRecords, recommendation]);
+  }), [answerRecords, evidenceRecords, fallbackActivityEnd, learnerId, misconceptionRecords, profiles, recommendation]);
   const recommendationAction = dashboard.recommendation
     ? actionForState(deriveLearningStateFromEvidence(dashboard.recommendation.pointId, learnerId, evidenceRecords))
     : 'study';
@@ -77,6 +86,14 @@ export function ProgressPage() {
         </div>
         <div className="learning-dashboard__profile-actions">
           <span className="demo-badge">演示数据</span>
+          <ProfileEditorDrawer
+            profile={dashboard.profile}
+            open={profileEditorOpen}
+            onOpen={() => setProfileEditorOpen(true)}
+            onClose={() => setProfileEditorOpen(false)}
+            onSave={(patch) => updateProfile(learnerId, patch)}
+            onRestore={() => resetProfileOverride(learnerId)}
+          />
           <LearningRecordDrawer records={dashboard.learningRecords} open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)} />
         </div>
       </motion.header>
