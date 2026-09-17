@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { openProductArea, resetDemoState } from './helpers';
 
 function maxDelta(left: number[], right: number[]) {
@@ -22,23 +22,8 @@ async function waitForCameraRest(canvas: Locator) {
   return readPose(canvas);
 }
 
-async function observeReentry(page: Page) {
-  await page.evaluate(() => {
-    const target = document.querySelector('[data-spatial-stage] canvas')!;
-    const samples: number[][] = [];
-    const capture = () => {
-      const raw = target.getAttribute('data-spatial-camera');
-      if (raw) samples.push(raw.split(',').map(Number));
-    };
-    (window as typeof window & { __universeReentrySamples?: number[][] }).__universeReentrySamples = samples;
-    const observer = new MutationObserver(capture);
-    observer.observe(target, { attributes: true, attributeFilter: ['data-spatial-camera'] });
-    window.setTimeout(() => observer.disconnect(), 3_000);
-  });
-}
-
 for (const source of ['知识库', '知识树'] as const) {
-  test(`${source}返回 Universe 不重播 Opening，并在原 Canvas 内恢复最后视角`, async ({ page }) => {
+  test(`${source}返回 Universe 不重播 Opening，并在原 Canvas 内清除陈旧节点镜头`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.addInitScript(() => {
       const documentWithProbe = document as Document & { __viewTransitionCalls?: number };
@@ -51,14 +36,16 @@ for (const source of ['知识库', '知识树'] as const) {
     });
     await resetDemoState(page);
     await page.goto('/universe');
-    const canvas = page.locator('[data-spatial-stage] canvas');
+    const canvas = page.locator('canvas[aria-label="计算机知识关系图"]');
     await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 30_000 });
     const canvasIdentity = await canvas.evaluateHandle((element) => element);
+    const overviewPose = await waitForCameraRest(canvas);
     await page.keyboard.press('/');
     await page.getByRole('textbox', { name: '搜索输入' }).fill('线性表');
     await page.locator('.command-result').filter({ has: page.getByText('线性表', { exact: true }) }).first().click();
     await expect(page.locator('.node-inspector.is-expanded')).toBeVisible();
-    const originalPose = await waitForCameraRest(canvas);
+    const focusedPose = await waitForCameraRest(canvas);
+    expect(maxDelta(focusedPose, overviewPose)).toBeGreaterThan(0.5);
 
     await openProductArea(page, '知识库');
     await expect(page).toHaveURL(/\/library$/);
@@ -66,19 +53,15 @@ for (const source of ['知识库', '知识树'] as const) {
       await page.getByRole('button', { name: '进入知识树' }).click();
       await expect(page).toHaveURL(/\/tree\/[^/]+\/path$/);
     }
-    await observeReentry(page);
     await openProductArea(page, '知识空间');
     await expect(page).toHaveURL(/\/universe$/);
     await expect(page.getByRole('button', { name: '进入知识空间' })).toHaveCount(0);
-    expect(await canvasIdentity.evaluate((element) => element === document.querySelector('[data-spatial-stage] canvas'))).toBe(true);
 
-    await expect(canvas).toHaveAttribute('data-spatial-reentry-state', 'complete', { timeout: 2_000 });
-    await expect(canvas).toHaveAttribute('data-spatial-reentry-progress', '1.000');
-    const samples = await page.evaluate(() => (
-      (window as typeof window & { __universeReentrySamples?: number[][] }).__universeReentrySamples ?? []
-    ));
-    expect(new Set(samples.map((sample) => sample.map((value) => value.toFixed(1)).join(','))).size).toBeGreaterThan(2);
-    expect(maxDelta(await readPose(canvas), originalPose)).toBeLessThan(0.25);
+    await expect(page.locator('.node-inspector.is-expanded')).toHaveCount(0);
+    const returnedPose = await waitForCameraRest(canvas);
+    await expect.poll(() => canvasIdentity.evaluate((element) => element === document.querySelector('canvas[aria-label="计算机知识关系图"]'))).toBe(true);
+    expect(maxDelta(returnedPose, overviewPose)).toBeLessThan(0.25);
+    expect(maxDelta(returnedPose, focusedPose)).toBeGreaterThan(0.5);
     expect(await page.evaluate(() => (document as Document & { __viewTransitionCalls?: number }).__viewTransitionCalls ?? 0)).toBe(0);
   });
 }

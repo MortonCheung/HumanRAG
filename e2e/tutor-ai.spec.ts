@@ -12,7 +12,13 @@ async function sendTutor(page: Page, message: string, expectedAssistantCount: nu
 
 test('AI 导师按 Router 只发送需要的 Context，进入页面不调用 API', async ({ page }) => {
   const bodies: ChatRequest[] = [];
+  let statusRequests = 0;
   await page.route('**/api/chat', async (route) => {
+    if (route.request().method() === 'GET') {
+      statusRequests += 1;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ configured: false, mode: 'mock' }) });
+      return;
+    }
     bodies.push(route.request().postDataJSON() as ChatRequest);
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: '这是测试回答。', source: 'live' }) });
   });
@@ -20,6 +26,7 @@ test('AI 导师按 Router 只发送需要的 Context，进入页面不调用 API
   await page.goto('/tutor');
   await expect(page.getByRole('heading', { name: 'AI导师' })).toBeVisible();
   await expect(page.getByRole('button', { name: '打开 Pico' })).toHaveCount(0);
+  await expect.poll(() => statusRequests).toBe(1);
   expect(bodies).toHaveLength(0);
 
   await sendTutor(page, 'Transformer 是什么', 1);

@@ -119,10 +119,10 @@
 .learning-dashboard__insight p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--it-text-soft); font-size: 10px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
 .learning-dashboard__insight small { display: block; margin-top: 5px; color: var(--it-text-faint); font: 8px/1 var(--it-mono); }
 
-.learning-record-backdrop { position: fixed; z-index: 120; inset: var(--it-nav-height) 0 0; background: rgb(4 6 10 / .64); backdrop-filter: blur(3px); }
+.learning-record-backdrop { position: fixed; z-index: 140; inset: var(--it-nav-height) 0 0; background: rgb(4 6 10 / .64); backdrop-filter: blur(3px); }
 .learning-record-drawer {
   position: fixed;
-  z-index: 121;
+  z-index: 141;
   top: var(--it-nav-height);
   right: 0;
   bottom: 0;
