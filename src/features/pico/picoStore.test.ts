@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendChat } from '../../ai/chat/chatClient';
+import { speakText } from '../../ai/speech/speechClient';
 import { usePicoStore } from './picoStore';
 import type { PicoPageContext } from './picoTypes';
 
 vi.mock('../../ai/chat/chatClient', () => ({ sendChat: vi.fn() }));
+vi.mock('../../ai/speech/speechClient', () => ({ speakText: vi.fn() }));
 
 const tcp: PicoPageContext = { key: 'study:tcp', route: '/tcp', pageType: 'study', title: 'TCP 慢启动' };
 const tree: PicoPageContext = { key: 'study:tree', route: '/tree', pageType: 'study', title: '二叉树' };
@@ -51,6 +53,18 @@ describe('picoStore', () => {
       mode: 'pico', message: '怎么理解？', history: [{ role: 'assistant', content: '新上下文开场' }], pageContext: tree,
     }));
     expect(usePicoStore.getState().messages.at(-1)).toMatchObject({ role: 'assistant', content: '先看窗口增长规则。', source: 'mock' });
+    expect(speakText).not.toHaveBeenCalled();
+  });
+
+  it('真实回答写入聊天后交给共享语音客户端', async () => {
+    vi.mocked(sendChat).mockResolvedValue({ text: '先看窗口增长规则。', source: 'live' });
+    vi.mocked(speakText).mockResolvedValue();
+    usePicoStore.getState().setPageContext(tcp);
+
+    await usePicoStore.getState().send('怎么理解？');
+
+    expect(usePicoStore.getState().messages.at(-1)).toMatchObject({ role: 'assistant', content: '先看窗口增长规则。', source: 'live' });
+    expect(speakText).toHaveBeenCalledWith('先看窗口增长规则。');
   });
 
   it('请求期间切换上下文会丢弃旧响应', async () => {

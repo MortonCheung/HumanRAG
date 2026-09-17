@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatMessage } from '../../ai/chat/contracts';
 import { sendChat } from '../../ai/chat/chatClient';
+import { speakText } from '../../ai/speech/speechClient';
 import type { PicoConversationItem, PicoState } from './picoTypes';
 import { defaultPromptForExplicitContext, explicitContextExcerpt } from './askPrompts';
 
@@ -125,6 +126,7 @@ export const usePicoStore = create<PicoState>((set, get) => ({
       motionNonce: current.motionNonce + 1,
       cooldownUntil,
     }));
+    if (result.source === 'live') void speakText(result.text).catch(() => undefined);
     const reactionNonce = get().motionNonce;
     window.setTimeout(() => {
       const current = get();

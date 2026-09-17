@@ -3,6 +3,7 @@ import { ArrowUp } from '@phosphor-icons/react';
 import { getAIServiceStatus, type AIServiceStatus } from '../../../ai/chat/serviceStatus';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatMessage, type ChatSource } from '../../../ai/chat/contracts';
 import { sendChat } from '../../../ai/chat/chatClient';
+import { speakText } from '../../../ai/speech/speechClient';
 import { routeTutorContext } from '../../../ai/context/contextRouter';
 import { selectContextBlocks } from '../../../ai/context/learnerContext';
 import { useLearnerContextBundle } from '../../../ai/context/useLearnerContextBundle';
@@ -40,6 +41,7 @@ export function TutorPage() {
     setMessages((current) => [...current, { id: sequence.current++, role: 'user', content: message }]);
     const result = await sendChat({ mode: 'tutor', message, history, baseContext: bundle.base, contextBlocks, routing });
     setMessages((current) => [...current, { id: sequence.current++, role: 'assistant', content: result.text, source: result.source, references: routing.blocks }]);
+    if (result.source === 'live') void speakText(result.text).catch(() => undefined);
     setBusy(false);
     const until = Date.now() + AI_SUBMISSION_COOLDOWN_MS;
     setCooldownUntil(until);
