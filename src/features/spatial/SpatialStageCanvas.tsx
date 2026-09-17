@@ -20,6 +20,7 @@ import { buildGraphRevealPlan } from '../../scene/reveal/graphReveal';
 import { buildGoalTreeExtractionLayout, GoalTreeExtraction } from './transitions/GoalTreeExtraction';
 import { useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
 import { SPATIAL_CAMERA_FOV } from '../../scene/cameraFraming';
+import { PicoWorldActor } from '../pico/PicoWorldActor';
 
 function ContextHealth({ onError }: { onError: () => void }) {
   const { gl } = useThree();
@@ -204,6 +205,7 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
       extraction={extracting ? { phase: extractionPhase, phaseStartedAt: extractionStartedAt } : undefined} />}
     <NodePointField model={visibleModel} motionAllowed={motionAllowed} experiencePhase={experiencePhase} extraction={extractionState} />
     <NodeHitField model={visibleModel} onHover={onHover} onSelect={onSelect} enabled={experiencePhase === 'universe' && !activePanel && !extractionActive} />
+    {experiencePhase === 'universe' && !extractionActive && <PicoWorldActor model={visibleModel} motionAllowed={motionAllowed} />}
     {!extractionActive && anchors.map((node) => <group key={node.id} position={node.displayPosition}>
       <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
     </group>)}

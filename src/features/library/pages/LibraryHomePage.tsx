@@ -11,12 +11,14 @@ import { useSpatialOccluder } from '../../spatial/SpatialViewport';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { MOTION } from '../../../motion/tokens';
 import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { usePicoStore } from '../../pico/picoStore';
 
 export function LibraryHomePage() {
   const reducedMotion = Boolean(useReducedMotion());
   const navigate = useNavigate();
   const location = useLocation();
   const selectStageTree = useSpatialStageStore((state) => state.selectTree);
+  const reactPico = usePicoStore((state) => state.react);
   const viewport = useSpatialOccluder('inspector');
   const stageViewport = useSpatialOccluder('stage');
   const domain = useMemo(() => migrateV9(), []);
@@ -72,7 +74,10 @@ export function LibraryHomePage() {
                   role="option"
                   aria-selected={tree.id === selectedTreeId}
                   className={tree.id === selectedTreeId ? 'is-selected' : ''}
-                  onClick={() => setSelectedTreeId(tree.id)}
+                  onClick={() => {
+                    if (tree.id !== selectedTreeId) reactPico('turn');
+                    setSelectedTreeId(tree.id);
+                  }}
                 >
                   {tree.id === selectedTreeId && <motion.i
                     className="library-manager__selection"

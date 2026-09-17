@@ -6,10 +6,30 @@ import type { PicoConversationItem, PicoState } from './picoTypes';
 let sequence = 0;
 const nextId = (prefix: string) => `${prefix}-${Date.now()}-${sequence++}`;
 
+function reaction(motion: PicoState['motion'], face?: PicoState['face']) {
+  return (state: PicoState) => ({
+    ...(face ? { face } : {}),
+    motion,
+    motionNonce: state.motionNonce + 1,
+  });
+}
+
+function settleReaction(nonce: number, delay = 900) {
+  window.setTimeout(() => {
+    const current = usePicoStore.getState();
+    if (current.motionNonce !== nonce) return;
+    usePicoStore.setState({ motion: 'idle', face: current.busy ? 'thinking' : 'idle' });
+  }, delay);
+}
+
 export const usePicoStore = create<PicoState>((set, get) => ({
   open: false,
   face: 'idle',
   presence: 'docked',
+  motion: 'idle',
+  motionNonce: 0,
+  travelTargetId: null,
+  travelNonce: 0,
   pageContext: null,
   explicitContext: null,
   contextVersion: 0,
@@ -19,6 +39,34 @@ export const usePicoStore = create<PicoState>((set, get) => ({
   cooldownUntil: 0,
   openDock: () => set((state) => ({ open: true, focusNonce: state.focusNonce + 1 })),
   closeDock: () => set({ open: false }),
+  react: (motion) => {
+    set(reaction(motion));
+    settleReaction(get().motionNonce);
+  },
+  reactToResult: (correct) => {
+    set(reaction(correct ? 'hop' : 'wobble', correct ? 'success' : 'error'));
+    settleReaction(get().motionNonce, correct ? 1_050 : 820);
+  },
+  reactToInsight: () => {
+    set(reaction('turn', 'success'));
+    settleReaction(get().motionNonce, 1_050);
+  },
+  startTravel: (travelTargetId) => set((state) => ({
+    open: false,
+    presence: 'traveling',
+    travelTargetId,
+    travelNonce: state.travelNonce + 1,
+  })),
+  finishTravel: (nonce) => set((state) => state.travelNonce === nonce && state.presence === 'traveling'
+    ? { presence: 'perched' }
+    : {}),
+  returnToDock: () => set((state) => state.presence === 'docked' || state.presence === 'returning'
+    ? {}
+    : { presence: 'returning', travelNonce: state.travelNonce + 1 }),
+  finishReturn: (nonce) => set((state) => state.travelNonce === nonce && state.presence === 'returning'
+    ? { presence: 'docked', travelTargetId: null }
+    : {}),
+  dockImmediately: () => set({ presence: 'docked', travelTargetId: null }),
   setPageContext: (pageContext) => set((state) => {
     if (state.pageContext?.key === pageContext.key) return { pageContext };
     const contextVersion = state.contextVersion + 1;
@@ -27,7 +75,10 @@ export const usePicoStore = create<PicoState>((set, get) => ({
       : [];
     return { pageContext, explicitContext: null, contextVersion, messages: [...state.messages, ...separator] };
   }),
-  ask: (explicitContext) => set((state) => ({ explicitContext, open: true, focusNonce: state.focusNonce + 1 })),
+  ask: (explicitContext) => {
+    set((state) => ({ explicitContext, open: true, focusNonce: state.focusNonce + 1, motion: 'attention', motionNonce: state.motionNonce + 1 }));
+    settleReaction(get().motionNonce, 700);
+  },
   send: async (raw) => {
     const message = raw.trim();
     const state = get();
@@ -38,7 +89,7 @@ export const usePicoStore = create<PicoState>((set, get) => ({
       .filter((item): item is Extract<PicoConversationItem, { role: 'user' | 'assistant' }> => item.contextVersion === contextVersion && item.role !== 'context')
       .slice(-8)
       .map(({ role, content }) => ({ role, content }));
-    set({ messages: [...state.messages, userItem], busy: true, face: 'thinking' });
+    set((current) => ({ messages: [...current.messages, userItem], busy: true, face: 'thinking', motion: 'attention', motionNonce: current.motionNonce + 1 }));
     const result = await sendChat({ mode: 'pico', message, history, pageContext: state.pageContext, explicitContext: state.explicitContext ?? undefined });
     if (get().contextVersion !== contextVersion) {
       set({ busy: false, face: 'idle' });
@@ -49,11 +100,14 @@ export const usePicoStore = create<PicoState>((set, get) => ({
       messages: [...current.messages, { id: nextId('assistant'), role: 'assistant', content: result.text, source: result.source, contextVersion }],
       busy: false,
       face: 'success',
+      motion: 'hop',
+      motionNonce: current.motionNonce + 1,
       cooldownUntil,
     }));
+    const reactionNonce = get().motionNonce;
     window.setTimeout(() => {
       const current = get();
-      if (current.contextVersion === contextVersion && current.face === 'success') set({ face: 'idle' });
+      if (current.contextVersion === contextVersion && current.motionNonce === reactionNonce) set({ face: 'idle', motion: 'idle' });
       if (current.cooldownUntil === cooldownUntil) set({ cooldownUntil: 0 });
     }, AI_SUBMISSION_COOLDOWN_MS);
   },

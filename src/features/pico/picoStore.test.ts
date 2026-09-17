@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendChat } from '../../ai/chat/chatClient';
 import { usePicoStore } from './picoStore';
 import type { PicoPageContext } from './picoTypes';
@@ -14,9 +14,11 @@ describe('picoStore', () => {
     vi.clearAllMocks();
     usePicoStore.setState({
       open: false, face: 'idle', presence: 'docked', pageContext: null, explicitContext: null,
+      motion: 'idle', motionNonce: 0, travelTargetId: null, travelNonce: 0,
       contextVersion: 0, messages: [], busy: false, focusNonce: 0, cooldownUntil: 0,
     });
   });
+  afterEach(() => vi.useRealTimers());
 
   it('StrictMode 重复注册同一 key 不增加版本；切换页面保留聊天并插入分隔', () => {
     usePicoStore.getState().setPageContext(tcp);
@@ -61,5 +63,29 @@ describe('picoStore', () => {
     await pending;
     expect(usePicoStore.getState().messages.some((item) => item.role === 'assistant' && item.content === '旧响应')).toBe(false);
     expect(usePicoStore.getState()).toMatchObject({ busy: false, face: 'idle', contextVersion: 2 });
+  });
+
+  it('连续节点选择只允许最新一次飞行落位，返回后恢复 Dock renderer', () => {
+    usePicoStore.getState().startTravel('node-a');
+    const first = usePicoStore.getState().travelNonce;
+    usePicoStore.getState().startTravel('node-b');
+    const second = usePicoStore.getState().travelNonce;
+    usePicoStore.getState().finishTravel(first);
+    expect(usePicoStore.getState()).toMatchObject({ presence: 'traveling', travelTargetId: 'node-b' });
+    usePicoStore.getState().finishTravel(second);
+    expect(usePicoStore.getState().presence).toBe('perched');
+    usePicoStore.getState().returnToDock();
+    const returning = usePicoStore.getState().travelNonce;
+    expect(usePicoStore.getState().presence).toBe('returning');
+    usePicoStore.getState().finishReturn(returning);
+    expect(usePicoStore.getState()).toMatchObject({ presence: 'docked', travelTargetId: null });
+  });
+
+  it('作答反馈使用短动作并自动回到安静状态', () => {
+    vi.useFakeTimers();
+    usePicoStore.getState().reactToResult(false);
+    expect(usePicoStore.getState()).toMatchObject({ face: 'error', motion: 'wobble' });
+    vi.advanceTimersByTime(820);
+    expect(usePicoStore.getState()).toMatchObject({ face: 'idle', motion: 'idle' });
   });
 });

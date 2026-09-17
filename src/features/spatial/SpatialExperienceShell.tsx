@@ -17,6 +17,8 @@ import { deriveLearningStateFromEvidence } from '../../domain/learning/deriveLea
 import { knowledgeGraph } from '../../data/knowledgeGraph';
 import { useChromeVisibility } from '../../app/RootChromeShell';
 import { capturePublishedUniverseView, type UniverseCameraSnapshot } from '../../scene/CameraController';
+import { usePicoStore } from '../pico/picoStore';
+import { PICO_CAMERA_DELAY_MS } from '../pico/picoTravel';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -78,6 +80,10 @@ function SpatialExperience() {
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
+  const startPicoTravel = usePicoStore((state) => state.startTravel);
+  const returnPicoToDock = usePicoStore((state) => state.returnToDock);
+  const dockPicoImmediately = usePicoStore((state) => state.dockImmediately);
+  const selectTimer = useRef<number | undefined>(undefined);
   const setStageMode = useSpatialStageStore((state) => state.setMode);
   const selectTree = useSpatialStageStore((state) => state.selectTree);
   const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
@@ -119,6 +125,17 @@ function SpatialExperience() {
   }, [finishEntry, phase, ready, reducedMotion]);
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => window.clearTimeout(selectTimer.current), []);
+  useEffect(() => {
+    if ((openingRoute || directUniverse) && selectedNodeId === null) returnPicoToDock();
+  }, [directUniverse, openingRoute, returnPicoToDock, selectedNodeId]);
+  useEffect(() => {
+    if (!openingRoute && !directUniverse) {
+      window.clearTimeout(selectTimer.current);
+      selectTimer.current = undefined;
+      dockPicoImmediately();
+    }
+  }, [directUniverse, dockPicoImmediately, openingRoute]);
   useEffect(() => {
     if (phase !== 'universe' || !entryFocusPending.current) return;
     entryFocusPending.current = false;
@@ -175,12 +192,25 @@ function SpatialExperience() {
   const extractionStatus = extractionPhase === 'idle' || extractionPhase === 'handoff'
     ? null
     : '正在整理…';
+  const handleNodeSelect = useCallback((id: string) => {
+    window.clearTimeout(selectTimer.current);
+    if (reducedMotion) {
+      dockPicoImmediately();
+      selectNode(id);
+      return;
+    }
+    startPicoTravel(id);
+    selectTimer.current = window.setTimeout(() => {
+      selectTimer.current = undefined;
+      selectNode(id);
+    }, PICO_CAMERA_DELAY_MS);
+  }, [dockPicoImmediately, reducedMotion, selectNode, startPicoTravel]);
 
   return (
     <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry, returningToUniverse, reentryKey }}>
       <div className={`spatial-experience spatial-experience--${phase}${treeWorkspaceReadOnly ? ' spatial-experience--readonly' : ''}`} aria-busy={!ready && !failed} data-returning-to-universe={returningToUniverse || undefined} data-reentry-key={reentryKey} style={{ viewTransitionName: 'route-page' }}>
         <SceneBoundary key={attempt} onError={handleError}>
-          <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
+          <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={handleNodeSelect}
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
             onEntryComplete={finishEntry} treeReadOnly={treeWorkspaceReadOnly} returningToUniverse={returningToUniverse} reentryKey={reentryKey} universeRouteActive={openingRoute || directUniverse} reentrySnapshot={returningToUniverse ? lastUniverseSnapshot.current : null} />
         </SceneBoundary>

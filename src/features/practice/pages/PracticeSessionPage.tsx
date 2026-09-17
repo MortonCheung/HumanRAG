@@ -22,6 +22,7 @@ import { MOTION } from '../../../motion/tokens';
 import '../practice.css';
 import { usePicoPageContext } from '../../pico/PicoContextBridge';
 import { activeQuestionContext } from '../../pico/questionContext';
+import { usePicoStore } from '../../pico/picoStore';
 
 const MODE_COPY: Record<PracticeMode, { label: string; progress: string; complete: string; empty: string }> = {
   train: { label: '训练', progress: '训练进度', complete: '完成训练', empty: '这个范围还没有可用题目。' },
@@ -67,6 +68,8 @@ export function PracticeSessionPage() {
   const taskExposures = useProgressStore((state) => state.taskExposures);
   const [error, setError] = useState('');
   const [questionDirection, setQuestionDirection] = useState<1 | -1>(1);
+  const reactPico = usePicoStore((state) => state.react);
+  const reactPicoToResult = usePicoStore((state) => state.reactToResult);
   const sessionId = legacyId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
   const scopeNode = pointId ?? (legacyId?.startsWith('node:') ? legacyId.slice(5) : undefined);
   const branch = scopeNode ? contentRepository.getNode(scopeNode)?.branchId : undefined;
@@ -123,6 +126,14 @@ export function PracticeSessionPage() {
     if (!result.ok) setError(result.missing ? `还有 ${result.missing} 道题未作答。` : '进度未保存，请重试。');
   };
   const previous = () => { setQuestionDirection(-1); store.prev(); };
+  const submit = () => {
+    if (!selected.trim()) { setError('先完成作答。'); return; }
+    if (!id || !store.submitAnswer(id, selected)) return;
+    setError('');
+    const submittedAnswer = usePracticeStore.getState().answers[id];
+    if (mode === 'train' && submittedAnswer) reactPicoToResult(submittedAnswer.correct);
+    else reactPico('attention');
+  };
   const goToQuestion = (index: number) => {
     setQuestionDirection(index >= store.currentIndex ? 1 : -1);
     store.goTo(index);
@@ -147,7 +158,7 @@ export function PracticeSessionPage() {
             {answer && mode !== 'train' && <p className="practice-answer-recorded" role="status"><strong>已记录</strong><span>本轮结束后统一查看答案与结果。</span></p>}
           </motion.div> : <motion.p key="practice-restoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>正在恢复练习。</motion.p>}
         </AnimatePresence>
-      </div><footer className="practice-stage__footer"><div className="practice-stage__secondary"><button type="button" className="text-button text-button--ghost" onClick={() => id && store.toggleFlag(id)} disabled={!id}><Flag size={16} weight={flagged ? 'fill' : 'regular'} />{flagged ? '已标记' : '标记'}</button><button type="button" className="text-button text-button--ghost" onClick={previous} disabled={store.currentIndex === 0}><CaretLeft size={16} />上一题</button>{!answer && <button type="button" className="text-button text-button--ghost" disabled={!question} onClick={() => { setError(''); next(); }}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button>}</div>{answer ? <button className="text-button text-button--primary" type="button" onClick={next}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button> : <button className="text-button text-button--primary" type="button" disabled={!question} onClick={() => { if (!selected.trim()) setError('先完成作答。'); else if (id && store.submitAnswer(id, selected)) setError(''); }}>提交答案 <ArrowRight size={16} /></button>}</footer></main>
+      </div><footer className="practice-stage__footer"><div className="practice-stage__secondary"><button type="button" className="text-button text-button--ghost" onClick={() => id && store.toggleFlag(id)} disabled={!id}><Flag size={16} weight={flagged ? 'fill' : 'regular'} />{flagged ? '已标记' : '标记'}</button><button type="button" className="text-button text-button--ghost" onClick={previous} disabled={store.currentIndex === 0}><CaretLeft size={16} />上一题</button>{!answer && <button type="button" className="text-button text-button--ghost" disabled={!question} onClick={() => { setError(''); next(); }}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button>}</div>{answer ? <button className="text-button text-button--primary" type="button" onClick={next}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button> : <button className="text-button text-button--primary" type="button" disabled={!question} onClick={submit}>提交答案 <ArrowRight size={16} /></button>}</footer></main>
     </div>}
   </div>;
 }

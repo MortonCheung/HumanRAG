@@ -4,6 +4,7 @@ export type { PicoExplicitContext, PicoPageContext, PicoPageType } from '../../a
 
 export type PicoFace = 'idle' | 'thinking' | 'success' | 'error';
 export type PicoPresence = 'docked' | 'traveling' | 'perched' | 'returning';
+export type PicoMotion = 'idle' | 'attention' | 'hop' | 'wobble' | 'turn';
 
 export type PicoConversationItem =
   | { id: string; role: 'user'; content: string; contextVersion: number }
@@ -14,6 +15,10 @@ export interface PicoState {
   open: boolean;
   face: PicoFace;
   presence: PicoPresence;
+  motion: PicoMotion;
+  motionNonce: number;
+  travelTargetId: string | null;
+  travelNonce: number;
   pageContext: PicoPageContext | null;
   explicitContext: PicoExplicitContext | null;
   contextVersion: number;
@@ -23,6 +28,14 @@ export interface PicoState {
   cooldownUntil: number;
   openDock: () => void;
   closeDock: () => void;
+  react: (motion: Exclude<PicoMotion, 'idle'>) => void;
+  reactToResult: (correct: boolean) => void;
+  reactToInsight: () => void;
+  startTravel: (nodeId: string) => void;
+  finishTravel: (nonce: number) => void;
+  returnToDock: () => void;
+  finishReturn: (nonce: number) => void;
+  dockImmediately: () => void;
   setPageContext: (context: PicoPageContext) => void;
   ask: (context: PicoExplicitContext) => void;
   send: (text: string) => Promise<void>;

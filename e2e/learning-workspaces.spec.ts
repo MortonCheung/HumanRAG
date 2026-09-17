@@ -31,6 +31,7 @@ test.describe('学习、带我学与测验分工', () => {
     await page.goto(pointPath('verify'));
     await page.locator('.practice-question__options .question-option').first().click();
     await page.getByRole('button', { name: '提交答案' }).click();
+    await expect(page.locator('.pico-actor-host')).toHaveAttribute('data-pico-face', 'idle');
 
     await expect(page.getByText('已记录', { exact: true })).toBeVisible();
     await expect(page.locator('.practice-answer-feedback')).toHaveCount(0);

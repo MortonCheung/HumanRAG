@@ -19,6 +19,8 @@ test.describe('教学复教、重测与终止', () => {
     await page.getByRole('button', { name: /下一步/ }).click();
     await expect(page.getByRole('heading', { name: diagnostic.title })).toBeVisible();
     await submitTeachingStep(page, diagnostic.questionIds ?? [], 'wrong');
+    await expect(page.locator('.pico-actor-host')).toHaveAttribute('data-pico-face', 'error');
+    await expect(page.locator('.pico-actor-host')).toHaveAttribute('data-pico-motion', 'wobble');
     await page.getByRole('button', { name: /下一步/ }).click();
 
     await expect(page.getByRole('heading', { name: explanation.title })).toBeVisible();

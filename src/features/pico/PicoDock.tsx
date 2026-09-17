@@ -11,6 +11,9 @@ export function PicoDock() {
   const reducedMotion = Boolean(useReducedMotion());
   const open = usePicoStore((state) => state.open);
   const face = usePicoStore((state) => state.face);
+  const presence = usePicoStore((state) => state.presence);
+  const picoMotion = usePicoStore((state) => state.motion);
+  const motionNonce = usePicoStore((state) => state.motionNonce);
   const pageContext = usePicoStore((state) => state.pageContext);
   const explicitContext = usePicoStore((state) => state.explicitContext);
   const messages = usePicoStore((state) => state.messages);
@@ -20,6 +23,7 @@ export function PicoDock() {
   const openDock = usePicoStore((state) => state.openDock);
   const closeDock = usePicoStore((state) => state.closeDock);
   const send = usePicoStore((state) => state.send);
+  const react = usePicoStore((state) => state.react);
   const [draft, setDraft] = useState('');
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -42,11 +46,17 @@ export function PicoDock() {
       type="button"
       className={`pico-actor-host${open ? ' is-open' : ''}`}
       aria-label={open ? 'Pico' : '打开 Pico'}
-      tabIndex={open ? -1 : 0}
+      aria-hidden={presence === 'docked' ? undefined : true}
+      tabIndex={presence === 'docked' && !open ? 0 : -1}
       onClick={open ? undefined : openDock}
-      animate={{ scale: open ? 0.82 : 1, opacity: 1 }}
+      onMouseEnter={() => react('attention')}
+      animate={{ scale: presence === 'docked' ? open ? 0.82 : 1 : 0.7, opacity: presence === 'docked' ? 1 : 0 }}
       transition={transition}
-    ><PicoActor face={face} /></motion.button>
+      data-pico-presence={presence}
+      data-pico-face={face}
+      data-pico-motion={picoMotion}
+      style={{ pointerEvents: presence === 'docked' ? undefined : 'none' }}
+    ><PicoActor face={face} motion={picoMotion} motionNonce={motionNonce} motionAllowed={!reducedMotion && presence === 'docked'} /></motion.button>
     <AnimatePresence initial={false}>
       {open && <motion.aside
         ref={occluder.ref}

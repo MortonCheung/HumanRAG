@@ -14,6 +14,7 @@ import { TcpTaskInputs } from './TcpTaskInputs';
 import { usePicoPageContext } from '../../pico/PicoContextBridge';
 import { AskPicoButton } from '../../pico/AskPicoButton';
 import { activeQuestionContext, questionExplicitContext } from '../../pico/questionContext';
+import { usePicoStore } from '../../pico/picoStore';
 
 const STAGES = { ready: '开始之前', diagnostic: '先试一次', clarification: '再看关键一步', teaching: '看清变化', guided: '试着应用', independent: '独立验证', complete: '本轮完成', paused: '本轮结束' };
 const PHASES = ['诊断', '理解', '示范', '尝试', '独立验证'];
@@ -24,6 +25,8 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
   const location = useLocation();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const store = useTeachingStore();
+  const reactPico = usePicoStore((state) => state.react);
+  const reactPicoToResult = usePicoStore((state) => state.reactToResult);
   const records = useProgressStore((state) => state.evidenceRecords);
   const practiceReturn = (location.state as { practiceReturn?: PracticeReturnContext } | null)?.practiceReturn;
   const session = store.tcp?.learnerId === learnerId ? store.tcp : null;
@@ -54,6 +57,12 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
 
   const returnContext = session?.practiceReturn?.learnerId === learnerId ? session.practiceReturn : undefined;
   const exit = useAppBack(parent);
+  const advance = () => { store.advanceTcp(); reactPico('hop'); };
+  const submit = () => {
+    store.submitTcp();
+    const feedback = useTeachingStore.getState().tcp?.feedback;
+    if (feedback) reactPicoToResult(feedback.correct);
+  };
   return (
     <div className="page tcp-page">
       <WorkspaceHeader title="TCP 慢启动 · 带我学" backLabel="返回" onBack={exit} primaryAction={returnContext ? <Link className="context-nav__button context-nav__button--primary" to={returnContext.path}>继续原练习</Link> : undefined} />
@@ -61,17 +70,17 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
         <header className="tcp-lesson__heading"><div><p className="tcp-eyebrow">计算机网络 <span aria-hidden="true">/</span> 约 8 分钟</p><h1 ref={lessonHeading} tabIndex={-1}>{session?.stage === 'teaching' ? TCP_FRAGMENTS[session.difficulty].title : session?.stage === 'independent' ? '换个条件，独立判断。' : session?.stage === 'complete' ? '本轮验证完成。' : session?.stage === 'paused' ? '先停在这里。' : '窗口，怎样一步步变大？'}</h1></div><span className="tcp-lesson__edition" aria-hidden="true">TCP<br />01</span></header>
         {session && <><ol className="tcp-phases" aria-label="本轮教学阶段">{PHASES.map((label, index) => <li key={label} className={index < PHASE_INDEX[session.stage] ? 'is-done' : ''} aria-current={index === PHASE_INDEX[session.stage] ? 'step' : undefined}><span aria-hidden="true">0{index + 1}</span>{label}</li>)}</ol><div className="tcp-decision" role="note"><span>为什么现在做这一步</span><p>{session.stage === 'ready' ? '先用一个具体窗口过程定位你的当前理解，再决定是否需要讲解。' : session.stage === 'independent' ? '讲解和提示已经收起；现在用两项新任务确认能否独立运用。' : session.stage === 'complete' ? '本轮两项新任务均独立完成，现在只汇总可核验的结果。' : session.stage === 'paused' ? session.pauseReason : session.decision}</p></div></>}
         {store.storageError && <div role="alert" className="lesson-save-error">{store.storageError}<button type="button" className="text-button" onClick={() => session ? store.saveTcp(session) : store.ensureTcpSession(practiceReturn)}>重试保存</button></div>}
-        {!session ? <p>正在恢复本次学习。</p> : session.stage === 'ready' ? <section className="tcp-intro"><div className="tcp-intro__copy"><p>给定初始窗口与门限，<br />判断每轮之后的变化。</p><button className="text-button text-button--primary" type="button" onClick={store.advanceTcp}>开始尝试 <ArrowRight size={18} /></button><p className="tcp-fine">逐 RTT 的简化模型，不是完整 TCP 仿真。</p><TcpSource /></div><div className="tcp-intro__notation" aria-hidden="true"><div><small>拥塞窗口</small><span>cwnd</span></div><div className="tcp-intro__packets">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div><div className="tcp-intro__threshold"><small>慢启动门限</small><span>ssthresh</span></div></div></section> : session.stage === 'teaching' ? <>
+        {!session ? <p>正在恢复本次学习。</p> : session.stage === 'ready' ? <section className="tcp-intro"><div className="tcp-intro__copy"><p>给定初始窗口与门限，<br />判断每轮之后的变化。</p><button className="text-button text-button--primary" type="button" onClick={advance}>开始尝试 <ArrowRight size={18} /></button><p className="tcp-fine">逐 RTT 的简化模型，不是完整 TCP 仿真。</p><TcpSource /></div><div className="tcp-intro__notation" aria-hidden="true"><div><small>拥塞窗口</small><span>cwnd</span></div><div className="tcp-intro__packets">{Array.from({ length: 12 }, (_, index) => <i key={index} />)}</div><div className="tcp-intro__threshold"><small>慢启动门限</small><span>ssthresh</span></div></div></section> : session.stage === 'teaching' ? <>
           <p className="tcp-lesson__lead">{TCP_FRAGMENTS[session.difficulty].text}</p>
           <TcpDemonstration key={`${session.id}-${session.attempt}-${session.difficulty}`} difficulty={session.difficulty} learnerId={learnerId} />
-          <div className="tcp-stage-end"><button type="button" className="text-button text-button--primary" onClick={store.advanceTcp}>自己试一次 <ArrowRight size={18} /></button></div>
+          <div className="tcp-stage-end"><button type="button" className="text-button text-button--primary" onClick={advance}>自己试一次 <ArrowRight size={18} /></button></div>
         </> : task && question ? <section key={eventId} className="tcp-task" aria-labelledby="tcp-task-title">
           <div className="tcp-task__main"><p className="tcp-eyebrow">{session.stage === 'independent' ? `第 ${session.attempt} 轮 · ${session.taskIndex + 1} / 2 · ${hintShown ? '已使用帮助' : '未使用帮助'}` : STAGES[session.stage]}</p><h2 id="tcp-task-title">{question.stem}</h2>
             {task.role === 'observe' && <ol className="tcp-observations" aria-label="观测窗口">{tcpWindows(task.initial, task.threshold, Math.max(...task.rounds)).map((value, round) => <li key={round}><span>第 {round} 轮</span><strong>{value}</strong><small>MSS</small></li>)}</ol>}
             <TcpTaskInputs task={task} value={session.drafts[eventId] ?? ''} disabled={Boolean(session.feedback)} onChange={store.setTcpDraft} />
             {hintShown && <div className="tcp-help" role="status">{TCP_RULES}{session.stage === 'independent' && <p>本题按辅助作答记录，之后用新任务验证。</p>}</div>}
             {session.feedback ? <div className="tcp-feedback" role="status"><strong>{session.feedback.correct ? hintShown ? '辅助下完成' : '本题正确' : '还需要调整'}</strong><p>{session.feedback.text}</p>{!session.feedback.correct && <p>{session.feedback.difficulty === 'unknown' ? '这个答案尚不足以确定原因。' : TCP_FRAGMENTS[session.feedback.difficulty].title}</p>}</div> : null}
-            <div className="tcp-task__actions">{session.feedback ? <button className="text-button text-button--primary" onClick={store.advanceTcp} type="button">{session.stage === 'independent' && session.feedback.correct && session.feedback.independent ? session.taskIndex === 0 ? '下一项任务' : '查看本轮结果' : session.feedback.correct ? '继续' : '看关键一步'} <ArrowRight size={18} /></button> : <><button className="text-button text-button--primary" type="button" onClick={store.submitTcp}>提交判断 <ArrowRight size={18} /></button><button className="text-button text-button--ghost" type="button" disabled={hintShown} onClick={store.requestTcpHint}>{hintShown ? '已使用提示' : '需要提示'}</button></>}<AskPicoButton label={session.feedback ? '问问 Pico · 这道题' : '问问 Pico'} context={questionExplicitContext(question, '当前 TCP 任务', session.feedback ? { selected: session.drafts[eventId] ?? '', misconceptionText: session.feedback.correct ? undefined : session.feedback.text } : undefined)} /></div>
+            <div className="tcp-task__actions">{session.feedback ? <button className="text-button text-button--primary" onClick={advance} type="button">{session.stage === 'independent' && session.feedback.correct && session.feedback.independent ? session.taskIndex === 0 ? '下一项任务' : '查看本轮结果' : session.feedback.correct ? '继续' : '看关键一步'} <ArrowRight size={18} /></button> : <><button className="text-button text-button--primary" type="button" onClick={submit}>提交判断 <ArrowRight size={18} /></button><button className="text-button text-button--ghost" type="button" disabled={hintShown} onClick={store.requestTcpHint}>{hintShown ? '已使用提示' : '需要提示'}</button></>}<AskPicoButton label={session.feedback ? '问问 Pico · 这道题' : '问问 Pico'} context={questionExplicitContext(question, '当前 TCP 任务', session.feedback ? { selected: session.drafts[eventId] ?? '', misconceptionText: session.feedback.correct ? undefined : session.feedback.text } : undefined)} /></div>
           </div><aside className="tcp-task__aside"><dl className="tcp-task__conditions"><div><dt>初始窗口</dt><dd>{task.initial}<small>MSS</small></dd></div><div><dt>慢启动门限</dt><dd>{task.threshold}<small>MSS</small></dd></div></dl><p className="tcp-eyebrow">任务边界</p><p>{session.stage === 'independent' ? '正向预测与观测判断，须在同一轮无帮助完成。' : '只处理无丢包、按 RTT 离散变化的简化情形。'}</p><details><summary>本例的范围</summary><p>第 0 轮为初始状态；每轮代表一个 RTT。题目给定初始窗口和门限。这里只验证无丢包情形。</p></details></aside>
         </section> : <section className="tcp-complete"><span className={`tcp-status tcp-status--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</span><p>{session.stage === 'paused' ? session.pauseReason : '本轮的正向预测与观测判断均无帮助通过。这个结果只说明本次验证，不代表长期掌握。'}</p><div className="tcp-complete__facts">{session.answers.slice(-6).map((answer) => <div key={answer.eventId}><span>第 {answer.attempt} 轮 · {getTcpTask(answer.questionId)?.role === 'observe' ? '观测判断' : getTcpTask(answer.questionId)?.role === 'predict' ? '窗口预测' : '过程作答'}</span><strong>{answer.correct ? answer.independent ? '独立正确' : '正确 · 非独立验证' : '需巩固'}</strong></div>)}</div><button className="text-button text-button--primary" onClick={exit} type="button">返回知识树 <ArrowRight size={18} /></button></section>}
       </main>

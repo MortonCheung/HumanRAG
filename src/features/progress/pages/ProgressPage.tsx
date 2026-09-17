@@ -29,6 +29,7 @@ import { useLearnerContextBundle } from '../../../ai/context/useLearnerContextBu
 import { sendChat } from '../../../ai/chat/chatClient';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatResult } from '../../../ai/chat/contracts';
 import { buildInsightSignature, cachedInsight, cacheInsight, selectInsightContextBlocks } from '../learningInsight';
+import { usePicoStore } from '../../pico/picoStore';
 
 function misconceptionName(id: string) {
   return MISCONCEPTIONS_BY_ID.get(id)?.name
@@ -58,6 +59,7 @@ export function ProgressPage() {
   const [insightBusy, setInsightBusy] = useState(false);
   const [insightCooldownUntil, setInsightCooldownUntil] = useState(0);
   const { bundle: learnerContext } = useLearnerContextBundle();
+  const reactToInsight = usePicoStore((state) => state.reactToInsight);
   const fallbackActivityEnd = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const profiles = useMemo(() => LEARNER_PROFILES.map((profile) => (
     profile.id === learnerId ? resolveLearnerProfile(profile, profileOverride) : profile
@@ -96,12 +98,14 @@ export function ProgressPage() {
     const cached = cachedInsight(insightSignature);
     if (cached) {
       setInsightState({ signature: insightSignature, result: cached });
+      reactToInsight();
       return;
     }
     setInsightBusy(true);
     const result = await sendChat({ mode: 'insight', baseContext: learnerContext.base, contextBlocks: selectInsightContextBlocks(learnerContext) });
     cacheInsight(insightSignature, result);
     setInsightState({ signature: insightSignature, result });
+    reactToInsight();
     setInsightBusy(false);
     const until = Date.now() + AI_SUBMISSION_COOLDOWN_MS;
     setInsightCooldownUntil(until);

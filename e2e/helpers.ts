@@ -104,7 +104,8 @@ async function fillQuestionCard(card: Locator, question: Question, mode: 'correc
   for (const optionId of values) {
     const index = options.findIndex((option) => option.id === optionId);
     expect(index, `题目 ${question.id} 应包含选项 ${optionId}`).toBeGreaterThanOrEqual(0);
-    await card.getByRole('button').nth(index).click();
+    // Question cards also contain “问问 Pico”; only option controls represent answers.
+    await card.locator('.question-option').nth(index).click();
   }
 }
 
@@ -122,7 +123,7 @@ export async function submitTeachingStep(
   }
   await page.getByRole('button', { name: '提交答案' }).click();
   await expect(page.getByText('本步作答已记录', { exact: true })).toBeVisible();
-  await expect(cards.locator('button:enabled, input:enabled')).toHaveCount(0);
+  await expect(cards.locator('.question-option:enabled, input:enabled')).toHaveCount(0);
 }
 
 export async function submitPracticeQuestion(

@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { GlobalNav } from '../components/navigation/GlobalNav';
 import { SpatialViewportProvider } from '../features/spatial/SpatialViewport';
@@ -26,14 +26,19 @@ export function RootChromeShell() {
   const visibility = useMemo(() => ({ revealOpeningChrome }), [revealOpeningChrome]);
   const concealed = location.pathname === ROUTES.root && revealedOpeningKey !== location.key;
   const picoOpen = usePicoStore((state) => state.open);
+  const picoPresence = usePicoStore((state) => state.presence);
+  const dockPicoImmediately = usePicoStore((state) => state.dockImmediately);
   const picoVisible = location.pathname !== ROUTES.tutor;
+  useEffect(() => {
+    if (location.pathname !== ROUTES.root && location.pathname !== ROUTES.universe) dockPicoImmediately();
+  }, [dockPicoImmediately, location.pathname]);
 
   return (
     <AppHistoryProvider>
       <SpatialViewportProvider>
         <ChromeVisibilityContext.Provider value={visibility}>
           <GlobalNav concealed={concealed} />
-          <div className="root-workspace" data-pico-open={(picoVisible && picoOpen) || undefined}>
+          <div className="root-workspace" data-pico-open={(picoVisible && picoOpen) || undefined} data-pico-presence={picoPresence}>
             <div className="root-workspace__route"><Outlet /></div>
             {picoVisible && <Suspense fallback={null}><LazyPicoDock /></Suspense>}
           </div>

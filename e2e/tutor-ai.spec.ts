@@ -54,6 +54,8 @@ test('Dashboard 只在点击时生成洞察，并按同一快照复用缓存', a
   const trigger = page.getByRole('button', { name: '生成学习洞察' });
   await trigger.click();
   await expect(page.locator('.learning-dashboard__insight')).toContainText('先处理重复误区');
+  await expect(page.locator('.pico-actor-host')).toHaveAttribute('data-pico-face', 'success');
+  await expect(page.locator('.pico-actor-host')).toHaveAttribute('data-pico-motion', 'turn');
   expect(bodies).toHaveLength(1);
   const request = bodies[0] as Extract<ChatRequest, { mode: 'insight' }>;
   expect(request.mode).toBe('insight');

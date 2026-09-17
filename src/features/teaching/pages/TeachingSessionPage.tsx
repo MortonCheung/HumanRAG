@@ -22,6 +22,7 @@ import '../teaching.css';
 import '../tcp-lesson.css';
 import { usePicoPageContext } from '../../pico/PicoContextBridge';
 import { activeQuestionContext } from '../../pico/questionContext';
+import { usePicoStore } from '../../pico/picoStore';
 
 export function TeachingSessionPage() {
   const { unitId, pointId, libraryId, treeId } = useParams();
@@ -40,6 +41,8 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
   const store = useTeachingStore();
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
+  const reactPico = usePicoStore((state) => state.react);
+  const reactPicoToResult = usePicoStore((state) => state.reactToResult);
   const routeUnit = routeUnitId ? contentRepository.getTeachingUnit(routeUnitId) : undefined;
   const unit = store.unitId ? contentRepository.getTeachingUnit(store.unitId) : undefined;
   const step = store.currentStepId ? contentRepository.getTeachingStep(store.currentStepId) : undefined;
@@ -78,6 +81,15 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
         ? `现在移除提示，用新题确认你能否独立运用「${nodeName}」。`
         : buildDecisionSentence({ stepKind: step.kind, context, nodeName, unitTitle: unit.title, lastMisconceptionName: misconceptionName })) : '';
   const exit = useAppBack(parent);
+  const advance = () => { store.advance(); reactPico('hop'); };
+  const submit = () => {
+    const answerCount = store.answers.length;
+    const result = store.submitCurrentStep(selections);
+    setError(result.ok ? '' : result.missing ? `还有 ${result.missing} 道题未作答。` : '记录未保存，请重试。');
+    if (!result.ok) return;
+    const submittedAnswers = useTeachingStore.getState().answers.slice(answerCount);
+    if (submittedAnswers.length) reactPicoToResult(submittedAnswers.every((answer) => answer.correct));
+  };
 
   useEffect(() => { if (routeUnitId && routeUnit && routeUnitId !== useTeachingStore.getState().unitId) useTeachingStore.getState().startSession(routeUnitId); }, [routeUnitId, routeUnit]);
   useEffect(() => { setSelections({}); setError(''); if (scrollPane.current) scrollPane.current.scrollTop = 0; }, [store.currentStepId, store.attempt]);
@@ -112,7 +124,7 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
           </motion.section> : <motion.p key="teaching-restoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>正在恢复本次学习。</motion.p>}
         </AnimatePresence>
       </div>
-      {store.status !== 'finished' && step && <footer className="teach-stage__footer"><span className="teach-stage__hint" role={error ? 'alert' : undefined}>{error || (submitted ? '本步作答已记录' : '')}</span>{questionIds.length > 0 && !submitted ? <div><button className="text-button text-button--ghost" type="button" onClick={() => { setError(''); store.advance(); }}>下一步 <ArrowRight size={16} /></button><button className="text-button text-button--primary" type="button" onClick={() => { const result = store.submitCurrentStep(selections); setError(result.ok ? '' : result.missing ? `还有 ${result.missing} 道题未作答。` : '记录未保存，请重试。'); }}>提交答案</button></div> : <button className="text-button text-button--primary" type="button" onClick={store.advance}>下一步 <ArrowRight size={16} /></button>}</footer>}
+      {store.status !== 'finished' && step && <footer className="teach-stage__footer"><span className="teach-stage__hint" role={error ? 'alert' : undefined}>{error || (submitted ? '本步作答已记录' : '')}</span>{questionIds.length > 0 && !submitted ? <div><button className="text-button text-button--ghost" type="button" onClick={() => { setError(''); advance(); }}>下一步 <ArrowRight size={16} /></button><button className="text-button text-button--primary" type="button" onClick={submit}>提交答案</button></div> : <button className="text-button text-button--primary" type="button" onClick={advance}>下一步 <ArrowRight size={16} /></button>}</footer>}
       </main>
     </div>}
   </div>;
