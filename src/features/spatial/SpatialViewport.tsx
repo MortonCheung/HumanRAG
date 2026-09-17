@@ -4,6 +4,7 @@ export interface ViewportRect { left: number; top: number; width: number; height
 type Occluder = 'navigation' | 'inspector' | 'stage' | 'pico';
 interface SpatialViewportValue {
   rect: ViewportRect;
+  picoRect: ViewportRect | null;
   register: (kind: Occluder, element: HTMLElement | null) => void;
   measure: () => void;
 }
@@ -37,10 +38,17 @@ export function SpatialViewportProvider({ children }: { children: ReactNode }) {
   const elements = useRef(new Map<Occluder, HTMLElement>());
   const observer = useRef<ResizeObserver | null>(null);
   const [rect, setRect] = useState<ViewportRect>(() => ({ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }));
+  const [picoRect, setPicoRect] = useState<ViewportRect | null>(null);
   const measure = useCallback(() => {
     const bounds = (kind: Occluder) => elements.current.get(kind)?.getBoundingClientRect();
-    const next = usableViewport(window.innerWidth, window.innerHeight, bounds('navigation'), bounds('inspector'), bounds('stage'), bounds('pico'));
+    const pico = bounds('pico') ?? null;
+    const next = usableViewport(window.innerWidth, window.innerHeight, bounds('navigation'), bounds('inspector'), bounds('stage'), pico ?? undefined);
     setRect((previous) => Object.keys(next).every((key) => Math.abs(previous[key as keyof ViewportRect] - next[key as keyof ViewportRect]) < 0.5) ? previous : next);
+    setPicoRect((previous) => {
+      if (previous === pico) return previous;
+      if (previous && pico && Object.keys(pico).every((key) => Math.abs(previous[key as keyof ViewportRect] - pico[key as keyof ViewportRect]) < 0.5)) return previous;
+      return pico;
+    });
   }, []);
   const register = useCallback((kind: Occluder, element: HTMLElement | null) => {
     const previous = elements.current.get(kind);
@@ -56,7 +64,7 @@ export function SpatialViewportProvider({ children }: { children: ReactNode }) {
     measure();
     return () => { observer.current?.disconnect(); window.removeEventListener('resize', measure); };
   }, [measure]);
-  const value = useMemo(() => ({ rect, register, measure }), [rect, register, measure]);
+  const value = useMemo(() => ({ rect, picoRect, register, measure }), [rect, picoRect, register, measure]);
   return <SpatialViewportContext.Provider value={value}>{children}</SpatialViewportContext.Provider>;
 }
 
@@ -67,3 +75,5 @@ export function useSpatialOccluder(kind: Occluder, active = true) {
   return { ref, measure: context?.measure };
 }
 export function useSpatialViewport() { return useContext(SpatialViewportContext)?.rect; }
+/** The Pico Dock rectangle on its own, so camera composition can yield to the dock without inheriting other occluders. */
+export function useSpatialPicoRect() { return useContext(SpatialViewportContext)?.picoRect ?? null; }

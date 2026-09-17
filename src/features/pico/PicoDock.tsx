@@ -42,6 +42,7 @@ export function PicoDock() {
   const contextTitle = explicitContext?.title ?? pageContext?.title ?? '当前页面';
 
   return <>
+    {open && <div ref={occluder.ref} className="pico-dock-occluder" aria-hidden />}
     <motion.button
       type="button"
       className={`pico-actor-host${open ? ' is-open' : ''}`}
@@ -59,7 +60,6 @@ export function PicoDock() {
     ><PicoActor face={face} motion={picoMotion} motionNonce={motionNonce} motionAllowed={!reducedMotion && presence === 'docked'} /></motion.button>
     <AnimatePresence initial={false}>
       {open && <motion.aside
-        ref={occluder.ref}
         className="pico-dock"
         data-page-context-key={pageContext?.key}
         data-explicit-context-type={explicitContext?.type}

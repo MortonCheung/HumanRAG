@@ -1,11 +1,12 @@
 :root { --pico-dock-width: clamp(380px, 30vw, 420px); }
 .root-workspace { min-height: 100dvh; }
-.root-workspace__route { width: 100%; min-width: 0; transition: width 220ms var(--it-ease); }
+.root-workspace__route { width: 100%; min-width: 0; transition: width 360ms var(--it-ease); }
 .pico-actor-host { position: fixed; z-index: 129; right: 20px; bottom: 20px; width: 64px; height: 64px; padding: 0; overflow: hidden; border: 1px solid var(--it-rule-strong); border-radius: 50%; background: var(--it-surface-raised); box-shadow: 0 10px 34px rgb(0 0 0 / .3); transition: top 220ms var(--it-ease), right 220ms var(--it-ease), bottom 220ms var(--it-ease), width 220ms var(--it-ease), height 220ms var(--it-ease), border-color 160ms var(--it-ease); }
 .pico-actor-host:hover { border-color: var(--it-accent); }
 .pico-actor-host.is-open { top: calc(var(--it-nav-height) + 8px); right: calc(var(--pico-dock-width) - 76px); bottom: auto; width: 56px; height: 56px; border-color: transparent; background: transparent; box-shadow: none; pointer-events: none; }
 .pico-actor-host canvas { display: block; width: 100% !important; height: 100% !important; }
 .pico-actor-fallback { display: grid; place-items: center; width: 100%; height: 100%; color: var(--it-accent); font: 600 18px/1 var(--it-mono); }
+.pico-dock-occluder { position: fixed; top: var(--it-nav-height); right: 0; bottom: 0; width: var(--pico-dock-width); pointer-events: none; visibility: hidden; }
 .pico-dock { position: fixed; z-index: 125; top: var(--it-nav-height); right: 0; bottom: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: var(--pico-dock-width); border-left: 1px solid var(--it-rule); background: var(--it-bg); box-shadow: -18px 0 52px rgb(3 6 12 / .22); }
 .pico-dock__header { display: flex; align-items: center; justify-content: space-between; min-height: 72px; padding: 12px 16px 12px 88px; border-bottom: 1px solid var(--it-rule); }
 .pico-dock__header > div { display: grid; gap: 5px; min-width: 0; }
@@ -39,7 +40,6 @@
 .pico-context-block > .ask-pico-button { margin-top: 8px; }
 @media (min-width: 769px) {
   .root-workspace[data-pico-open] .root-workspace__route { width: calc(100vw - var(--pico-dock-width)); }
-  .root-workspace[data-pico-open] .spatial-canvas-layer { right: var(--pico-dock-width); }
 }
 @media (max-width: 768px) {
   .pico-dock { top: max(var(--it-nav-height), 52px); width: 100vw; }

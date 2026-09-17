@@ -7,7 +7,7 @@ import type { CameraIntent, SceneModel } from '../graph/types';
 import type { SpatialExperiencePhase } from '../features/spatial/SpatialExperienceContext';
 import { applyCameraPose, frameSphereAlongView, freezeCamera, introCameraDistance, nodeFocusPose, openingSeedFocalOffset, viewportFocalOffset } from './cameraFraming';
 import { createEntryShot, introOrbitDirection } from './entryShot';
-import { useSpatialViewport } from '../features/spatial/SpatialViewport';
+import { useSpatialPicoRect, useSpatialViewport, type ViewportRect } from '../features/spatial/SpatialViewport';
 
 type View = { position: THREE.Vector3; target: THREE.Vector3; offset: THREE.Vector3; intentId: string };
 export interface UniverseCameraSnapshot {
@@ -83,6 +83,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
   current.current = { model, intent, experiencePhase, onEntryComplete, openingSeedIds, extractionFrame, universeRouteActive };
   const { camera, size, invalidate, gl } = useThree();
   const usable = useSpatialViewport();
+  const picoRect = useSpatialPicoRect();
 
   // 每渲染帧发布一次真实生效的相机位姿（见 publishCameraPose 注释）。
   useFrame(({ clock }) => {
@@ -276,14 +277,14 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
       void instance.setFocalOffset(...lastUniverseView.offset.toArray(), false);
       return;
     }
-    if (intent.mode === 'overview') {
-      // Node Focus 为 Inspector 留出的屏幕偏移必须立即清零；镜头位置本身仍平滑复位。
-      void instance.setFocalOffset(0, 0, 0, false);
-      apply(overview, center, !initial);
-      return;
-    }
-    if (intent.mode === 'goal') {
-      void instance.setFocalOffset(0, 0, 0, motionAllowed && !initial);
+    if (intent.mode === 'overview' || intent.mode === 'goal') {
+      // Pico Dock 打开时不缩小画布：由构图让位完成空间划分。
+      // 只补偿 Pico 自身的矩形，避免把导航等常驻遮挡的历史偏移带进 overview 构图。
+      const picoUsable: ViewportRect | undefined = picoRect
+        ? { left: 0, top: 0, width: Math.max(0, Math.min(size.width, picoRect.left)), height: size.height }
+        : undefined;
+      const overviewFocal = viewportFocalOffset(camera as THREE.PerspectiveCamera, overview.distanceTo(center), size.width, size.height, picoUsable);
+      void instance.setFocalOffset(overviewFocal.x, overviewFocal.y, 0, motionAllowed && !initial);
       apply(overview, center, !initial);
       return;
     }
@@ -296,7 +297,7 @@ export function CameraController({ intent, model, experiencePhase, motionAllowed
     void instance.setFocalOffset(focal.x, focal.y, 0, motionAllowed);
     // Hover/color changes must not steal the camera.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [experiencePhase, intent.id, size.width, size.height, motionAllowed, camera, invalidate, usable, extractionFrame?.active, extractionFrame?.positions, returningToUniverse, reentryKey, reentrySnapshot]);
+  }, [experiencePhase, intent.id, size.width, size.height, motionAllowed, camera, invalidate, usable, picoRect, extractionFrame?.active, extractionFrame?.positions, returningToUniverse, reentryKey, reentrySnapshot]);
 
   useEffect(() => {
     const visibility = () => {
