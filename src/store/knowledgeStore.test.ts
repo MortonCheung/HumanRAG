@@ -19,11 +19,52 @@ describe('knowledgeStore spatial continuity', () => {
     expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
   });
 
-  it('keeps the user goal and selection when replaying entry', () => {
+  it('clears a stale node focus back to overview when replaying entry', () => {
     useKnowledgeStore.getState().selectNode('direction-408');
-    useKnowledgeStore.getState().prepareUniverseEntry();
-    expect(useKnowledgeStore.getState().selectedGoalId).toBe('goal-cs-graduate');
-    expect(useKnowledgeStore.getState().selectedNodeId).toBe('direction-408');
+    useKnowledgeStore.getState().prepareUniverseEntry(null);
+    const state = useKnowledgeStore.getState();
+    expect(state.selectedGoalId).toBe('goal-cs-graduate');
+    expect(state.selectedNodeId).toBeNull();
+    expect(state.nodeFocusOriginGoalId).toBeNull();
+    expect(state.phase).toBe('overview');
+    expect(state.cameraIntent.mode).toBe('overview');
+    expect(state.cameraIntent.id).toMatch(/^overview:entry:/);
+    expect(state.hoveredNodeId).toBeNull();
+    expect(state.activePanel).toBeNull();
+    expect(state.isPathRibbonOpen).toBe(false);
+    expect(state.relationMode).toBe('primary');
+  });
+
+  it('keeps a healthy overview untouched apart from transient panels', () => {
+    useKnowledgeStore.getState().selectGoal('goal-cs-graduate');
+    const intentBefore = useKnowledgeStore.getState().cameraIntent;
+    useKnowledgeStore.getState().hoverNode('knowledge-tcp');
+    useKnowledgeStore.getState().openPanel('search');
+    useKnowledgeStore.setState({ isPathRibbonOpen: true });
+    useKnowledgeStore.getState().prepareUniverseEntry(null);
+    const state = useKnowledgeStore.getState();
+    expect(state.selectedGoalId).toBe('goal-cs-graduate');
+    expect(state.phase).toBe('goalFocused');
+    expect(state.cameraIntent).toBe(intentBefore);
+    expect(state.hoveredNodeId).toBeNull();
+    expect(state.activePanel).toBeNull();
+    expect(state.isPathRibbonOpen).toBe(false);
+  });
+
+  it('focuses the requested node when the route carries an explicit focusNodeId', () => {
+    useKnowledgeStore.getState().prepareUniverseEntry('knowledge-tcp');
+    const state = useKnowledgeStore.getState();
+    expect(state.selectedNodeId).toBe('knowledge-tcp');
+    expect(state.phase).toBe('nodeFocused');
+    expect(state.cameraIntent.mode).toBe('node');
+    expect(state.cameraIntent.nodeId).toBe('knowledge-tcp');
+  });
+
+  it('ignores an unknown focusNodeId and falls back to the entry rule', () => {
+    useKnowledgeStore.getState().selectNode('knowledge-tcp');
+    useKnowledgeStore.getState().prepareUniverseEntry('not-a-node');
+    expect(useKnowledgeStore.getState().selectedNodeId).toBeNull();
+    expect(useKnowledgeStore.getState().cameraIntent.mode).toBe('overview');
   });
 
   it('creates a node camera intent when the next node is far away', () => {

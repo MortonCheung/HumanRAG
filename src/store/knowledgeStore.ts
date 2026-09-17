@@ -50,7 +50,7 @@ interface KnowledgeStore {
   setQualityPreference: (preference: QualityPreference) => void;
   setResolvedQualityTier: (tier: ResolvedQualityTier) => void;
   resetKnowledge: () => void;
-  prepareUniverseEntry: () => void;
+  prepareUniverseEntry: (focusNodeId?: string | null) => void;
 }
 
 function readPersisted(): PersistedState {
@@ -222,13 +222,40 @@ export const useKnowledgeStore = create<KnowledgeStore>((set, get) => ({
       resolvedQualityTier: 'balanced',
     });
   },
-  prepareUniverseEntry: () => set((state) => {
-    return {
+  prepareUniverseEntry: (focusNodeId) => {
+    // An explicit "locate this node in the knowledge space" request wins over everything.
+    if (focusNodeId && nodesById.has(focusNodeId)) {
+      get().selectNode(focusNodeId);
+      return;
+    }
+    const state = get();
+    // A stale node focus must never decide the entry camera: only an explicit
+    // focusNodeId may re-enter with `node` mode. Top-level navigation always
+    // returns to overview; a healthy overview keeps its composition untouched.
+    const hasNodeFocus = state.selectedNodeId !== null
+      || state.phase === 'nodeFocused'
+      || state.cameraIntent.mode === 'node';
+    if (!hasNodeFocus) {
+      set({
+        hoveredNodeId: null,
+        activePanel: null,
+        isPathRibbonOpen: false,
+        unmatchedGoal: false,
+        selectionEpoch: state.selectionEpoch + 1,
+      });
+      return;
+    }
+    set({
+      selectedNodeId: null,
+      nodeFocusOriginGoalId: null,
       hoveredNodeId: null,
       activePanel: null,
+      relationMode: 'primary',
       isPathRibbonOpen: false,
       unmatchedGoal: false,
+      phase: 'overview',
       selectionEpoch: state.selectionEpoch + 1,
-    };
-  }),
+      cameraIntent: { id: `overview:entry:${Date.now()}`, mode: 'overview' },
+    });
+  },
 }));

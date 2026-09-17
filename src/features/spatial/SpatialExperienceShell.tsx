@@ -39,6 +39,7 @@ function SpatialExperience() {
   const reducedMotion = Boolean(useReducedMotion());
   const openingRoute = location.pathname === ROUTES.root;
   const directUniverse = location.pathname === ROUTES.universe;
+  const appliedUniverseEntryKey = useRef<string | null>(null);
   const navigation = useRef({ key: location.key, pathname: location.pathname, returningToUniverse: false, reentryKey: 0 });
   if (navigation.current.key !== location.key) {
     const previousPath = navigation.current.pathname;
@@ -80,6 +81,7 @@ function SpatialExperience() {
   const cameraIntent = useKnowledgeStore((state) => state.cameraIntent);
   const hoverNode = useKnowledgeStore((state) => state.hoverNode);
   const selectNode = useKnowledgeStore((state) => state.selectNode);
+  const prepareUniverseEntry = useKnowledgeStore((state) => state.prepareUniverseEntry);
   const startPicoTravel = usePicoStore((state) => state.startTravel);
   const returnPicoToDock = usePicoStore((state) => state.returnToDock);
   const dockPicoImmediately = usePicoStore((state) => state.dockImmediately);
@@ -155,6 +157,13 @@ function SpatialExperience() {
     const timeout = window.setTimeout(handleError, 8000);
     return () => window.clearTimeout(timeout);
   }, [attempt, failed, handleError, ready]);
+  useLayoutEffect(() => {
+    // Route entry runs exactly once per location.key, never per render.
+    if (appliedUniverseEntryKey.current === location.key) return;
+    appliedUniverseEntryKey.current = location.key;
+    const focusNodeId = (location.state as { focusNodeId?: string } | null)?.focusNodeId ?? null;
+    prepareUniverseEntry(focusNodeId);
+  }, [location.key, location.state, prepareUniverseEntry]);
   useLayoutEffect(() => {
     // Only an actual route change resets the stage; completing a shot is not a new landing.
     setPhase(openingRoute ? 'intro' : 'universe');
