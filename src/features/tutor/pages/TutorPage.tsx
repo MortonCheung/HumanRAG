@@ -1,5 +1,6 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowUp } from '@phosphor-icons/react';
+import { getAIServiceStatus, type AIServiceStatus } from '../../../ai/chat/serviceStatus';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatMessage, type ChatSource } from '../../../ai/chat/contracts';
 import { sendChat } from '../../../ai/chat/chatClient';
 import { routeTutorContext } from '../../../ai/context/contextRouter';
@@ -21,7 +22,11 @@ export function TutorPage() {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [service, setService] = useState<AIServiceStatus | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const sequence = useRef(0);
+  const detectService = useCallback(() => { void getAIServiceStatus().then(setService); }, []);
+  useEffect(() => { detectService(); }, [detectService]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -44,7 +49,25 @@ export function TutorPage() {
   return <div className="page tutor-page">
     <WorkspaceHeader title="AI导师" />
     <main className="tutor-workspace">
-      <header className="tutor-heading"><p>全局学习支持</p><h1>AI导师</h1><span>问知识，也可以结合你的学习记录进行分析</span></header>
+      <header className="tutor-heading"><p>全局学习支持</p><h1>AI导师</h1><span>问知识，也可以结合你的学习记录进行分析</span>
+        <button type="button" className={`tutor-ai-status${service?.mode === 'live' ? ' is-live' : ''}`} aria-haspopup="dialog" onClick={() => setInspectorOpen((open) => !open)}>
+          <i aria-hidden="true" />{service?.mode === 'live' ? 'AI 已连接' : '演示模式'}
+        </button>
+      </header>
+      {inspectorOpen && <aside className="tutor-ai-inspector" role="dialog" aria-label="AI 服务状态">
+        <header><strong>AI 服务</strong><button type="button" onClick={() => setInspectorOpen(false)}>关闭</button></header>
+        <dl>
+          <dt>状态</dt><dd>{service?.configured ? '已连接' : '演示模式'}</dd>
+          {service?.configured
+            ? <>
+              <dt>模型</dt><dd>{service.model ?? '—'}</dd>
+              <dt>网关</dt><dd>{service.provider ?? '—'}</dd>
+              <dt>密钥</dt><dd>已由服务端安全配置</dd>
+            </>
+            : <><dt>说明</dt><dd>当前未检测到 AI 服务，回答将使用内置演示数据。</dd></>}
+        </dl>
+        <button type="button" className="tutor-ai-inspector__refresh" onClick={detectService}>重新检测</button>
+      </aside>}
       <section className="tutor-conversation" aria-label="导师对话">
         {messages.length === 0 && <div className="tutor-empty"><strong>从一个具体问题开始</strong><p>可以直接问概念，也可以问“我哪里最薄弱”或“下一步学什么”。只有这类明确问题才会读取相应学习明细。</p></div>}
         {messages.map((item) => <article key={item.id} className={`tutor-message tutor-message--${item.role}`}>

@@ -11,6 +11,19 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
 });
 
+/** 只暴露连接状态；密钥与完整 URL（含 query）绝不回传。GET 不调用模型、不消耗 token。 */
+export async function onRequestGet(context: FunctionContext) {
+  const { AI_API_URL: apiUrl, AI_API_KEY: apiKey, AI_MODEL: model } = context.env;
+  if (!apiUrl || !apiKey || !model) return json({ configured: false, mode: 'mock' });
+  let provider: string | undefined;
+  try {
+    provider = new URL(apiUrl).host;
+  } catch {
+    provider = undefined;
+  }
+  return json({ configured: true, mode: 'live', model, provider });
+}
+
 export async function onRequestPost(context: FunctionContext) {
   const declaredLength = Number(context.request.headers.get('content-length') ?? 0);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) return json({ error: 'REQUEST_TOO_LARGE' }, 413);
