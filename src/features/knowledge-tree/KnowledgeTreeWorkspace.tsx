@@ -15,6 +15,7 @@ import { useProgressStore } from '../../store/progressStore';
 import { useUserStore } from '../../store/userStore';
 import { useLearningQuestionStore } from '../../domain/learning/learningQuestions';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
+import { useAppBack } from '../../app/appHistory';
 import './knowledge-tree-workspace.css';
 
 export function KnowledgeTreeWorkspace() {
@@ -39,6 +40,7 @@ export function KnowledgeTreeWorkspace() {
     () => getLearningRecommendation(learnerId, data.points.map((point) => point.id)),
     [data.points, evidence, learnerId, learningQuestions, remediationTasks],
   );
+  const back = useAppBack({ to: ROUTES.library, state: treeId ? { selectedTreeId: treeId } : undefined });
 
   useEffect(() => {
     const focusedPointId = (location.state as { focusedPointId?: string } | null)?.focusedPointId;
@@ -54,7 +56,7 @@ export function KnowledgeTreeWorkspace() {
       <WorkspaceHeader
         title={data.tree.name}
         backLabel="返回知识库"
-        onBack={() => navigate(ROUTES.library, { state: { selectedTreeId: treeId }, viewTransition: false })}
+        onBack={back}
         primaryAction={data.tree.ownerType === 'user' ? <button className="context-nav__button context-nav__button--primary" onClick={() => navigate(ROUTES.pointNewContent(libraryId, treeId))} type="button"><Plus size={16} aria-hidden="true" />新增节点</button> : undefined}
         actions={data.tree.ownerType === 'user'
           ? <button className="context-nav__button" onClick={() => navigate(ROUTES.treeEdit(libraryId, treeId, 'structure'))} type="button">编辑</button>

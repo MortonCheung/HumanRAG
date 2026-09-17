@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTeachingStore } from '../../../store/teachingStore';
 import { contentRepository } from '../../../services/content/ContentRepository';
@@ -31,7 +31,6 @@ export function TeachingSessionPage() {
 /** Existing content remains available without claiming the full TCP teaching capability. */
 function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string; parent: { to: string; state?: unknown } }) {
   const scrollPane = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const store = useTeachingStore();
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
@@ -60,13 +59,13 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
       : !submitted && step.kind === 'independent-check'
         ? `现在移除提示，用新题确认你能否独立运用「${nodeName}」。`
         : buildDecisionSentence({ stepKind: step.kind, context, nodeName, unitTitle: unit.title, lastMisconceptionName: misconceptionName })) : '';
-  const exit = () => navigate(parent.to, { state: parent.state });
+  const exit = useAppBack(parent);
 
   useEffect(() => { if (routeUnitId && routeUnit && routeUnitId !== useTeachingStore.getState().unitId) useTeachingStore.getState().startSession(routeUnitId); }, [routeUnitId, routeUnit]);
   useEffect(() => { setSelections({}); setError(''); if (scrollPane.current) scrollPane.current.scrollTop = 0; }, [store.currentStepId, store.attempt]);
 
   return <div className="page">
-    <WorkspaceHeader title={routeUnit ? `${routeUnit.title} · 带我学` : '带我学'} backLabel="返回知识树" onBack={exit} />
+    <WorkspaceHeader title={routeUnit ? `${routeUnit.title} · 带我学` : '带我学'} backLabel="返回" onBack={exit} />
     {!routeUnit ? <main className="page__inner"><h1 className="page-title">暂未提供教学内容</h1><p className="page-lead">这个知识点的教学内容不存在或已被移除。</p></main> : <div className="teach-session teach-session--focused">
       <TeachingStepRail />
       <main className="teach-stage"><div className="teach-stage__scroll" ref={scrollPane}>

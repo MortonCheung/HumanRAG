@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ArrowRight, CaretLeft, CaretRight, Check, Question } from '@phosphor-icons/react';
-import { TransitionLink as Link, usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
+import { useAppBack } from '../../../app/appHistory';
 import { ROUTES } from '../../../app/routes';
 import { TCP_NODE_ID, TCP_RULES, TCP_VERSION } from '../../../data/v6/handcrafted/tcpLesson';
 import { getPoint, getPrerequisitesForPoint, getRelatedForPoint } from '../../../domain/knowledge/selectors';
@@ -30,8 +31,6 @@ function ConceptWorkbench({ concepts, objective }: { concepts: string[]; objecti
 
 export function StudyWorkspacePage() {
   const { libraryId, treeId, pointId } = useParams<{ libraryId: string; treeId: string; pointId: string }>();
-  const location = useLocation();
-  const navigate = useNavigate();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const [scratchpad, setScratchpad] = useState('');
   const [questionDraft, setQuestionDraft] = useState('');
@@ -55,10 +54,10 @@ export function StudyWorkspacePage() {
   const resources: LearningResource[] = Array.from(new Set([...point?.recommendedContent ?? [], ...sourceLabels])).map((title) => ({ type: 'reading', title }));
   const openQuestions = questions.filter((question) => question.learnerId === learnerId && question.pointId === pointId && question.status === 'open');
   const parent = getWorkspaceParent({ kind: 'learn', libraryId, treeId, pointId });
-  const exit = () => navigate(parent.to, { state: parent.state });
+  const exit = useAppBack(parent);
 
   return <div className="page study-page">
-    <WorkspaceHeader title={point?.name ?? node?.name ?? '学习'} backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} primaryAction={libraryId && treeId && pointId ? <Link className="context-nav__button context-nav__button--primary" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>带我学</Link> : undefined} />
+    <WorkspaceHeader title={point?.name ?? node?.name ?? '学习'} backLabel="返回" onBack={exit} primaryAction={libraryId && treeId && pointId ? <Link className="context-nav__button context-nav__button--primary" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>带我学</Link> : undefined} />
     {!point || !libraryId || !treeId || !pointId ? <main className="page__inner"><h1 className="page-title">没有找到这个知识点</h1><p className="page-lead">它可能已被移除，或不属于当前知识树。</p></main> : <div className="study-workspace">
       <main className="study-workspace__main">
         <header className="study-hero"><p className="study-section__kicker">学习 · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</p><h1>{point.name}</h1><p>{point.description || node?.description}</p><div className="study-core-question"><span>核心问题</span><strong>{point.id === TCP_NODE_ID ? '为什么发送方不能无限增加发送速率？' : objective}</strong></div></header>

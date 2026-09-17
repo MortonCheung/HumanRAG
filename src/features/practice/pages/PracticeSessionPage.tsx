@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { TransitionLink as Link, usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight, CaretLeft, Flag } from '@phosphor-icons/react';
 import { useUserStore } from '../../../store/userStore';
 import { usePracticeStore } from '../../../store/practiceStore';
@@ -88,7 +89,7 @@ export function PracticeSessionPage() {
   const copy = MODE_COPY[mode];
   const relatedNode = question ? contentRepository.getNode(question.nodeIds[0]) : undefined;
   const unit = relatedNode ? contentRepository.getTeachingUnitForNode(relatedNode.id) : undefined;
-  const exit = () => navigate(parent.to, { state: parent.state });
+  const exit = useAppBack(parent);
   const teachQuestion = (questionId: string) => {
     const targetQuestion = contentRepository.getQuestion(questionId);
     const targetNode = targetQuestion ? contentRepository.getNode(targetQuestion.nodeIds[0]) : undefined;
@@ -107,8 +108,8 @@ export function PracticeSessionPage() {
   };
 
   return <div className="page">
-    <WorkspaceHeader title={plan ? `${copy.label} · ${plan.title}` : copy.label} backLabel={scopeNode || treeId ? '返回知识树' : '返回知识库'} onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} />
-    {!plan ? <main className="page__inner"><h1 className="page-title">暂无可用题目</h1><p className="page-lead">这个范围的题目不存在或已被移除。</p></main> : !active && availableQuestionIds.length === 0 && !resumable ? <main className="page__inner practice-empty"><p className="panel-kicker">{copy.label}</p><h1 className="page-title">暂时无法开始</h1><p className="page-lead">{copy.empty}</p><button className="text-button text-button--primary" type="button" onClick={exit}>返回知识树</button></main> : active && store.status === 'finished' ? <div className="page__inner"><PracticeSessionSummary plan={plan} questionIds={ids} answers={store.answers} mode={mode} canRestart={mode === 'train' || availableQuestionIds.length > 0} onRestart={() => store.startSession(plan.id, availableQuestionIds, { restart: true, mode })} returnTo={parent.to} returnState={parent.state} onRemediate={teachQuestion} /></div> : <div className="practice-session practice-session--focused">
+    <WorkspaceHeader title={plan ? `${copy.label} · ${plan.title}` : copy.label} backLabel="返回" onBack={exit} />
+    {!plan ? <main className="page__inner"><h1 className="page-title">暂无可用题目</h1><p className="page-lead">这个范围的题目不存在或已被移除。</p></main> : !active && availableQuestionIds.length === 0 && !resumable ? <main className="page__inner practice-empty"><p className="panel-kicker">{copy.label}</p><h1 className="page-title">暂时无法开始</h1><p className="page-lead">{copy.empty}</p><button className="text-button text-button--primary" type="button" onClick={exit}>返回</button></main> : active && store.status === 'finished' ? <div className="page__inner"><PracticeSessionSummary plan={plan} questionIds={ids} answers={store.answers} mode={mode} canRestart={mode === 'train' || availableQuestionIds.length > 0} onRestart={() => store.startSession(plan.id, availableQuestionIds, { restart: true, mode })} onReturn={exit} onRemediate={teachQuestion} /></div> : <div className="practice-session practice-session--focused">
       <nav className="practice-nav" aria-label="题目导航"><p className="practice-nav__kicker">{copy.progress} {answeredCount} / {ids.length}</p><div className="practice-nav__grid">{ids.map((questionId, index) => { const entry = store.answers[questionId]; const resultClass = mode === 'train' && entry ? entry.correct ? 'is-correct' : 'is-wrong' : entry ? 'is-recorded' : ''; const stateLabel = entry ? mode === 'train' ? entry.correct ? '，正确' : '，错误' : '，已记录' : '，未作答'; return <button key={questionId} type="button" aria-label={`第 ${index + 1} 题${stateLabel}`} aria-current={index === store.currentIndex ? 'step' : undefined} className={`practice-nav__cell ${index === store.currentIndex ? 'is-current' : ''} ${resultClass}`} onClick={() => store.goTo(index)}>{index + 1}{store.flaggedIds.includes(questionId) ? '·' : ''}</button>; })}</div></nav>
       <main className="practice-stage"><div className="practice-stage__scroll">
         {(error || store.storageError) && <div className="lesson-save-error" role="alert">{error || store.storageError}{store.storageError && <button className="text-button" type="button" onClick={store.retrySave}>重试保存</button>}</div>}

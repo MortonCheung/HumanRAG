@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { TCP_TASKS } from '../src/data/v6/handcrafted/tcpLesson';
-import { fillTcpResponse, clickPageAction, resetDemoState } from './helpers';
+import { fillTcpResponse, clickPageAction, openProductArea, resetDemoState } from './helpers';
 
 const desktopDir = 'output/v11-final/visual-acceptance/desktop';
 const mobileDir = 'output/v11-final/visual-acceptance/mobile';
@@ -97,7 +97,7 @@ test('生成 1440 × 900 比赛视觉验收矩阵', async ({ page }) => {
   await fillTcpResponse(page, pair[1]);
   await page.getByRole('button', { name: '提交答案' }).click();
   await page.getByRole('button', { name: '完成验证' }).click();
-  await clickPageAction(page, '学习记录');
+  await openProductArea(page, '我的学习');
   await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();
   await page.waitForTimeout(450);
   await shot(page, `${desktopDir}/15-learning-evidence.png`);

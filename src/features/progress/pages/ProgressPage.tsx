@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { ArrowRight } from '@phosphor-icons/react';
 import { motion, useReducedMotion } from 'motion/react';
-import { TransitionLink as Link, usePageNavigate } from '../../../app/pageNavigation';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
 import { useUserStore } from '../../../store/userStore';
 import { useProgressStore } from '../../../store/progressStore';
 import { contentRepository } from '../../../services/content/ContentRepository';
@@ -33,11 +32,7 @@ function percent(value: number | null) {
 }
 
 export function ProgressPage() {
-  const navigate = usePageNavigate();
-  const location = useLocation();
   const reducedMotion = Boolean(useReducedMotion());
-  const returnContext = location.state as { returnTo?: string; returnState?: unknown } | null;
-  const returnTo = returnContext?.returnTo && /^\/(universe(?:$|[?#])|library(?:\/|$)|teach\/|practice\/)/.test(returnContext.returnTo) ? returnContext.returnTo : '/library';
   const learnerId = useUserStore((state) => state.activeProfileId);
   const answerRecords = useProgressStore((state) => state.answerRecords);
   const evidenceRecords = useProgressStore((state) => state.evidenceRecords);
@@ -73,7 +68,7 @@ export function ProgressPage() {
   });
 
   return <div className="page progress-page">
-    <WorkspaceHeader title="我的学习" backLabel="返回" onBack={() => navigate(returnTo, { state: returnContext?.returnState })} />
+    <WorkspaceHeader title="我的学习" />
     <main className="learning-dashboard">
       <motion.header className="learning-dashboard__profile" {...enter(0)}>
         <div>
@@ -151,7 +146,7 @@ export function ProgressPage() {
           <div className="learning-dashboard__next">
             <span className="learning-dashboard__kicker">NEXT</span>
             {dashboard.recommendation ? <>
-              <strong>{dashboard.recommendation.pointName}</strong>
+              <strong><Link className="learning-dashboard__next-point" to={actionPath(dashboard.recommendation.pointId, 'study')}>{dashboard.recommendation.pointName}</Link></strong>
               <p>{dashboard.recommendation.reasons[0]}</p>
               <Link className="learning-dashboard__cta" to={actionPath(dashboard.recommendation.pointId, recommendationAction)}>
                 {recommendationAction === 'teach' ? '带我巩固' : recommendationAction === 'verify' ? '再测一次' : '从这里继续'} <ArrowRight size={16} />

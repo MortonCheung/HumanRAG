@@ -9,6 +9,7 @@ import { getTreesForLibrary } from '../../../domain/knowledge/selectors';
 import { TreeIdentityForm } from '../components/TreeIdentityForm';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { useUnsavedChanges } from '../../workspace/useUnsavedChanges';
+import { useAppBack } from '../../../app/appHistory';
 import '../../knowledge-tree-editor/editor-workspace.css';
 
 const emptyIdentity: TreeIdentity = { name: '', description: '', color: '#b1d8ca' };
@@ -16,6 +17,7 @@ const emptyIdentity: TreeIdentity = { name: '', description: '', color: '#b1d8ca
 export function TreeGenesisPage() {
   const { libraryId } = useParams<{ libraryId: string }>();
   const navigate = useNavigate();
+  const back = useAppBack({ to: ROUTES.library });
   const reducedMotion = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
   const key = `iteach.tree-draft.v1:${libraryId}`;
@@ -61,7 +63,7 @@ export function TreeGenesisPage() {
   return (
     <div className="creation-screen">
       {guard}
-      <WorkspaceHeader onBack={() => navigate(ROUTES.library)} backLabel="返回知识库" title="新建知识树" primaryAction={<button type="submit" form="tree-identity-form" className="context-nav__button context-nav__button--primary" disabled={creating}>{creating ? '正在创建…' : '创建'}</button>} />
+      <WorkspaceHeader onBack={back} backLabel="返回知识库" title="新建知识树" primaryAction={<button type="submit" form="tree-identity-form" className="context-nav__button context-nav__button--primary" disabled={creating}>{creating ? '正在创建…' : '创建'}</button>} />
       <div className="tree-genesis-page">
         <div className="tree-genesis-page__stage">
           <motion.div className="tree-genesis-page__void" style={{ '--tree-color': identity.color } as React.CSSProperties} initial={{ opacity: 0, scale: reducedMotion ? 1 : .96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: reducedMotion ? .1 : .55, ease: [0.22, 1, 0.36, 1] }}>

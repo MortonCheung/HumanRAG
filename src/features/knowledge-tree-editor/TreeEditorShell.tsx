@@ -1,5 +1,5 @@
 import { Outlet, useParams } from 'react-router-dom';
-import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
+import { useAppBack } from '../../app/appHistory';
 import { ROUTES } from '../../app/routes';
 import { migrateV9 } from '../../domain/knowledge/migration';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
@@ -12,17 +12,17 @@ const SECTIONS = [
 ];
 
 export function TreeEditorShell() {
-  const navigate = useNavigate();
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
   const domain = migrateV9();
   const tree = [...domain.trees, ...domain.userTrees].find((candidate) => candidate.id === treeId);
+  const back = useAppBack({ to: libraryId && treeId ? ROUTES.treePath(libraryId, treeId) : ROUTES.library });
 
   return (
     <div className="tree-editor-shell">
       <WorkspaceHeader
         title={tree?.name ?? '知识树'}
         backLabel="返回知识树"
-        onBack={() => navigate(libraryId && treeId ? ROUTES.tree(libraryId, treeId) : ROUTES.library)}
+        onBack={back}
         modes={libraryId && treeId ? <NavigationModes label="编辑模式" items={SECTIONS.map((section) => ({ to: ROUTES.treeEdit(libraryId, treeId, section.key), label: section.label }))} /> : undefined}
       />
       <div key={treeId} className="tree-editor-shell__content">

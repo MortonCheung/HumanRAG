@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { TransitionLink as Link, usePageNavigate as useNavigate } from '../../../app/pageNavigation';
+import { TransitionLink as Link } from '../../../app/pageNavigation';
+import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight, CaretLeft, CaretRight, Pause, Play } from '@phosphor-icons/react';
 import { useReducedMotion } from 'motion/react';
 import { TCP_FRAGMENTS, TCP_NODE_ID, TCP_RULES, TCP_VERSION, getTcpQuestion, getTcpTask, tcpResultKey, tcpWindows, type TcpDifficulty } from '../../../data/v6/handcrafted/tcpLesson';
@@ -9,7 +10,6 @@ import { useProgressStore } from '../../../store/progressStore';
 import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS } from '../../../domain/learning/deriveLearningState';
 import { useUserStore } from '../../../store/userStore';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
-import { ROUTES } from '../../../app/routes';
 import { TcpTaskInputs } from './TcpTaskInputs';
 
 const STAGES = { ready: '开始之前', diagnostic: '先试一次', clarification: '再看关键一步', teaching: '看清变化', guided: '试着应用', independent: '独立验证', complete: '本轮完成', paused: '本轮结束' };
@@ -18,7 +18,6 @@ const PHASE_INDEX = { ready: 0, diagnostic: 0, clarification: 0, teaching: 1, gu
 
 export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } }) {
   const lessonHeading = useRef<HTMLHeadingElement>(null);
-  const navigate = useNavigate();
   const location = useLocation();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const store = useTeachingStore();
@@ -41,10 +40,10 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
   }, [session?.stage, taskId]);
 
   const returnContext = session?.practiceReturn?.learnerId === learnerId ? session.practiceReturn : undefined;
-  const exit = () => navigate(parent.to, { state: parent.state });
+  const exit = useAppBack(parent);
   return (
     <div className="page tcp-page">
-      <WorkspaceHeader title="TCP 慢启动 · 带我学" backLabel="返回知识树" onBack={exit} actions={<Link className="context-nav__button" to={ROUTES.progress} state={{ returnTo: location.pathname, returnState: location.state }}>学习记录</Link>} primaryAction={returnContext ? <Link className="context-nav__button context-nav__button--primary" to={returnContext.path}>继续原练习</Link> : undefined} />
+      <WorkspaceHeader title="TCP 慢启动 · 带我学" backLabel="返回" onBack={exit} primaryAction={returnContext ? <Link className="context-nav__button context-nav__button--primary" to={returnContext.path}>继续原练习</Link> : undefined} />
       <main className="tcp-lesson">
         <header className="tcp-lesson__heading"><div><p className="tcp-eyebrow">计算机网络 <span aria-hidden="true">/</span> 约 8 分钟</p><h1 ref={lessonHeading} tabIndex={-1}>{session?.stage === 'teaching' ? TCP_FRAGMENTS[session.difficulty].title : session?.stage === 'independent' ? '换个条件，独立判断。' : session?.stage === 'complete' ? '本轮验证完成。' : session?.stage === 'paused' ? '先停在这里。' : '窗口，怎样一步步变大？'}</h1></div><span className="tcp-lesson__edition" aria-hidden="true">TCP<br />01</span></header>
         {session && <><ol className="tcp-phases" aria-label="本轮教学阶段">{PHASES.map((label, index) => <li key={label} className={index < PHASE_INDEX[session.stage] ? 'is-done' : ''} aria-current={index === PHASE_INDEX[session.stage] ? 'step' : undefined}><span aria-hidden="true">0{index + 1}</span>{label}</li>)}</ol><div className="tcp-decision" role="note"><span>为什么现在做这一步</span><p>{session.stage === 'ready' ? '先用一个具体窗口过程定位你的当前理解，再决定是否需要讲解。' : session.stage === 'independent' ? '讲解和提示已经收起；现在用两项新任务确认能否独立运用。' : session.stage === 'complete' ? '本轮两项新任务均独立完成，现在只汇总可核验的结果。' : session.stage === 'paused' ? session.pauseReason : session.decision}</p></div></>}

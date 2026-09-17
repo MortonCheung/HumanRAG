@@ -11,8 +11,7 @@ interface PracticeSessionSummaryProps {
   questionIds: string[];
   answers: Record<string, PracticeAnswer>;
   onRestart: () => void;
-  returnTo: string;
-  returnState?: unknown;
+  onReturn: () => void;
   mode?: PracticeMode;
   canRestart?: boolean;
   onRemediate?: (questionId: string) => void;
@@ -37,7 +36,7 @@ const MODE_COPY: Record<PracticeMode, { kicker: string; evidence: string; restar
   exam: { kicker: '考试完成', evidence: '本轮答案现已统一揭示；各知识点只按完整的新题独立作答写入验证证据。', restart: '开始新一轮' },
 };
 
-export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, returnTo, returnState, mode = 'train', canRestart = true, onRemediate }: PracticeSessionSummaryProps) {
+export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, onReturn, mode = 'train', canRestart = true, onRemediate }: PracticeSessionSummaryProps) {
   const copy = MODE_COPY[mode];
   const resultRows = questionIds
     .map((questionId) => ({ question: contentRepository.getQuestion(questionId), answer: answers[questionId] }))
@@ -128,7 +127,7 @@ export function PracticeSessionSummary({ plan, questionIds, answers, onRestart, 
       </div>
 
       <footer className="practice-result__actions">
-        <Link className="text-button text-button--ghost" to={returnTo} state={returnState}>返回上一级</Link>
+        <button className="text-button text-button--ghost" type="button" onClick={onReturn}>返回</button>
         {canRestart && <button className="text-button text-button--ghost" type="button" onClick={onRestart}>
           <Repeat size={14} /> {copy.restart}
         </button>}

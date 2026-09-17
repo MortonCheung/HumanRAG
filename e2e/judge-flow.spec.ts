@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { clickPageAction, expectNoHorizontalOverflow, resetDemoState } from './helpers';
+import { clickPageAction, expectNoHorizontalOverflow, openProductArea, resetDemoState } from './helpers';
 
 test.describe('评委主流程与一级路由', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe('评委主流程与一级路由', () => {
     await expect(page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '刷题' })).toHaveCount(0);
 
     await page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '知识空间' }).click();
-    await clickPageAction(page, '学习记录');
+    await openProductArea(page, '我的学习');
     await expect(page).toHaveURL(/\/progress$/);
     await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
     await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();

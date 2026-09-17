@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { TCP_TASKS } from '../src/data/v6/handcrafted/tcpLesson';
-import { fillTcpResponse, clickPageAction, expectPageAction, resetDemoState } from './helpers';
+import { fillTcpResponse, clickPageAction, expectPageAction, openProductArea, resetDemoState } from './helpers';
 
 test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', async ({ page }) => {
   test.setTimeout(120_000);
@@ -60,7 +60,7 @@ test('比赛主流程从 408 目标经 TCP 误区补教到独立验证证据', a
   }
 
   await expect(page.getByText('已掌握', { exact: true })).toBeVisible();
-  await clickPageAction(page, '学习记录');
+  await openProductArea(page, '我的学习');
   await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
   const nextAction = page.locator('.learning-dashboard__next');
   await expect(nextAction.locator('strong')).toBeVisible();

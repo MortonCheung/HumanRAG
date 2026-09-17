@@ -6,6 +6,7 @@ import type { PointDraft } from '../../domain/knowledge/types';
 import { ROUTES } from '../../app/routes';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 import { useUnsavedChanges } from '../workspace/useUnsavedChanges';
+import { useAppBack } from '../../app/appHistory';
 
 export interface PointCreationContext {
   draft: PointDraft | null;
@@ -93,6 +94,7 @@ function PointCreationSession() {
   const location = useLocation();
   const navigate = useNavigate();
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
+  const back = useAppBack({ to: libraryId && treeId ? ROUTES.treeEdit(libraryId, treeId, 'structure') : ROUTES.library });
   const [restored] = useState(() => treeId ? restoreDraft(treeId, location.state) : { draft: null, error: '未找到所属知识树。' });
   const [draft, setCurrentDraft] = useState<PointDraft | null>(restored.draft);
   const draftRef = useRef(draft);
@@ -140,7 +142,7 @@ function PointCreationSession() {
       <WorkspaceHeader
         title={placing ? '位置与关系' : '新建知识点'}
         backLabel="返回节点编辑"
-        onBack={() => navigate(libraryId && treeId ? ROUTES.treeEdit(libraryId, treeId, 'structure') : ROUTES.library)}
+        onBack={back}
       />
       <div className={`point-creation-shell${placing ? ' is-placement' : ''}`}>
         {!placing && <div className="point-creation-shell__stage">
