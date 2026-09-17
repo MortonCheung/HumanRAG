@@ -33,7 +33,8 @@
 .library-manager__tree-list { min-height: 0; padding-top: 8px; overflow-y: auto; }
 .library-manager__tree-list > button { position: relative; width: 100%; min-height: 64px; display: grid; grid-template-columns: 9px 1fr; gap: 13px; align-items: center; padding: 10px; border-radius: 0; background: transparent; text-align: left; transition: background 180ms var(--it-ease), color 180ms var(--it-ease); }
 .library-manager__tree-list > button:hover { background: rgb(255 255 255 / .035); }
-.library-manager__tree-list > button.is-selected { background: rgb(197 239 255 / .04); box-shadow: inset 2px 0 var(--it-accent); }
+.library-manager__tree-list > button.is-selected { background: rgb(197 239 255 / .04); }
+.library-manager__selection { position: absolute; top: 8px; bottom: 8px; left: 0; width: 2px; background: var(--it-accent); pointer-events: none; }
 .library-manager__tree-swatch { width: 7px; height: 7px; border-radius: 50%; box-shadow: 0 0 0 4px rgb(177 216 202 / .05); }
 .library-manager__tree-copy { min-width: 0; display: grid; gap: 5px; }
 .library-manager__tree-copy strong { overflow: hidden; font-size: 15px; font-weight: 540; text-overflow: ellipsis; white-space: nowrap; }

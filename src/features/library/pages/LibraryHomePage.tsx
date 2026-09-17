@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Exam, Plus } from '@phosphor-icons/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useLocation } from 'react-router-dom';
 import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { ROUTES } from '../../../app/routes';
@@ -8,8 +9,10 @@ import type { KnowledgeTree } from '../../../domain/knowledge/types';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { useSpatialOccluder } from '../../spatial/SpatialViewport';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
+import { MOTION } from '../../../motion/tokens';
 
 export function LibraryHomePage() {
+  const reducedMotion = Boolean(useReducedMotion());
   const navigate = useNavigate();
   const location = useLocation();
   const selectStageTree = useSpatialStageStore((state) => state.selectTree);
@@ -62,6 +65,12 @@ export function LibraryHomePage() {
                   className={tree.id === selectedTreeId ? 'is-selected' : ''}
                   onClick={() => setSelectedTreeId(tree.id)}
                 >
+                  {tree.id === selectedTreeId && <motion.i
+                    className="library-manager__selection"
+                    layoutId="library-tree-selection"
+                    aria-hidden="true"
+                    transition={reducedMotion ? { duration: 0 } : MOTION.spring.direct}
+                  />}
                   <span className="library-manager__tree-swatch" style={{ background: tree.color }} />
                   <span className="library-manager__tree-copy">
                     <strong>{tree.name}</strong>

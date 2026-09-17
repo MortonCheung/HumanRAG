@@ -85,6 +85,7 @@
   overflow-y: auto;
 }
 .step-rail__item { position: relative; display: flex; align-items: center; gap: 12px; min-height: 66px; padding: 12px 14px 12px 0; background: none; border: 0; text-align: left; cursor: default; }
+.step-rail__active-marker { position: absolute; top: 8px; bottom: 8px; left: -22px; width: 2px; background: var(--it-accent); }
 .step-rail__dot {
   position: relative;
   z-index: 1;

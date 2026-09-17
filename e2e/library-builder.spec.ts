@@ -13,10 +13,9 @@ test.describe('知识库、知识树与知识点创建', () => {
     await expect(page.locator('[data-spatial-stage] canvas')).toHaveCount(1);
     await expect(page.getByRole('listbox', { name: '知识树列表' })).toBeVisible();
     await expect(page.getByRole('button', { name: /进入知识树/ })).toBeVisible();
-    await page.getByRole('button', { name: '页面操作' }).click();
     await expect(page.getByRole('button', { name: /测验/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /创建知识树/ })).toBeVisible();
-    await page.getByRole('button', { name: '页面操作' }).click();
+    await expect(page.getByRole('button', { name: '页面操作' })).toBeHidden();
 
     const canvas = page.locator('[data-spatial-stage] canvas');
     const canvasIdentity = await canvas.evaluateHandle((element) => element);

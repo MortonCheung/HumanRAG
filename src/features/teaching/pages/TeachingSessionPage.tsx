@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight } from '@phosphor-icons/react';
 import { useTeachingStore } from '../../../store/teachingStore';
@@ -16,6 +17,7 @@ import { BRANCH_TO_TREE_ID } from '../../../domain/knowledge/catalog';
 import { buildDecisionSentence, type TeachingContext } from '../../../ai/teaching/TeachingDecisionEngine';
 import { MISCONCEPTIONS } from '../../../data/v6/catalogs/misconceptionCatalog';
 import { teachingPhaseIndex } from '../components/TeachingStepRail';
+import { MOTION } from '../../../motion/tokens';
 import '../teaching.css';
 import '../tcp-lesson.css';
 
@@ -30,6 +32,7 @@ export function TeachingSessionPage() {
 
 /** Existing content remains available without claiming the full TCP teaching capability. */
 function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string; parent: { to: string; state?: unknown } }) {
+  const reducedMotion = Boolean(useReducedMotion());
   const scrollPane = useRef<HTMLDivElement>(null);
   const store = useTeachingStore();
   const [selections, setSelections] = useState<Record<string, string>>({});
@@ -70,14 +73,29 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
       <TeachingStepRail />
       <main className="teach-stage"><div className="teach-stage__scroll" ref={scrollPane}>
         {store.storageError && <p className="lesson-save-error" role="alert">{store.storageError}</p>}
-        {store.status === 'finished' ? <TeachingCompletionEvidence unit={unit ?? routeUnit} answers={store.answers} completedStepIds={store.completedStepIds} outcome={store.outcome} onFinish={exit} onRestart={() => store.startSession(routeUnit.id)} /> : step && unit ? <section className="stage-block">
-          <p className="stage-block__kicker">第 {teachingPhaseIndex(step.kind) + 1} 阶段 · {step.kind === 'independent-check' ? `第 ${store.attempt} 次独立验证` : unit.title}</p>
-          <h1 className="stage-block__title">{step.title}</h1>
-          <div className="teach-decision" role="note"><span>为什么现在做这一步</span><p>{decision}</p></div>
-          <div className="stage-block__body">{step.bodyBlocks.map((block, index) => <ContentBlockView key={`${step.id}-${index}`} block={block} />)}
-            {questionIds.map((id, index) => <QuestionCard key={`${id}-${store.attempt}`} questionId={id} index={index} onSelectionChange={(questionId, selected) => setSelections((current) => ({ ...current, [questionId]: selected }))} />)}
-          </div>
-        </section> : <p>正在恢复本次学习。</p>}
+        <AnimatePresence initial={false} mode="wait">
+          {store.status === 'finished' ? <motion.div
+            key="teaching-complete"
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: reducedMotion ? 0 : MOTION.duration.content, ease: MOTION.ease.out }}
+          ><TeachingCompletionEvidence unit={unit ?? routeUnit} answers={store.answers} completedStepIds={store.completedStepIds} outcome={store.outcome} onFinish={exit} onRestart={() => store.startSession(routeUnit.id)} /></motion.div> : step && unit ? <motion.section
+            key={`${step.id}-${store.attempt}`}
+            className="stage-block"
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: reducedMotion ? 0 : MOTION.duration.content, ease: MOTION.ease.out }}
+          >
+            <p className="stage-block__kicker">第 {teachingPhaseIndex(step.kind) + 1} 阶段 · {step.kind === 'independent-check' ? `第 ${store.attempt} 次独立验证` : unit.title}</p>
+            <h1 className="stage-block__title">{step.title}</h1>
+            <div className="teach-decision" role="note"><span>为什么现在做这一步</span><p>{decision}</p></div>
+            <div className="stage-block__body">{step.bodyBlocks.map((block, index) => <ContentBlockView key={`${step.id}-${index}`} block={block} />)}
+              {questionIds.map((id, index) => <QuestionCard key={`${id}-${store.attempt}`} questionId={id} index={index} onSelectionChange={(questionId, selected) => setSelections((current) => ({ ...current, [questionId]: selected }))} />)}
+            </div>
+          </motion.section> : <motion.p key="teaching-restoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>正在恢复本次学习。</motion.p>}
+        </AnimatePresence>
       </div>
       {store.status !== 'finished' && step && <footer className="teach-stage__footer"><span className="teach-stage__hint" role={error ? 'alert' : undefined}>{error || (submitted ? '本步作答已记录' : '')}</span>{questionIds.length > 0 && !submitted ? <div><button className="text-button text-button--ghost" type="button" onClick={() => { setError(''); store.advance(); }}>下一步 <ArrowRight size={16} /></button><button className="text-button text-button--primary" type="button" onClick={() => { const result = store.submitCurrentStep(selections); setError(result.ok ? '' : result.missing ? `还有 ${result.missing} 道题未作答。` : '记录未保存，请重试。'); }}>提交答案</button></div> : <button className="text-button text-button--primary" type="button" onClick={store.advance}>下一步 <ArrowRight size={16} /></button>}</footer>}
       </main>

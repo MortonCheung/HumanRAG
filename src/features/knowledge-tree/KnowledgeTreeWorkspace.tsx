@@ -1,5 +1,6 @@
 import { BookOpenText, ChalkboardTeacher, Plus, SealCheck } from '@phosphor-icons/react';
 import { useEffect, useMemo } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { ROUTES } from '../../app/routes';
@@ -16,6 +17,7 @@ import { useUserStore } from '../../store/userStore';
 import { useLearningQuestionStore } from '../../domain/learning/learningQuestions';
 import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 import { useAppBack } from '../../app/appHistory';
+import { MOTION } from '../../motion/tokens';
 import './knowledge-tree-workspace.css';
 
 export function KnowledgeTreeWorkspace() {
@@ -66,7 +68,9 @@ export function KnowledgeTreeWorkspace() {
         <div ref={stageViewport.ref} className="knowledge-tree-workspace__stage" aria-label={`${data.tree.name}三维知识树`} />
         <aside ref={panelViewport.ref} className="knowledge-tree-workspace__panel" aria-label={selectedPoint ? `${selectedPoint.name}详情` : '知识点'}>
           <div className={`knowledge-tree-workspace__mode-panel${selectedPoint ? ' is-obscured' : ''}`} inert={Boolean(selectedPoint)} aria-hidden={Boolean(selectedPoint)}><Outlet /></div>
-          {selectedPoint && <TreePointDetailPanel point={selectedPoint} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
+          <AnimatePresence initial={false} mode="wait">
+            {selectedPoint && <TreePointDetailPanel key={selectedPoint.id} point={selectedPoint} libraryId={libraryId} treeId={treeId} learnerId={learnerId} evidence={evidence} recommendation={recommendation} onClose={() => selectPoint(null)} />}
+          </AnimatePresence>
         </aside>
       </div>
     </main>
@@ -83,12 +87,19 @@ function TreePointDetailPanel({ point, libraryId, treeId, learnerId, evidence, r
   onClose: () => void;
 }) {
   const navigate = useNavigate();
+  const reducedMotion = Boolean(useReducedMotion());
   const learningState = deriveLearningStateFromEvidence(point.id, learnerId, evidence);
   const recommendedAction: 'study' | 'teach' | 'verify' | null = recommendation?.pointId !== point.id
     ? null
     : recommendedActionFor(learningState);
   return (
-    <section className="tree-point-detail">
+    <motion.section
+      className="tree-point-detail"
+      initial={reducedMotion ? false : { opacity: 0, x: 10 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
+      transition={{ duration: reducedMotion ? 0 : MOTION.duration.content, ease: MOTION.ease.out }}
+    >
       <button type="button" className="tree-workspace-back" onClick={onClose}>返回知识点</button>
       <p className="tree-panel-kicker">知识点</p>
       <h1>{point.name}</h1>
@@ -106,7 +117,7 @@ function TreePointDetailPanel({ point, libraryId, treeId, learnerId, evidence, r
         <button type="button" aria-label="带我学" className={recommendedAction === 'teach' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointTeach(libraryId, treeId, point.id))}><ChalkboardTeacher size={18} aria-hidden="true" /><span><strong>带我学</strong>{recommendedAction === 'teach' && <small>建议</small>}</span></button>
         <button type="button" aria-label="刷题" className={recommendedAction === 'verify' ? 'is-recommended' : ''} onClick={() => navigate(ROUTES.pointVerify(libraryId, treeId, point.id))}><SealCheck size={18} aria-hidden="true" /><span><strong>刷题</strong>{recommendedAction === 'verify' && <small>建议</small>}</span></button>
       </div>
-    </section>
+    </motion.section>
   );
 }
 

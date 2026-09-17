@@ -18,8 +18,8 @@ function AnimatedNavigationTitle({ title }: { title: string }) {
       key={title}
       className="context-nav__title"
       title={title}
-      initial={reducedMotion ? false : { opacity: 0, filter: 'blur(4px)', color: 'var(--it-accent)' }}
-      animate={{ opacity: 1, filter: 'blur(0px)', color: 'var(--it-text)' }}
+      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reducedMotion ? 0 : 0.26, ease: [0.16, 1, 0.3, 1] }}
     >
       {title}

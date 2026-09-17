@@ -1,4 +1,6 @@
 import type { LearningActivityDay } from '../learningDashboard';
+import { motion, useReducedMotion } from 'motion/react';
+import { MOTION } from '../../../motion/tokens';
 
 function shortDate(date: string) {
   return date.slice(5).replace('-', '.');
@@ -13,14 +15,18 @@ export function LearningActivityHeatmap({ activity, range }: {
   activity: readonly LearningActivityDay[];
   range: { start: string; end: string };
 }) {
+  const reducedMotion = Boolean(useReducedMotion());
   return <div className="learning-activity-visual">
     <div className="learning-activity-heatmap" role="img" aria-label={`${shortDate(range.start)} 至 ${shortDate(range.end)} 的每日学习活动`}>
-      {activity.map((day) => <span
+      {activity.map((day, index) => <motion.span
         key={day.date}
         className="learning-activity-cell"
         data-level={day.level}
         title={description(day)}
         aria-label={description(day)}
+        initial={reducedMotion ? false : { opacity: 0, scale: 0.82 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: reducedMotion ? 0 : MOTION.duration.micro, delay: reducedMotion ? 0 : Math.min(index, 35) * 0.008, ease: MOTION.ease.out }}
       />)}
       <span className="learning-activity-cell learning-activity-cell--placeholder" aria-hidden="true" />
     </div>

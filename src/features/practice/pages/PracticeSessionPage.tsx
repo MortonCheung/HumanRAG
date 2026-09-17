@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { usePageNavigate as useNavigate } from '../../../app/pageNavigation';
 import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight, CaretLeft, Flag } from '@phosphor-icons/react';
@@ -17,6 +18,7 @@ import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { getWorkspaceParent } from '../../workspace/parentNavigation';
 import type { PracticeReturnContext } from '../../../store/teachingStore';
 import { getTcpTask, tcpTaskResultKeys, tcpTaskSignature } from '../../../data/v6/handcrafted/tcpLesson';
+import { MOTION } from '../../../motion/tokens';
 import '../practice.css';
 
 const MODE_COPY: Record<PracticeMode, { label: string; progress: string; complete: string; empty: string }> = {
@@ -53,6 +55,7 @@ function questionsForMode(questionIds: string[], learnerId: string, mode: Practi
 }
 
 export function PracticeSessionPage() {
+  const reducedMotion = Boolean(useReducedMotion());
   const { sessionId: legacyId, pointId, treeId, libraryId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +64,7 @@ export function PracticeSessionPage() {
   const answerRecords = useProgressStore((state) => state.answerRecords);
   const taskExposures = useProgressStore((state) => state.taskExposures);
   const [error, setError] = useState('');
+  const [questionDirection, setQuestionDirection] = useState<1 | -1>(1);
   const sessionId = legacyId ?? (pointId ? `node:${pointId}` : treeId ? `tree:${treeId}` : libraryId ? `library:${libraryId}` : undefined);
   const scopeNode = pointId ?? (legacyId?.startsWith('node:') ? legacyId.slice(5) : undefined);
   const branch = scopeNode ? contentRepository.getNode(scopeNode)?.branchId : undefined;
@@ -102,22 +106,36 @@ export function PracticeSessionPage() {
   };
   const teach = () => { if (question) teachQuestion(question.id); };
   const next = () => {
-    if (!isLast) { store.next(); return; }
+    if (!isLast) { setQuestionDirection(1); store.next(); return; }
     const result = store.finish();
     if (!result.ok) setError(result.missing ? `还有 ${result.missing} 道题未作答。` : '进度未保存，请重试。');
+  };
+  const previous = () => { setQuestionDirection(-1); store.prev(); };
+  const goToQuestion = (index: number) => {
+    setQuestionDirection(index >= store.currentIndex ? 1 : -1);
+    store.goTo(index);
   };
 
   return <div className="page">
     <WorkspaceHeader title={plan ? `${copy.label} · ${plan.title}` : copy.label} backLabel="返回" onBack={exit} />
     {!plan ? <main className="page__inner"><h1 className="page-title">暂无可用题目</h1><p className="page-lead">这个范围的题目不存在或已被移除。</p></main> : !active && availableQuestionIds.length === 0 && !resumable ? <main className="page__inner practice-empty"><p className="panel-kicker">{copy.label}</p><h1 className="page-title">暂时无法开始</h1><p className="page-lead">{copy.empty}</p><button className="text-button text-button--primary" type="button" onClick={exit}>返回</button></main> : active && store.status === 'finished' ? <div className="page__inner"><PracticeSessionSummary plan={plan} questionIds={ids} answers={store.answers} mode={mode} canRestart={mode === 'train' || availableQuestionIds.length > 0} onRestart={() => store.startSession(plan.id, availableQuestionIds, { restart: true, mode })} onReturn={exit} onRemediate={teachQuestion} /></div> : <div className="practice-session practice-session--focused">
-      <nav className="practice-nav" aria-label="题目导航"><p className="practice-nav__kicker">{copy.progress} {answeredCount} / {ids.length}</p><div className="practice-nav__grid">{ids.map((questionId, index) => { const entry = store.answers[questionId]; const resultClass = mode === 'train' && entry ? entry.correct ? 'is-correct' : 'is-wrong' : entry ? 'is-recorded' : ''; const stateLabel = entry ? mode === 'train' ? entry.correct ? '，正确' : '，错误' : '，已记录' : '，未作答'; return <button key={questionId} type="button" aria-label={`第 ${index + 1} 题${stateLabel}`} aria-current={index === store.currentIndex ? 'step' : undefined} className={`practice-nav__cell ${index === store.currentIndex ? 'is-current' : ''} ${resultClass}`} onClick={() => store.goTo(index)}>{index + 1}{store.flaggedIds.includes(questionId) ? '·' : ''}</button>; })}</div></nav>
+      <nav className="practice-nav" aria-label="题目导航"><p className="practice-nav__kicker">{copy.progress} {answeredCount} / {ids.length}</p><div className="practice-nav__grid">{ids.map((questionId, index) => { const entry = store.answers[questionId]; const resultClass = mode === 'train' && entry ? entry.correct ? 'is-correct' : 'is-wrong' : entry ? 'is-recorded' : ''; const stateLabel = entry ? mode === 'train' ? entry.correct ? '，正确' : '，错误' : '，已记录' : '，未作答'; return <button key={questionId} type="button" aria-label={`第 ${index + 1} 题${stateLabel}`} aria-current={index === store.currentIndex ? 'step' : undefined} className={`practice-nav__cell ${index === store.currentIndex ? 'is-current' : ''} ${resultClass}`} onClick={() => goToQuestion(index)}>{index + 1}{store.flaggedIds.includes(questionId) ? '·' : ''}</button>; })}</div></nav>
       <main className="practice-stage"><div className="practice-stage__scroll">
         {(error || store.storageError) && <div className="lesson-save-error" role="alert">{error || store.storageError}{store.storageError && <button className="text-button" type="button" onClick={store.retrySave}>重试保存</button>}</div>}
-        {question ? <><PracticeQuestion questionId={question.id} index={store.currentIndex} total={ids.length} selected={selected} answer={answer} revealResult={mode === 'train'} onSelectChange={store.setDraft} />
-          {answer && mode === 'train' && <section className="practice-answer-feedback" aria-label="作答反馈"><p className={`practice-feedback__verdict ${answer.correct ? 'is-correct' : 'is-wrong'}`}>{answer.correct ? '本题正确' : '本题未通过'}</p>{answer.correct && <p>已记录一次正确作答；是否掌握会结合后续独立任务判断。</p>}{!answer.correct && answer.misconceptionText && <p>{answer.misconceptionId ? '本次作答指向：' : '原因待确认：'}{answer.misconceptionText}</p>}<p>{question.explanation}</p>{!answer.correct && unit && <button type="button" className="text-button" onClick={teach}>看这一步的讲解 <ArrowRight size={16} /></button>}</section>}
-          {answer && mode !== 'train' && <p className="practice-answer-recorded" role="status"><strong>已记录</strong><span>本轮结束后统一查看答案与结果。</span></p>}
-        </> : <p>正在恢复练习。</p>}
-      </div><footer className="practice-stage__footer"><div className="practice-stage__secondary"><button type="button" className="text-button text-button--ghost" onClick={() => id && store.toggleFlag(id)} disabled={!id}><Flag size={16} weight={flagged ? 'fill' : 'regular'} />{flagged ? '已标记' : '标记'}</button><button type="button" className="text-button text-button--ghost" onClick={store.prev} disabled={store.currentIndex === 0}><CaretLeft size={16} />上一题</button>{!answer && <button type="button" className="text-button text-button--ghost" disabled={!question} onClick={() => { setError(''); next(); }}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button>}</div>{answer ? <button className="text-button text-button--primary" type="button" onClick={next}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button> : <button className="text-button text-button--primary" type="button" disabled={!question} onClick={() => { if (!selected.trim()) setError('先完成作答。'); else if (id && store.submitAnswer(id, selected)) setError(''); }}>提交答案 <ArrowRight size={16} /></button>}</footer></main>
+        <AnimatePresence initial={false} mode="wait">
+          {question ? <motion.div
+            key={question.id}
+            className="practice-question-motion"
+            initial={reducedMotion ? false : { opacity: 0, x: questionDirection * 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: questionDirection * -8 }}
+            transition={{ duration: reducedMotion ? 0 : MOTION.duration.content, ease: MOTION.ease.out }}
+          ><PracticeQuestion questionId={question.id} index={store.currentIndex} total={ids.length} selected={selected} answer={answer} revealResult={mode === 'train'} onSelectChange={store.setDraft} />
+            {answer && mode === 'train' && <section className="practice-answer-feedback" aria-label="作答反馈"><p className={`practice-feedback__verdict ${answer.correct ? 'is-correct' : 'is-wrong'}`}>{answer.correct ? '本题正确' : '本题未通过'}</p>{answer.correct && <p>已记录一次正确作答；是否掌握会结合后续独立任务判断。</p>}{!answer.correct && answer.misconceptionText && <p>{answer.misconceptionId ? '本次作答指向：' : '原因待确认：'}{answer.misconceptionText}</p>}<p>{question.explanation}</p>{!answer.correct && unit && <button type="button" className="text-button" onClick={teach}>看这一步的讲解 <ArrowRight size={16} /></button>}</section>}
+            {answer && mode !== 'train' && <p className="practice-answer-recorded" role="status"><strong>已记录</strong><span>本轮结束后统一查看答案与结果。</span></p>}
+          </motion.div> : <motion.p key="practice-restoring" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>正在恢复练习。</motion.p>}
+        </AnimatePresence>
+      </div><footer className="practice-stage__footer"><div className="practice-stage__secondary"><button type="button" className="text-button text-button--ghost" onClick={() => id && store.toggleFlag(id)} disabled={!id}><Flag size={16} weight={flagged ? 'fill' : 'regular'} />{flagged ? '已标记' : '标记'}</button><button type="button" className="text-button text-button--ghost" onClick={previous} disabled={store.currentIndex === 0}><CaretLeft size={16} />上一题</button>{!answer && <button type="button" className="text-button text-button--ghost" disabled={!question} onClick={() => { setError(''); next(); }}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button>}</div>{answer ? <button className="text-button text-button--primary" type="button" onClick={next}>{isLast ? copy.complete : '下一题'} <ArrowRight size={16} /></button> : <button className="text-button text-button--primary" type="button" disabled={!question} onClick={() => { if (!selected.trim()) setError('先完成作答。'); else if (id && store.submitAnswer(id, selected)) setError(''); }}>提交答案 <ArrowRight size={16} /></button>}</footer></main>
     </div>}
   </div>;
 }
