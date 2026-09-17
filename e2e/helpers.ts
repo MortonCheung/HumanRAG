@@ -6,7 +6,7 @@ import { tcpExpected, type TcpTask } from '../src/data/v6/handcrafted/tcpLesson'
 export const SYSTEM_UNIT_ID = 'tu-knowledge-linear-list';
 export const SYSTEM_NODE_ID = 'knowledge-linear-list';
 
-/** 第 30 章：次要操作在任何 viewport 都收进同一个 `...` disclosure。 */
+/** 次要操作在宽屏直接显示，空间不足时由同一个 `...` disclosure 承载。 */
 function secondaryAction(page: Page, name: string) {
   const nav = page.locator('header.context-nav');
   return nav

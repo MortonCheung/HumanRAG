@@ -1,4 +1,4 @@
-import type { createBrowserRouter } from 'react-router-dom';
+import { NavigationType } from 'react-router-dom';
 import './route-transitions.css';
 
 export type RouteDirection = -1 | 0 | 1;
@@ -24,22 +24,10 @@ function routeLayer(path: string) {
   return 1;
 }
 
-/** Product hierarchy determines Back, not URL segment count or PUSH versus POP. */
-export function getRouteDirection(from: string, to: string): RouteDirection {
-  if (from === to || isSpatialEntry(from, to)) return 0;
-  if (to === '/progress') return 1;
-  if (from === '/progress') return -1;
-  return Math.sign(routeLayer(to) - routeLayer(from)) as RouteDirection;
-}
-
-/** Read-only subscription: the router still owns snapshots, interruption and POP. */
-export function installRouteTransitionDirection(router: ReturnType<typeof createBrowserRouter>) {
-  let previousPath = router.state.location.pathname;
-  return router.subscribe((state) => {
-    const nextPath = state.location.pathname;
-    if (nextPath === previousPath) return;
-    const direction = getRouteDirection(previousPath, nextPath);
-    document.documentElement.dataset.routeDirection = direction > 0 ? 'forward' : direction < 0 ? 'back' : 'lateral';
-    previousPath = nextPath;
-  });
+/** Real POP direction wins; ordinary PUSH only moves forward when entering a deeper task. */
+export function getRouteDirection(from: string, to: string, navigation: { action?: NavigationType; popDirection?: RouteDirection } = {}): RouteDirection {
+  if (from === to) return 0;
+  if (navigation.action === NavigationType.Pop) return navigation.popDirection ?? 0;
+  if (navigation.action === NavigationType.Replace || isSpatialEntry(from, to)) return 0;
+  return routeLayer(to) > routeLayer(from) ? 1 : 0;
 }

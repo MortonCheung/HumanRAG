@@ -3,14 +3,12 @@ import { useReducedMotion } from 'motion/react';
 import { matchPath, Outlet, useLocation } from 'react-router-dom';
 import { TransitionLink as Link } from '../../app/pageNavigation';
 import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
-import { GlobalNav } from '../../components/navigation/GlobalNav';
 import { buildSceneModel } from '../../graph/relevance';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
 import { ROUTES } from '../../app/routes';
 import { SpatialExperienceContext, type SpatialExperiencePhase } from './SpatialExperienceContext';
 import { UniversePage } from '../universe/pages/UniversePage';
 import { LandingPage } from '../landing/pages/LandingPage';
-import { SpatialViewportProvider } from './SpatialViewport';
 import { SpatialStageCanvas } from './SpatialStageCanvas';
 import { useSpatialStageStore, type SpatialStageMode } from './spatialStageStore';
 import { canStartGoalTreeHandoff, GOAL_TREE_HANDOFF_MS, GOAL_TREE_STABLE_FRAME_MS, useGoalTreeTransitionStore } from './transitions/goalTreeTransitionStore';
@@ -18,6 +16,7 @@ import { useProgressStore } from '../../store/progressStore';
 import { useUserStore } from '../../store/userStore';
 import { deriveLearningStateFromEvidence } from '../../domain/learning/deriveLearningState';
 import { knowledgeGraph } from '../../data/knowledgeGraph';
+import { useChromeVisibility } from '../../app/RootChromeShell';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -28,11 +27,12 @@ class SceneBoundary extends Component<{ children: ReactNode; onError: () => void
 
 /** Route changes replace only the DOM; one camera owns the entire entry shot. */
 export function SpatialExperienceShell() {
-  return <SpatialViewportProvider><SpatialExperience /></SpatialViewportProvider>;
+  return <SpatialExperience />;
 }
 
 function SpatialExperience() {
   const location = useLocation();
+  const { revealOpeningChrome } = useChromeVisibility();
   const navigate = useNavigate();
   const reducedMotion = Boolean(useReducedMotion());
   const openingRoute = location.pathname === ROUTES.root;
@@ -95,8 +95,11 @@ function SpatialExperience() {
   useEffect(() => {
     if (phase !== 'universe' || !entryFocusPending.current) return;
     entryFocusPending.current = false;
-    document.querySelector<HTMLElement>('.spatial-experience > .context-nav')?.focus({ preventScroll: true });
+    document.querySelector<HTMLElement>('header.context-nav')?.focus({ preventScroll: true });
   }, [phase]);
+  useEffect(() => {
+    if (openingRoute && (phase === 'settling' || phase === 'universe')) revealOpeningChrome(location.key);
+  }, [location.key, openingRoute, phase, revealOpeningChrome]);
   useEffect(() => { if (pendingEntry && ready) beginUniverseEntry(); }, [beginUniverseEntry, pendingEntry, ready]);
   useEffect(() => {
     if (phase !== 'awakening') return;
@@ -154,7 +157,6 @@ function SpatialExperience() {
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
             onEntryComplete={finishEntry} treeReadOnly={treeWorkspaceReadOnly} />
         </SceneBoundary>
-        <GlobalNav concealed={(openingRoute || directUniverse) && phase !== 'settling' && phase !== 'universe'} />
         {(openingRoute || directUniverse) && <UniversePage />}
         {openingRoute && <LandingPage />}
         {!openingRoute && !directUniverse && <Outlet />}

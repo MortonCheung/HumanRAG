@@ -1,7 +1,7 @@
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, useParams } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { ROUTES } from './routes';
-import { installRouteTransitionDirection } from './routeTransitions';
+import { RootChromeShell } from './RootChromeShell';
 import { SpatialExperienceShell } from '../features/spatial/SpatialExperienceShell';
 import { migrateV9 } from '../domain/knowledge/migration';
 import { loadLibraryHomeRoute } from '../features/library/loadLibraryHomePage';
@@ -27,8 +27,8 @@ migrateV9();
 // Resolve page modules before committing a view, so snapshots contain the
 // complete destination instead of a blank Suspense fallback.
 const router = createBrowserRouter(createRoutesFromElements(
-  <>
-    <Route element={<SpatialExperienceShell />} hydrateFallbackElement={initialView}>
+  <Route element={<RootChromeShell />} hydrateFallbackElement={initialView}>
+    <Route element={<SpatialExperienceShell />}>
       <Route path={ROUTES.root} element={null} />
       <Route path={ROUTES.universe} element={null} />
       <Route path={ROUTES.library} lazy={loadLibraryHomeRoute} />
@@ -69,11 +69,8 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route path="/library/new" element={<Navigate to={ROUTES.treeNew('computer')} replace />} />
     <Route path="/library/:libraryId/edit" element={<Navigate to={ROUTES.library} replace />} />
     <Route path="*" element={<Navigate to={ROUTES.root} replace />} />
-  </>,
+  </Route>,
 ));
-
-const unsubscribeTransitionDirection = installRouteTransitionDirection(router);
-if (import.meta.hot) import.meta.hot.dispose(unsubscribeTransitionDirection);
 
 export function AppRouter() {
   return <RouterProvider router={router} />;

@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom';
 import { AppShell } from '../../../app/AppShell';
+import { GlobalNav } from '../../../components/navigation/GlobalNav';
 import { ROUTES } from '../../../app/routes';
 import { createTree, migrateV9 } from '../../../domain/knowledge/migration';
 import { KnowledgeTreeWorkspace } from '../KnowledgeTreeWorkspace';
@@ -33,11 +34,11 @@ describe('knowledge tree node creation entry', () => {
   it('keeps Add visible on a narrow user tree and its editor, with the real creation form reachable', async () => {
     const { library } = migrateV9();
     const tree = createTree(library.id, { identity: { name: '导航创建回归', description: '', color: '#b1d8ca' } });
-    const router = createMemoryRouter([{ element: <AppShell />, children: [
+    const router = createMemoryRouter([{ element: <><GlobalNav /><Outlet /></>, children: [{ element: <AppShell />, children: [
       { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <p>知识点</p> }] },
       { path: '/library/:libraryId/tree/:treeId/edit', element: <TreeEditorShell />, children: [{ path: 'structure', element: <TreeStructureEditorPage /> }] },
       { path: '/library/:libraryId/tree/:treeId/points/new', element: <PointCreationShell />, children: [{ path: 'content', element: <PointContentPage /> }] },
-    ] }], { initialEntries: [ROUTES.treePath(library.id, tree.id)] });
+    ] }] }], { initialEntries: [ROUTES.treePath(library.id, tree.id)] });
     render(<RouterProvider router={router} />);
     const assertAdd = () => {
       const add = screen.getByRole('button', { name: '新增节点' });
@@ -58,9 +59,9 @@ describe('knowledge tree node creation entry', () => {
   });
 
   it('makes the system example read-only state explicit without adding write controls', () => {
-    const router = createMemoryRouter([{ element: <AppShell />, children: [
+    const router = createMemoryRouter([{ element: <><GlobalNav /><Outlet /></>, children: [{ element: <AppShell />, children: [
       { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <p>知识点</p> }] },
-    ] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
+    ] }] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
     render(<RouterProvider router={router} />);
     fireEvent.click(screen.getByRole('button', { name: '页面操作' }));
     expect(screen.getByText('只读').getAttribute('title')).toBeNull();
@@ -69,12 +70,12 @@ describe('knowledge tree node creation entry', () => {
   });
 
   it('offers three equal point intents and uses their canonical routes', async () => {
-    const router = createMemoryRouter([{ element: <AppShell />, children: [
+    const router = createMemoryRouter([{ element: <><GlobalNav /><Outlet /></>, children: [{ element: <AppShell />, children: [
       { path: '/library/:libraryId/tree/:treeId', element: <KnowledgeTreeWorkspace />, children: [{ path: 'path', element: <SelectTcpPoint /> }] },
       { path: '/library/:libraryId/tree/:treeId/point/:pointId/study', element: <p>自学工作区</p> },
       { path: '/library/:libraryId/tree/:treeId/point/:pointId/teach', element: <p>带我学工作区</p> },
       { path: '/library/:libraryId/tree/:treeId/point/:pointId/verify', element: <p>测验工作区</p> },
-    ] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
+    ] }] }], { initialEntries: [ROUTES.treePath('computer', 'tree-408')] });
     render(<RouterProvider router={router} />);
     const actions = [
       ['自学', ROUTES.pointStudy('computer', 'tree-408', 'knowledge-tcp'), '自学工作区'],

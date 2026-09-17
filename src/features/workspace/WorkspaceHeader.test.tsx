@@ -54,10 +54,10 @@ describe('context navigation host lifecycle', () => {
       useEffect(() => { mounts(); }, []);
       return <><WorkspaceHeader title="创建节点" onBack={() => {}} /><input aria-label="节点名称" value={title} onChange={(event) => setTitle(event.target.value)} /><Outlet /></>;
     }
-    const router = createMemoryRouter([{ element: <AppShell />, children: [{ element: <DraftShell />, children: [
+    const router = createMemoryRouter([{ element: <><GlobalNav /><Outlet /></>, children: [{ element: <AppShell />, children: [{ element: <DraftShell />, children: [
       { path: '/new/content', element: <WorkspaceActions primary><button>下一步</button></WorkspaceActions> },
       { path: '/new/place', element: <WorkspaceActions primary><button>创建</button></WorkspaceActions> },
-    ] }] }], { initialEntries: ['/new/content'] });
+    ] }] }] }], { initialEntries: ['/new/content'] });
     render(<RouterProvider router={router} />);
     fireEvent.change(screen.getByRole('textbox', { name: '节点名称' }), { target: { value: '拥塞窗口' } });
     await act(() => router.navigate('/new/place'));

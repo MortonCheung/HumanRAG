@@ -34,7 +34,8 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
-.context-nav__title-slot { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; pointer-events: auto; }
+.context-nav__title-slot { display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; pointer-events: none; }
+.context-nav__title-slot :is(.context-nav__modes, .context-nav__mode-links, .context-nav__mode-select) { pointer-events: auto; }
 .context-nav__title-slot:not(:empty) + .context-nav__fallback { display: none; }
 .context-nav__title, .context-nav__fallback { overflow: hidden; max-width: 24vw; font-size: 14px; font-weight: 560; white-space: nowrap; text-overflow: ellipsis; }
 .context-nav__trailing {
@@ -95,8 +96,9 @@
   align-items: center;
 }
 .context-nav__app-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 180px; align-items: stretch; flex-direction: column; padding: 8px; border: 1px solid var(--it-rule-strong); border-radius: 10px; background: var(--it-surface, #10151e); box-shadow: 0 20px 52px rgb(3 6 12 / .4); }
-.context-nav__app-menu a { width: 100%; justify-content: flex-start; }
-.context-nav__app-menu a.active { color: var(--it-accent); }
+.context-nav__app-menu a { position: relative; width: 100%; justify-content: flex-start; }
+.context-nav__app-menu a.active { color: var(--it-text); }
+.context-nav__app-menu a > i { position: absolute; right: 10px; bottom: 5px; left: 10px; height: 1px; background: var(--it-accent); pointer-events: none; }
 .context-nav__app-menu[hidden], .context-nav__actions-slot[hidden] { display: none; }
 .context-nav__overflow:has(.context-nav__actions-slot:empty) { visibility: hidden; }
 .context-nav__more { display: inline-flex; }
@@ -141,6 +143,7 @@
   .context-nav__brand { display: none; }
   .context-nav__app-menu { position: static; min-width: 0; flex-direction: row; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
   .context-nav__app-menu a { width: auto; }
+  .context-nav__app-menu a > i { right: 10px; left: 10px; }
 }
 @media (min-width: 768px) and (max-width: 1099px) {
   .context-nav__search { width: 120px; padding: 0 8px; gap: 6px; }
@@ -149,6 +152,25 @@
   .context-nav__trailing { right: 16px; }
   .context-nav__title-slot:has(.context-nav__modes) > .context-nav__title { display: none; }
   .context-nav__mode-links a { padding: 0 7px; }
+}
+@media (min-width: 1100px) {
+  .context-nav__more { display: none; }
+  .context-nav__overflow:has(.context-nav__actions-slot:empty) { visibility: hidden; }
+  .context-nav__actions-slot {
+    position: static;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    flex-direction: row;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .context-nav__actions-slot > :is(button, a) { justify-content: center; width: auto; }
+  .context-nav__actions-slot:not([hidden]) { animation: none; transform: none; }
 }
 @media (max-width: 767px) {
   .context-nav__search { width: 100%; }

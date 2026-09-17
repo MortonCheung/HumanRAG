@@ -25,9 +25,9 @@ async function expectMenuInsideViewportAndOnTop(page: import('@playwright/test')
   }
 }
 
-// 第 54 章：导航左中右锚定，主按钮任何 viewport 都不被卡掉，次要操作进 `...`。
-for (const width of [390, 768, 1024, 1440]) {
-  test(`${width}px：导航左中右锚定，主按钮完整可见，次要操作收进 ...`, async ({ page }) => {
+// 宽屏直接展示少量页面操作；空间不足时才进入同一个 overflow。
+for (const width of [390, 768, 1024, 1366, 1440]) {
+  test(`${width}px：导航左中右锚定，主按钮完整可见，页面操作响应式布局`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await resetDemoState(page);
     await page.goto('/library');
@@ -50,17 +50,24 @@ for (const width of [390, 768, 1024, 1440]) {
       Math.abs(titleBox!.x + titleBox!.width / 2 - (headerBox!.x + headerBox!.width / 2)),
     ).toBeLessThan(3);
 
-    // 次要操作在桌面端同样收进 `...`，不再直接铺开挤压导航。
     const actions = page.locator('#context-nav-actions');
-    await expect(actions).toBeHidden();
-    await page.getByRole('button', { name: '页面操作' }).click();
-    await expect(actions).toBeVisible();
+    if (width >= 1100) {
+      await expect(page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '知识空间' })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '知识库' })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: '应用切换' }).getByRole('link', { name: '我的学习' })).toBeVisible();
+      await expect(actions).toBeVisible();
+      await expect(page.getByRole('button', { name: '页面操作' })).toBeHidden();
+    } else {
+      await expect(actions).toBeHidden();
+      await page.getByRole('button', { name: '页面操作' }).click();
+      await expect(actions).toBeVisible();
+    }
     await expect(page.getByRole('button', { name: /创建知识树/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^测验$/ })).toBeVisible();
   });
 }
 
-for (const width of [390, 768, 1024, 1440]) {
+for (const width of [390, 768, 1024]) {
   test(`${width}px：页面操作菜单位于 Inspector 之上且完整可点击`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await resetDemoState(page);

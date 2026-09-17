@@ -23,22 +23,33 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     primary: createNavigationHostRef('primary'),
     actions: createNavigationHostRef('actions'),
   }), []);
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [desktopNav, setDesktopNav] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [inlineActions, setInlineActions] = useState(() => window.matchMedia('(min-width: 1100px)').matches);
   const [appOpen, setAppOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
 
   useEffect(() => {
-    const query = window.matchMedia('(min-width: 768px)');
-    const update = () => { setWide(query.matches); setAppOpen(false); setActionsOpen(false); };
+    const navigationQuery = window.matchMedia('(min-width: 768px)');
+    const actionQuery = window.matchMedia('(min-width: 1100px)');
+    const update = () => {
+      setDesktopNav(navigationQuery.matches);
+      setInlineActions(actionQuery.matches);
+      setAppOpen(false);
+      setActionsOpen(false);
+    };
     update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    navigationQuery.addEventListener('change', update);
+    actionQuery.addEventListener('change', update);
+    return () => {
+      navigationQuery.removeEventListener('change', update);
+      actionQuery.removeEventListener('change', update);
+    };
   }, []);
 
   useEffect(() => {
     setAppOpen(false);
     setActionsOpen(false);
-  }, [pathname, wide]);
+  }, [desktopNav, inlineActions, pathname]);
 
   useLayoutEffect(() => {
     // Secondary actions live behind one disclosure at every width, so closing a
@@ -51,7 +62,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
       const panel = menu.querySelector<HTMLElement>('nav, .context-nav__actions-slot');
       if (panel?.contains(focused) && panel.hasAttribute('hidden')) trigger?.focus();
     }
-  }, [wide]);
+  }, [desktopNav, inlineActions]);
 
   useEffect(() => {
     const closeOutside = (event: PointerEvent) => {
@@ -61,7 +72,11 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      const menu = !wide && (appOpen ? appMenu.current : actionsOpen ? actionMenu.current : null);
+      const menu = !desktopNav && appOpen
+        ? appMenu.current
+        : !inlineActions && actionsOpen
+          ? actionMenu.current
+          : null;
       if (!menu) return;
       event.preventDefault();
       event.stopPropagation();
@@ -73,7 +88,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
     const closeAfterAction = (event: Event) => {
       if ((event.target as Element).closest('button:not(:disabled), a[href]')) {
         const focused = document.activeElement;
-        const shouldRestoreFocus = !wide && focused instanceof HTMLElement && Boolean(actionMenu.current?.contains(focused));
+        const shouldRestoreFocus = !inlineActions && focused instanceof HTMLElement && Boolean(actionMenu.current?.contains(focused));
         setActionsOpen(false);
         // Dialogs and search panels will claim focus in their own mount effect.
         if (shouldRestoreFocus) actionMenu.current?.querySelector('button')?.focus();
@@ -88,9 +103,14 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
       document.removeEventListener('pointerdown', closeOutside);
       document.removeEventListener('keydown', escape, true);
     };
-  }, [wide, appOpen, actionsOpen]);
+  }, [desktopNav, inlineActions, appOpen, actionsOpen]);
 
   const fallbackTitle = pathname === ROUTES.library ? '知识库' : pathname === ROUTES.progress ? '我的学习' : pathname === ROUTES.universe ? '知识空间' : '';
+  const topLevel = [
+    { to: ROUTES.universe, label: '知识空间', active: pathname === ROUTES.root || pathname === ROUTES.universe },
+    { to: ROUTES.library, label: '知识库', active: pathname === ROUTES.library || pathname.startsWith(`${ROUTES.library}/`) },
+    { to: ROUTES.progress, label: '我的学习', active: pathname === ROUTES.progress },
+  ] as const;
 
   return (
     <motion.header
@@ -113,9 +133,17 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
             <span className="context-nav__brand-name">HumanRAG</span>
             <MorphIcon icon={appOpen ? ChevronUp : ChevronDown} size={14} strokeWidth={1.8} spring="snappy" reducedMotion="user" />
           </button>
-          <nav id="context-nav-app-menu" className="context-nav__app-menu" aria-label="应用切换" hidden={!wide && !appOpen}>
-            <NavLink to={ROUTES.universe} onClick={() => setAppOpen(false)}>知识空间</NavLink>
-            <NavLink to={ROUTES.library} onClick={() => setAppOpen(false)}>知识库</NavLink>
+          <nav id="context-nav-app-menu" className="context-nav__app-menu" aria-label="应用切换" hidden={!desktopNav && !appOpen}>
+            {topLevel.map((item) => <NavLink
+              key={item.to}
+              to={item.to}
+              aria-current={item.active ? 'page' : undefined}
+              className={item.active ? 'active' : undefined}
+              onClick={() => setAppOpen(false)}
+            >
+              <span>{item.label}</span>
+              {item.active && <motion.i layoutId="global-navigation-indicator" aria-hidden transition={reducedMotion ? { duration: 0 } : MOTION.spring.direct} />}
+            </NavLink>)}
           </nav>
         </div>
         <div ref={hosts.back} id="context-nav-back" className="context-nav__back-slot" />
@@ -130,7 +158,7 @@ export function GlobalNav({ concealed = false }: { concealed?: boolean }) {
           className="context-nav__overflow"
         >
           <button type="button" className="context-nav__button context-nav__more" aria-label="页面操作" aria-controls="context-nav-actions" aria-expanded={actionsOpen} onClick={() => { setActionsOpen((open) => !open); setAppOpen(false); }}><MorphIcon icon={actionsOpen ? X : MoreHorizontal} size={21} strokeWidth={1.8} spring="snappy" reducedMotion="user" /></button>
-          <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!actionsOpen} />
+          <div ref={hosts.actions} id="context-nav-actions" className="context-nav__actions-slot" aria-label="当前页面操作" hidden={!inlineActions && !actionsOpen} />
         </div>
         <div ref={hosts.primary} id="context-nav-primary" className="context-nav__primary-slot" />
       </div>
