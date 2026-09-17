@@ -9,6 +9,8 @@ interface SpatialExperienceValue {
   beginUniverseEntry: () => void;
   ready: boolean;
   pendingEntry: boolean;
+  returningToUniverse: boolean;
+  reentryKey: number;
 }
 
 export const SpatialExperienceContext = createContext<SpatialExperienceValue | null>(null);

@@ -1,8 +1,7 @@
-import { Component, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { matchPath, Outlet, useLocation } from 'react-router-dom';
-import { TransitionLink as Link } from '../../app/pageNavigation';
-import { usePageNavigate as useNavigate } from '../../app/pageNavigation';
+import { BEFORE_PAGE_NAVIGATION_EVENT, TransitionLink as Link, usePageNavigate as useNavigate } from '../../app/pageNavigation';
 import { buildSceneModel } from '../../graph/relevance';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
 import { ROUTES } from '../../app/routes';
@@ -17,6 +16,7 @@ import { useUserStore } from '../../store/userStore';
 import { deriveLearningStateFromEvidence } from '../../domain/learning/deriveLearningState';
 import { knowledgeGraph } from '../../data/knowledgeGraph';
 import { useChromeVisibility } from '../../app/RootChromeShell';
+import { capturePublishedUniverseView, type UniverseCameraSnapshot } from '../../scene/CameraController';
 
 class SceneBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
   state = { failed: false };
@@ -37,6 +37,23 @@ function SpatialExperience() {
   const reducedMotion = Boolean(useReducedMotion());
   const openingRoute = location.pathname === ROUTES.root;
   const directUniverse = location.pathname === ROUTES.universe;
+  const navigation = useRef({ key: location.key, pathname: location.pathname, returningToUniverse: false, reentryKey: 0 });
+  if (navigation.current.key !== location.key) {
+    const previousPath = navigation.current.pathname;
+    const returningToUniverse = directUniverse && (
+      previousPath === ROUTES.library
+      || Boolean(matchPath('/library/:libraryId/tree/:treeId/*', previousPath))
+      || Boolean(matchPath('/library/:libraryId/tree/:treeId', previousPath))
+    );
+    navigation.current = {
+      key: location.key,
+      pathname: location.pathname,
+      returningToUniverse,
+      reentryKey: navigation.current.reentryKey + (returningToUniverse ? 1 : 0),
+    };
+  }
+  const { returningToUniverse, reentryKey } = navigation.current;
+  const lastUniverseSnapshot = useRef<UniverseCameraSnapshot | null>(null);
   const spatialTreeMatch = matchPath('/library/:libraryId/tree/:treeId/*', location.pathname)
     ?? matchPath('/library/:libraryId/tree/:treeId', location.pathname);
   // Path / Verify workspaces are display models; the tree stage is readonly there.
@@ -69,6 +86,16 @@ function SpatialExperience() {
   const extractionVisualReady = useGoalTreeTransitionStore((state) => state.visualReady);
   const startExtractionHandoff = useGoalTreeTransitionStore((state) => state.startHandoff);
   const resetExtraction = useGoalTreeTransitionStore((state) => state.reset);
+
+  useEffect(() => {
+    const rememberBeforeNavigation = (event: Event) => {
+      const detail = (event as CustomEvent<{ from: string; to: string }>).detail;
+      if (!detail || (detail.from !== ROUTES.root && detail.from !== ROUTES.universe)) return;
+      lastUniverseSnapshot.current = capturePublishedUniverseView(cameraIntent.id) ?? lastUniverseSnapshot.current;
+    };
+    window.addEventListener(BEFORE_PAGE_NAVIGATION_EVENT, rememberBeforeNavigation);
+    return () => window.removeEventListener(BEFORE_PAGE_NAVIGATION_EVENT, rememberBeforeNavigation);
+  }, [cameraIntent.id]);
 
   const model = useMemo(() => {
     const learningStates = new Map(knowledgeGraph.nodes.map((node) => [node.id, deriveLearningStateFromEvidence(node.id, learnerId, evidence)] as const));
@@ -111,7 +138,7 @@ function SpatialExperience() {
     const timeout = window.setTimeout(handleError, 8000);
     return () => window.clearTimeout(timeout);
   }, [attempt, failed, handleError, ready]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Only an actual route change resets the stage; completing a shot is not a new landing.
     setPhase(openingRoute ? 'intro' : 'universe');
     const mode: SpatialStageMode = spatialTreeMatch ? 'tree' : libraryRoute ? 'library' : openingRoute ? 'intro' : 'universe';
@@ -150,12 +177,12 @@ function SpatialExperience() {
     : '正在整理…';
 
   return (
-    <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry }}>
-      <div className={`spatial-experience spatial-experience--${phase}${treeWorkspaceReadOnly ? ' spatial-experience--readonly' : ''}`} aria-busy={!ready && !failed} style={{ viewTransitionName: 'route-page' }}>
+    <SpatialExperienceContext.Provider value={{ phase, model, beginUniverseEntry, ready, pendingEntry, returningToUniverse, reentryKey }}>
+      <div className={`spatial-experience spatial-experience--${phase}${treeWorkspaceReadOnly ? ' spatial-experience--readonly' : ''}`} aria-busy={!ready && !failed} data-returning-to-universe={returningToUniverse || undefined} data-reentry-key={reentryKey} style={{ viewTransitionName: 'route-page' }}>
         <SceneBoundary key={attempt} onError={handleError}>
           <SpatialStageCanvas model={model} intent={cameraIntent} onHover={hoverNode} onSelect={selectNode}
             onMissed={() => hoverNode(null)} experiencePhase={phase} onReady={handleReady} onError={handleError}
-            onEntryComplete={finishEntry} treeReadOnly={treeWorkspaceReadOnly} />
+            onEntryComplete={finishEntry} treeReadOnly={treeWorkspaceReadOnly} returningToUniverse={returningToUniverse} reentryKey={reentryKey} universeRouteActive={openingRoute || directUniverse} reentrySnapshot={returningToUniverse ? lastUniverseSnapshot.current : null} />
         </SceneBoundary>
         {(openingRoute || directUniverse) && <UniversePage />}
         {openingRoute && <LandingPage />}

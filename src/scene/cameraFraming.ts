@@ -79,3 +79,14 @@ export function introCameraDistance(radius: number) {
     INTRO_DISTANCE_MAX,
   );
 }
+
+/**
+ * Opening 等待态只改变取景，不改变 seed 的世界坐标。
+ * 宽屏保留约 7% 画宽的轻微右移；窄屏按可用横向空间收敛，避免重新引入溢出。
+ */
+export function openingSeedFocalOffset(radius: number, width: number, height: number) {
+  if (radius <= 0 || width <= 0 || height <= 0) return 0;
+  const aspect = width / height;
+  const viewportScale = THREE.MathUtils.clamp((aspect - 0.45) / 1.15, 0.42, 1);
+  return -THREE.MathUtils.clamp(radius * 0.14 * viewportScale, 0.8, 3.2);
+}

@@ -41,13 +41,13 @@ export function entryPoseAt(from: CameraPose, toTarget: THREE.Vector3, toDistanc
 }
 
 /** Orbit around world Y, settle by 2.15 s, then hold the exact pose until handoff. */
-export function createEntryShot(from: CameraPose, toTarget: THREE.Vector3, toDistance: number, apply: (pose: CameraPose) => void, complete: () => void) {
+export function createEntryShot(from: CameraPose, toTarget: THREE.Vector3, toDistance: number, apply: (pose: CameraPose, progress: number) => void, complete: () => void) {
   const shot = { progress: 0 };
   const pose = { position: new THREE.Vector3(), target: new THREE.Vector3() };
   return gsap.timeline({ onComplete: complete }).to(shot, {
     progress: 1, duration: ENTRY_CAMERA_MOTION_DURATION, ease: 'none',
     onUpdate: () => {
-      apply(entryPoseAt(from, toTarget, toDistance, shot.progress, pose));
+      apply(entryPoseAt(from, toTarget, toDistance, shot.progress, pose), shot.progress);
     },
   }).to({}, { duration: ENTRY_SHOT_DURATION - ENTRY_CAMERA_MOTION_DURATION });
 }

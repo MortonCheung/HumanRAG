@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import CameraControls from 'camera-controls';
 import * as THREE from 'three';
-import { applyCameraPose, freezeCamera, introCameraDistance, nodeFocusPose, SPATIAL_CAMERA_FOV, viewportFocalOffset } from './cameraFraming';
+import { applyCameraPose, freezeCamera, introCameraDistance, nodeFocusPose, openingSeedFocalOffset, SPATIAL_CAMERA_FOV, viewportFocalOffset } from './cameraFraming';
 import { usableViewport } from '../features/spatial/SpatialViewport';
 import { buildSceneModel } from '../graph/relevance';
 import type { SceneModelInput } from '../graph/relevance';
@@ -93,6 +93,16 @@ describe('Opening 取景（手册第 10 章 / 第 13 章）', () => {
     // 手册上限 46 会截断这枚距离（实测 seed 簇需要约 61），是"顶栏压住 seed / 移动端溢出"的根因。
     expect(introCameraDistance(seedSphere.radius)).toBeGreaterThan(46);
     expect(introCameraDistance(seedSphere.radius)).toBeCloseTo(seedSphere.radius * 3.1, 6);
+  });
+
+  it('只用随包围球与 viewport 收敛的负 focal offset 让 seed 视觉右移', () => {
+    const desktop = openingSeedFocalOffset(seedSphere.radius, 1440, 900);
+    const mobile = openingSeedFocalOffset(seedSphere.radius, 390, 844);
+    expect(desktop).toBeLessThan(0);
+    expect(mobile).toBeLessThan(0);
+    expect(Math.abs(desktop)).toBeGreaterThan(Math.abs(mobile));
+    expect(Math.abs(desktop)).toBeLessThanOrEqual(3.2);
+    expect(openingSeedFocalOffset(0, 1440, 900)).toBe(0);
   });
 
   it.each([

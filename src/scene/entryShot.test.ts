@@ -72,4 +72,19 @@ describe('entry shot handoff', () => {
     expect(apply).toHaveBeenCalledTimes(calls);
     expect(complete).not.toHaveBeenCalled();
   });
+
+  it('publishes linear shot progress so opening composition can explicitly return to zero', () => {
+    const progress: number[] = [];
+    const timeline = createEntryShot(
+      { position: new Vector3(40, 10, 80), target: new Vector3() },
+      new Vector3(4, 0, 0),
+      50,
+      (_pose, value) => progress.push(value),
+      vi.fn(),
+    ).pause();
+    timeline.time(ENTRY_CAMERA_MOTION_DURATION / 2);
+    timeline.time(ENTRY_CAMERA_MOTION_DURATION);
+    expect(progress.at(-1)).toBeCloseTo(1, 6);
+    timeline.kill();
+  });
 });

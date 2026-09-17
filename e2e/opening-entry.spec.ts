@@ -12,7 +12,7 @@ import { resetDemoState } from './helpers';
  * 见 src/scene/CameraController.tsx 的 publishCameraPose 注释。
  */
 
-interface OpeningSample { t: number; distance: number; direction: number[] }
+interface OpeningSample { t: number; distance: number; direction: number[]; focalX: number }
 interface OpeningTrace { phases: { t: number; cls: string }[]; samples: OpeningSample[] }
 
 const INTRO_OBSERVE_MS = 1_200;
@@ -29,13 +29,15 @@ test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe �
   await resetDemoState(page);
   await page.goto('/');
   await expect(page.locator('.spatial-experience')).toHaveAttribute('aria-busy', 'false', { timeout: 12_000 });
+  const openingCanvas = page.locator('[data-spatial-stage] canvas');
+  await expect.poll(async () => Number((await openingCanvas.getAttribute('data-spatial-focal-offset'))?.split(',')[0])).toBeLessThan(-0.5);
 
   await page.evaluate(() => {
     const window_ms = 5000;
     const experience = document.querySelector('.spatial-experience')!;
     const canvas = document.querySelector('[data-spatial-stage] canvas');
     const phases: { t: number; cls: string }[] = [];
-    const samples: { t: number; distance: number; direction: number[] }[] = [];
+    const samples: { t: number; distance: number; direction: number[]; focalX: number }[] = [];
     const startedAt = performance.now();
     const record = () => phases.push({ t: Math.round(performance.now() - startedAt), cls: experience.className });
     record();
@@ -43,12 +45,14 @@ test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe �
     const capture = () => {
       const value = canvas?.getAttribute('data-spatial-camera');
       if (!value) return;
+      const focalX = Number(canvas?.getAttribute('data-spatial-focal-offset')?.split(',')[0]);
       const [px, py, pz, tx, ty, tz] = value.split(',').map(Number);
       const length = Math.hypot(px - tx, py - ty, pz - tz) || 1;
       samples.push({
         t: Math.round(performance.now() - startedAt),
         distance: length,
         direction: [(px - tx) / length, (py - ty) / length, (pz - tz) / length],
+        focalX,
       });
     };
     // 同步抓一帧 seed 取景的静止位姿（点击之前），把入场基线与 rAF 节奏解耦：
@@ -77,7 +81,8 @@ test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe �
   }
   const entryDuration = seen[3]!.t - seen[1]!.t;
   expect(entryDuration).toBeGreaterThan(2_450);
-  expect(entryDuration).toBeLessThan(3_050);
+  // SwiftShader under load may deliver animation frames late; the pure timeline test pins 2.70s exactly.
+  expect(entryDuration).toBeLessThan(3_400);
 
   // 点击前只有有限的空间视差，既不是静止画面，也不是持续转圈。
   const intro = trace.samples.filter((sample) => sample.t < seen[1]!.t);
@@ -90,6 +95,12 @@ test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe �
   // 入场期间必须出现多个不同距离，而不是一个静止值。
   const entry = trace.samples.filter((sample) => sample.t >= seen[1]!.t && sample.t <= seen[3]!.t);
   expect(new Set(entry.map((sample) => Math.round(sample.distance * 2))).size).toBeGreaterThan(4);
+  expect(intro.every((sample) => sample.focalX < -0.5)).toBe(true);
+  const focalSamples = entry.filter((sample) => Number.isFinite(sample.focalX));
+  for (let index = 1; index < focalSamples.length; index += 1) {
+    expect(focalSamples[index].focalX).toBeGreaterThanOrEqual(focalSamples[index - 1].focalX - 0.03);
+  }
+  expect(Math.abs(focalSamples.at(-1)!.focalX)).toBeLessThan(0.01);
 
   // Shot 从点击瞬间的真实 pose 接管，首帧不能跳回静态初始角度。
   const incoming = entry[0].direction;
@@ -117,4 +128,7 @@ test('入场前轻微环绕，点击后从当前 pose 展开到完整 Universe �
     expect(Math.abs(sample.distance - last)).toBeLessThan(4);
     expect((Math.acos(directionCosine(universe[0].direction, sample.direction)) * 180) / Math.PI).toBeLessThan(1);
   }
+  const settledFocal = (await openingCanvas.getAttribute('data-spatial-focal-offset'))?.split(',').map(Number) ?? [];
+  expect(settledFocal).toHaveLength(3);
+  settledFocal.forEach((value) => expect(Math.abs(value)).toBeLessThan(0.01));
 });

@@ -9,6 +9,7 @@ import type { RuntimeQualitySignals } from '../../performance/types';
 import { useKnowledgeStore } from '../../store/knowledgeStore';
 import { BatchedKnowledgeEdges } from '../../scene/BatchedKnowledgeEdges';
 import { CameraController, type CameraLifecycle } from '../../scene/CameraController';
+import type { UniverseCameraSnapshot } from '../../scene/CameraController';
 import { NodeHitField } from '../../scene/NodeHitField';
 import { NodePointField } from '../../scene/NodePointField';
 import type { SpatialExperiencePhase } from './SpatialExperienceContext';
@@ -56,7 +57,7 @@ function StageA11y({ model }: { model: SceneModel }) {
   return null;
 }
 
-export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase, onReady, onError, onEntryComplete, treeReadOnly }: CameraLifecycle & {
+export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed, experiencePhase, onReady, onError, onEntryComplete, treeReadOnly, returningToUniverse, reentryKey, universeRouteActive, reentrySnapshot }: CameraLifecycle & {
   model: SceneModel;
   intent: CameraIntent;
   onHover: (id: string | null) => void;
@@ -65,6 +66,10 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
   experiencePhase: SpatialExperiencePhase;
   onError: () => void;
   treeReadOnly: boolean;
+  returningToUniverse: boolean;
+  reentryKey: number;
+  universeRouteActive: boolean;
+  reentrySnapshot: UniverseCameraSnapshot | null;
 }) {
   const quality = useKnowledgeStore((state) => state.resolvedQualityTier);
   const qualityPreference = useKnowledgeStore((state) => state.qualityPreference);
@@ -106,7 +111,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
         <color attach="background" args={['#080a10']} />
         <PerspectiveCamera makeDefault fov={SPATIAL_CAMERA_FOV} near={0.1} far={420} position={[45, 33, 56]} />
         <SpatialSceneRouter model={model} intent={intent} onHover={onHover} onSelect={onSelect}
-          experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} treeReadOnly={treeReadOnly} />
+          experiencePhase={experiencePhase} onEntryComplete={onEntryComplete} motionAllowed={!runtimeSignals.reducedMotion && !runtimeSignals.hidden} treeReadOnly={treeReadOnly} returningToUniverse={returningToUniverse} reentryKey={reentryKey} universeRouteActive={universeRouteActive} reentrySnapshot={reentrySnapshot} />
         <ContextHealth onError={onError} />
         <StageA11y model={model} />
         <SceneReadiness onReady={onReady} />
@@ -116,7 +121,7 @@ export function SpatialStageCanvas({ model, intent, onHover, onSelect, onMissed,
   );
 }
 
-function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase, onEntryComplete, motionAllowed, treeReadOnly }: {
+function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase, onEntryComplete, motionAllowed, treeReadOnly, returningToUniverse, reentryKey, universeRouteActive, reentrySnapshot }: {
   model: SceneModel;
   intent: CameraIntent;
   onHover: (id: string | null) => void;
@@ -125,6 +130,10 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
   onEntryComplete: () => void;
   motionAllowed: boolean;
   treeReadOnly: boolean;
+  returningToUniverse: boolean;
+  reentryKey: number;
+  universeRouteActive: boolean;
+  reentrySnapshot: UniverseCameraSnapshot | null;
 }) {
   const mode = useSpatialStageStore((state) => state.mode);
   const activePanel = useKnowledgeStore((state) => state.activePanel);
@@ -199,6 +208,6 @@ function SpatialSceneRouter({ model, intent, onHover, onSelect, experiencePhase,
       <Html position={[0, node.type === 'goal' ? 2.8 : 1.65, 0]} center zIndexRange={[2, 0]} style={{ pointerEvents: 'none', visibility: experiencePhase === 'universe' ? 'visible' : 'hidden' }}><span className={`node-label ${node.visualState === 'selected' ? 'node-label--selected' : 'node-label--branch'}`}>{node.name}</span></Html>
     </group>)}
     {extractionActive && extractionLayout && <GoalTreeExtraction model={visibleModel} layout={extractionLayout} motionAllowed={motionAllowed} />}
-    <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} openingSeedIds={openingSeedIds} extractionFrame={extractionCameraFrame} />
+    <CameraController intent={intent} model={visibleModel} experiencePhase={experiencePhase} motionAllowed={motionAllowed} onEntryComplete={onEntryComplete} openingSeedIds={openingSeedIds} extractionFrame={extractionCameraFrame} returningToUniverse={returningToUniverse} reentryKey={reentryKey} universeRouteActive={universeRouteActive} reentrySnapshot={reentrySnapshot} />
   </>;
 }
