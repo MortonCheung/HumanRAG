@@ -34,4 +34,8 @@
 .tutor-ai-inspector dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; }
 .tutor-ai-inspector dt { color: var(--it-text-faint); font: 10px/1.6 var(--it-mono); }
 .tutor-ai-inspector dd { margin: 0; color: var(--it-text); font-size: 12px; overflow-wrap: anywhere; }
+.tutor-ai-inspector__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tutor-ai-inspector__row span { color: var(--it-text); font-size: 12px; }
+.tutor-ai-inspector__row button { min-height: 28px; padding: 0 14px; border: 1px solid var(--it-control-border); border-radius: var(--it-radius-button); background: transparent; color: var(--it-text-soft); font-size: 12px; }
+.tutor-ai-inspector__row button[aria-checked='true'] { border-color: var(--it-accent); color: var(--it-accent); }
 .tutor-ai-inspector__refresh { justify-self: start; min-height: 30px; padding: 0 14px; border: 1px solid var(--it-control-border); border-radius: var(--it-radius-button); background: transparent; color: var(--it-text-soft); font-size: 12px; }

@@ -20,7 +20,43 @@ function silentWav() {
   return buffer;
 }
 
-test('AI导师与 Pico 的 live 文本回复都会请求同一语音端点并自动播放', async ({ page }) => {
+/** 打开 AI 服务状态面板并切换到指定状态。 */
+async function setAutoSpeech(page: Page, enabled: boolean) {
+  await page.getByRole('button', { name: 'AI 已连接' }).click();
+  const toggle = page.getByRole('switch', { name: '自动朗读' });
+  await expect(toggle).toBeVisible();
+  if ((await toggle.getAttribute('aria-checked')) !== String(enabled)) await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', String(enabled));
+  await page.getByRole('button', { name: '关闭' }).click();
+}
+
+test('自动朗读默认关闭时，真实回复只显示文字且不请求语音端点', async ({ page }) => {
+  let speechRequests = 0;
+  await page.route('**/api/chat', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ configured: true, mode: 'live', model: 'deepseek-flash' }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: '这是来自聊天网关的回答。', source: 'live' }) });
+  });
+  await page.route('**/api/speech', async (route) => {
+    speechRequests += 1;
+    await route.fulfill({ status: 200, contentType: 'audio/wav', body: silentWav() });
+  });
+
+  await resetDemoState(page);
+  await page.goto('/tutor');
+  await page.getByLabel('输入问题').fill('请用一句话解释 TCP 慢启动。');
+  await page.getByRole('button', { name: '发送给 AI 导师' }).click();
+  await expect(page.locator('.tutor-message--assistant')).toContainText('这是来自聊天网关的回答。');
+  await expect.poll(() => speechRequests).toBe(0);
+
+  // 面板中的开关默认处于关闭状态。
+  await page.getByRole('button', { name: 'AI 已连接' }).click();
+  await expect(page.getByRole('switch', { name: '自动朗读' })).toHaveAttribute('aria-checked', 'false');
+});
+
+test('开启自动朗读后，AI导师与 Pico 的 live 文本回复都会请求同一语音端点并自动播放', async ({ page }) => {
   await page.addInitScript(() => {
     const NativeAudio = window.Audio;
     const probe = { attempts: 0, played: 0, rejected: 0 };
@@ -58,6 +94,7 @@ test('AI导师与 Pico 的 live 文本回复都会请求同一语音端点并自
 
   await resetDemoState(page);
   await page.goto('/tutor');
+  await setAutoSpeech(page, true);
   await page.getByLabel('输入问题').fill('请用一句话介绍 TCP。');
   await page.getByRole('button', { name: '发送给 AI 导师' }).click();
   await expect(page.locator('.tutor-message--assistant')).toContainText('这是来自聊天网关的回答。');

@@ -2,11 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendChat } from '../../ai/chat/chatClient';
 import { speakText } from '../../ai/speech/speechClient';
+import { setSpeechEnabled } from '../../ai/speech/speechPreferences';
 import { usePicoStore } from './picoStore';
 import type { PicoPageContext } from './picoTypes';
 
 vi.mock('../../ai/chat/chatClient', () => ({ sendChat: vi.fn() }));
-vi.mock('../../ai/speech/speechClient', () => ({ speakText: vi.fn() }));
+vi.mock('../../ai/speech/speechClient', () => ({ speakText: vi.fn(), stopSpeech: vi.fn() }));
 
 const tcp: PicoPageContext = { key: 'study:tcp', route: '/tcp', pageType: 'study', title: 'TCP 慢启动' };
 const tree: PicoPageContext = { key: 'study:tree', route: '/tree', pageType: 'study', title: '二叉树' };
@@ -14,6 +15,7 @@ const tree: PicoPageContext = { key: 'study:tree', route: '/tree', pageType: 'st
 describe('picoStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setSpeechEnabled(false);
     usePicoStore.setState({
       open: false, face: 'idle', presence: 'docked', pageContext: null, explicitContext: null,
       motion: 'idle', motionNonce: 0, travelTargetId: null, travelNonce: 0,
@@ -56,7 +58,18 @@ describe('picoStore', () => {
     expect(speakText).not.toHaveBeenCalled();
   });
 
-  it('真实回答写入聊天后交给共享语音客户端', async () => {
+  it('自动朗读默认关闭时，真实回答只写文本不调用语音端点', async () => {
+    vi.mocked(sendChat).mockResolvedValue({ text: '先看窗口增长规则。', source: 'live' });
+    usePicoStore.getState().setPageContext(tcp);
+
+    await usePicoStore.getState().send('怎么理解？');
+
+    expect(usePicoStore.getState().messages.at(-1)).toMatchObject({ role: 'assistant', content: '先看窗口增长规则。', source: 'live' });
+    expect(speakText).not.toHaveBeenCalled();
+  });
+
+  it('开启自动朗读后，真实回答写入聊天再交给共享语音客户端', async () => {
+    setSpeechEnabled(true);
     vi.mocked(sendChat).mockResolvedValue({ text: '先看窗口增长规则。', source: 'live' });
     vi.mocked(speakText).mockResolvedValue();
     usePicoStore.getState().setPageContext(tcp);

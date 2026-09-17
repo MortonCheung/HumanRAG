@@ -3,7 +3,8 @@ import { ArrowUp } from '@phosphor-icons/react';
 import { getAIServiceStatus, type AIServiceStatus } from '../../../ai/chat/serviceStatus';
 import { AI_SUBMISSION_COOLDOWN_MS, type ChatMessage, type ChatSource } from '../../../ai/chat/contracts';
 import { sendChat } from '../../../ai/chat/chatClient';
-import { speakText } from '../../../ai/speech/speechClient';
+import { speakText, stopSpeech } from '../../../ai/speech/speechClient';
+import { setSpeechEnabled, useSpeechEnabled } from '../../../ai/speech/speechPreferences';
 import { routeTutorContext } from '../../../ai/context/contextRouter';
 import { selectContextBlocks } from '../../../ai/context/learnerContext';
 import { useLearnerContextBundle } from '../../../ai/context/useLearnerContextBundle';
@@ -26,8 +27,10 @@ export function TutorPage() {
   const [service, setService] = useState<AIServiceStatus | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const sequence = useRef(0);
+  const speechEnabled = useSpeechEnabled();
   const detectService = useCallback(() => { void getAIServiceStatus().then(setService); }, []);
   useEffect(() => { detectService(); }, [detectService]);
+  useEffect(() => () => stopSpeech(), []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -41,7 +44,8 @@ export function TutorPage() {
     setMessages((current) => [...current, { id: sequence.current++, role: 'user', content: message }]);
     const result = await sendChat({ mode: 'tutor', message, history, baseContext: bundle.base, contextBlocks, routing });
     setMessages((current) => [...current, { id: sequence.current++, role: 'assistant', content: result.text, source: result.source, references: routing.blocks }]);
-    if (result.source === 'live') void speakText(result.text).catch(() => undefined);
+    // 文本已先渲染；只有开启自动朗读且是真实回答时才朗读，且不 await 阻塞消息。
+    if (result.source === 'live' && speechEnabled) void speakText(result.text).catch(() => undefined);
     setBusy(false);
     const until = Date.now() + AI_SUBMISSION_COOLDOWN_MS;
     setCooldownUntil(until);
@@ -68,6 +72,12 @@ export function TutorPage() {
             </>
             : <><dt>说明</dt><dd>当前未检测到 AI 服务，回答将使用内置演示数据。</dd></>}
         </dl>
+        <div className="tutor-ai-inspector__row">
+          <span>自动朗读</span>
+          <button type="button" role="switch" aria-label="自动朗读" aria-checked={speechEnabled} onClick={() => setSpeechEnabled(!speechEnabled)}>
+            {speechEnabled ? '开启' : '关闭'}
+          </button>
+        </div>
         <button type="button" className="tutor-ai-inspector__refresh" onClick={detectService}>重新检测</button>
       </aside>}
       <section className="tutor-conversation" aria-label="导师对话">

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { ArrowUp, X } from '@phosphor-icons/react';
+import { ArrowUp, SpeakerSimpleHigh, SpeakerSimpleX, X } from '@phosphor-icons/react';
 import { MOTION } from '../../motion/tokens';
+import { stopSpeech } from '../../ai/speech/speechClient';
+import { setSpeechEnabled, useSpeechEnabled } from '../../ai/speech/speechPreferences';
 import { useSpatialOccluder } from '../spatial/SpatialViewport';
 import { PicoActor } from './PicoActor';
 import { usePicoStore } from './picoStore';
@@ -25,10 +27,13 @@ export function PicoDock() {
   const send = usePicoStore((state) => state.send);
   const react = usePicoStore((state) => state.react);
   const [draft, setDraft] = useState('');
+  const speechEnabled = useSpeechEnabled();
   const input = useRef<HTMLTextAreaElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const occluder = useSpatialOccluder('pico', open);
   const transition = { duration: reducedMotion ? 0 : MOTION.duration.panel, ease: MOTION.ease.out };
+
+  useEffect(() => () => stopSpeech(), []);
 
   useEffect(() => { if (open && focusNonce > 0) requestAnimationFrame(() => input.current?.focus()); }, [focusNonce, open]);
   useEffect(() => { if (open) end.current?.scrollIntoView({ block: 'end' }); }, [messages, open]);
@@ -71,7 +76,9 @@ export function PicoDock() {
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
         transition={transition}
       >
-        <header className="pico-dock__header"><div><strong>Pico</strong><span>正在看 · {contextTitle}</span></div><button type="button" aria-label="关闭 Pico" onClick={closeDock}><X size={20} /></button></header>
+        <header className="pico-dock__header"><div><strong>Pico</strong><span>正在看 · {contextTitle}</span></div>
+          <button type="button" className="pico-dock__speech" role="switch" aria-checked={speechEnabled} aria-label={speechEnabled ? '关闭自动朗读' : '开启自动朗读'} onClick={() => setSpeechEnabled(!speechEnabled)}>{speechEnabled ? <SpeakerSimpleHigh size={18} /> : <SpeakerSimpleX size={18} />}</button>
+          <button type="button" aria-label="关闭 Pico" onClick={closeDock}><X size={20} /></button></header>
         <div className="pico-dock__messages" aria-live="polite">
           {messages.length === 0 && <div className="pico-dock__empty"><strong>一起看当前内容</strong><p>指出你卡住的一句、一步或一道题，我会优先结合当前页面回答。</p></div>}
           {messages.map((item) => item.role === 'context'
