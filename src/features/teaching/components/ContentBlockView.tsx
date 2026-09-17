@@ -1,27 +1,33 @@
 import type { TeachingContentBlock } from '../../../data/v6/schemas/teachingSchema';
 import { knowledgeGraph } from '../../../data/knowledgeGraph';
+import { AskPicoButton } from '../../pico/AskPicoButton';
+import { serializeTeachingBlock, teachingBlockTitle } from '../../pico/serializeTeachingBlock';
+
+function WithPico({ block, children }: { block: TeachingContentBlock; children: React.ReactNode }) {
+  return <div className="pico-context-block">{children}<AskPicoButton context={{ type: 'content', title: teachingBlockTitle(block), content: serializeTeachingBlock(block) }} /></div>;
+}
 
 /** 讲解内容块的统一渲染：段落、对比、图示、示例、列表。 */
 export function ContentBlockView({ block }: { block: TeachingContentBlock }) {
   switch (block.kind) {
     case 'paragraph':
-      return <p>{block.text}</p>;
+      return <WithPico block={block}><p>{block.text}</p></WithPico>;
     case 'key-contrast':
       return (
-        <div className="key-contrast">
+        <WithPico block={block}><div className="key-contrast">
           {block.items.map((item) => (
             <div className="key-contrast__row" key={item.label}>
               <span className="key-contrast__label">{item.label}</span>
               <span className="key-contrast__text">{item.text}</span>
             </div>
           ))}
-        </div>
+        </div></WithPico>
       );
     case 'diagram':
-      return <DiagramBlock block={block} />;
+      return <WithPico block={block}><DiagramBlock block={block} /></WithPico>;
     case 'example':
       return (
-        <div className="worked-example">
+        <WithPico block={block}><div className="worked-example">
           <h4 className="worked-example__title">{block.title}</h4>
           <p className="worked-example__prompt">{block.prompt}</p>
           <ol className="worked-example__steps">
@@ -29,11 +35,11 @@ export function ContentBlockView({ block }: { block: TeachingContentBlock }) {
               <li key={line}>{line}</li>
             ))}
           </ol>
-        </div>
+        </div></WithPico>
       );
     case 'list':
       return (
-        <div>
+        <WithPico block={block}><div>
           <p style={{ marginTop: 14, marginBottom: 4, color: 'var(--it-text)', fontWeight: 560, fontSize: 14 }}>
             {block.title}
           </p>
@@ -42,7 +48,7 @@ export function ContentBlockView({ block }: { block: TeachingContentBlock }) {
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </div>
+        </div></WithPico>
       );
     default:
       return null;

@@ -23,6 +23,8 @@ import { LearningRecordDrawer } from '../components/LearningRecordDrawer';
 import { ProfileEditorDrawer } from '../components/ProfileEditorDrawer';
 import { resolveLearnerProfile } from '../../../domain/learning/resolveLearnerProfile';
 import '../progress.css';
+import { useLocation } from 'react-router-dom';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
 
 function misconceptionName(id: string) {
   return MISCONCEPTIONS_BY_ID.get(id)?.name
@@ -35,6 +37,7 @@ function percent(value: number | null) {
 
 export function ProgressPage() {
   const reducedMotion = Boolean(useReducedMotion());
+  const location = useLocation();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const profileOverride = useUserStore((state) => state.profileOverrides[learnerId]);
   const updateProfile = useUserStore((state) => state.updateProfile);
@@ -70,6 +73,8 @@ export function ProgressPage() {
   const recommendationAction = dashboard.recommendation
     ? actionForState(deriveLearningStateFromEvidence(dashboard.recommendation.pointId, learnerId, evidenceRecords))
     : 'study';
+  const picoContext = useMemo(() => ({ key: 'progress:overview', route: location.pathname, pageType: 'progress' as const, title: '我的学习' }), [location.pathname]);
+  usePicoPageContext(picoContext);
   const enter = (index: number) => ({
     initial: reducedMotion ? false as const : { opacity: 0, y: 8 },
     animate: { opacity: 1, y: 0 },

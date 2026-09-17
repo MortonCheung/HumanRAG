@@ -1,14 +1,17 @@
 import { MOTION } from '../../../motion/tokens';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { ExplorerInterface } from '../../../components/ExplorerInterface';
 import { useKnowledgeStore } from '../../../store/knowledgeStore';
 import { useSpatialExperience } from '../../spatial/SpatialExperienceContext';
 import { useGoalTreeTransitionStore } from '../../spatial/transitions/goalTreeTransitionStore';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
 
 /** 三维知识空间页面（蓝图 §5）。从原 App.tsx 迁移，功能不回退。 */
 export function UniversePage() {
   const reducedMotion = Boolean(useReducedMotion());
+  const location = useLocation();
   const { phase: experiencePhase, model, returningToUniverse, reentryKey } = useSpatialExperience();
   const phase = useKnowledgeStore((state) => state.phase);
   const activePanel = useKnowledgeStore((state) => state.activePanel);
@@ -17,8 +20,18 @@ export function UniversePage() {
   const closePanel = useKnowledgeStore((state) => state.closePanel);
   const openPanel = useKnowledgeStore((state) => state.openPanel);
   const returnOverview = useKnowledgeStore((state) => state.returnOverview);
+  const selectedNodeId = useKnowledgeStore((state) => state.selectedNodeId);
   const extractionPhase = useGoalTreeTransitionStore((state) => state.phase);
   const extracting = extractionPhase !== 'idle' && extractionPhase !== 'handoff';
+  const selectedNode = model.nodes.find((node) => node.id === selectedNodeId);
+  const picoContext = useMemo(() => ({
+    key: `universe:${selectedNodeId ?? 'overview'}`,
+    route: location.pathname,
+    pageType: 'universe' as const,
+    title: selectedNode?.name ?? '知识空间全景',
+    selectedNode: selectedNode ? { id: selectedNode.id, name: selectedNode.name, description: selectedNode.description } : undefined,
+  }), [location.pathname, selectedNode, selectedNodeId]);
+  usePicoPageContext(picoContext);
 
   useEffect(() => {
     if (experiencePhase !== 'universe') return;

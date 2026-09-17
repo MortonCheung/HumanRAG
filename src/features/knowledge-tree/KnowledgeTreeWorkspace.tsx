@@ -19,6 +19,7 @@ import { WorkspaceHeader } from '../workspace/WorkspaceHeader';
 import { useAppBack } from '../../app/appHistory';
 import { MOTION } from '../../motion/tokens';
 import './knowledge-tree-workspace.css';
+import { usePicoPageContext } from '../pico/PicoContextBridge';
 
 export function KnowledgeTreeWorkspace() {
   const { libraryId, treeId } = useParams<{ libraryId: string; treeId: string }>();
@@ -43,6 +44,15 @@ export function KnowledgeTreeWorkspace() {
     [data.points, evidence, learnerId, learningQuestions, remediationTasks],
   );
   const back = useAppBack({ to: ROUTES.library, state: treeId ? { selectedTreeId: treeId } : undefined });
+  const picoContext = useMemo(() => data.tree && treeId ? ({
+    key: `tree:${treeId}:${selectedPointId ?? 'overview'}`,
+    route: location.pathname,
+    pageType: 'tree' as const,
+    title: selectedPoint?.name ?? data.tree.name,
+    treeId,
+    selectedNode: selectedPoint ? { id: selectedPoint.id, name: selectedPoint.name, description: selectedPoint.description } : undefined,
+  }) : null, [data.tree, location.pathname, selectedPoint, selectedPointId, treeId]);
+  usePicoPageContext(picoContext);
 
   useEffect(() => {
     const focusedPointId = (location.state as { focusedPointId?: string } | null)?.focusedPointId;

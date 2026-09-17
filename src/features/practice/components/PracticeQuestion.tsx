@@ -4,6 +4,8 @@ import type { PracticeAnswer } from '../../../store/practiceStore';
 import { getTcpTask } from '../../../data/v6/handcrafted/tcpLesson';
 import { TcpTaskInputs } from '../../teaching/components/TcpTaskInputs';
 import '../../teaching/tcp-lesson.css';
+import { AskPicoButton } from '../../pico/AskPicoButton';
+import { questionExplicitContext } from '../../pico/questionContext';
 
 const TYPE_LABELS: Record<Question['type'], string> = {
   'single-choice': '单选题',
@@ -73,6 +75,10 @@ export function PracticeQuestion({
         {index + 1} / {total} · {TYPE_LABELS[question.type]} · 难度 {question.difficulty}
       </span>
       <p className="practice-question__stem">{question.stem}</p>
+      <AskPicoButton
+        label={locked ? '问问 Pico · 这道题' : '问问 Pico'}
+        context={questionExplicitContext(question, `第 ${index + 1} 题`, answer)}
+      />
 
       {question.options && (answerData.kind === 'choice' || answerData.kind === 'ordering') && (
         <div className="practice-question__options">

@@ -20,6 +20,8 @@ import type { PracticeReturnContext } from '../../../store/teachingStore';
 import { getTcpTask, tcpTaskResultKeys, tcpTaskSignature } from '../../../data/v6/handcrafted/tcpLesson';
 import { MOTION } from '../../../motion/tokens';
 import '../practice.css';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { activeQuestionContext } from '../../pico/questionContext';
 
 const MODE_COPY: Record<PracticeMode, { label: string; progress: string; complete: string; empty: string }> = {
   train: { label: '训练', progress: '训练进度', complete: '完成训练', empty: '这个范围还没有可用题目。' },
@@ -93,6 +95,16 @@ export function PracticeSessionPage() {
   const copy = MODE_COPY[mode];
   const relatedNode = question ? contentRepository.getNode(question.nodeIds[0]) : undefined;
   const unit = relatedNode ? contentRepository.getTeachingUnitForNode(relatedNode.id) : undefined;
+  const picoContext = useMemo(() => ({
+    key: `practice:${store.runId || sessionId || 'restoring'}:${id ?? 'overview'}`,
+    route: location.pathname,
+    pageType: 'practice' as const,
+    title: question ? `${copy.label} · ${relatedNode?.name ?? '当前题目'}` : copy.label,
+    treeId,
+    selectedNode: relatedNode ? { id: relatedNode.id, name: relatedNode.name, description: relatedNode.description } : undefined,
+    activeQuestion: question ? activeQuestionContext(question, answer) : undefined,
+  }), [answer, copy.label, id, location.pathname, question, relatedNode, sessionId, store.runId, treeId]);
+  usePicoPageContext(picoContext);
   const exit = useAppBack(parent);
   const teachQuestion = (questionId: string) => {
     const targetQuestion = contentRepository.getQuestion(questionId);

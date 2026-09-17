@@ -3,6 +3,7 @@
 .study-hero { padding-bottom: 48px; border-bottom: 1px solid var(--it-rule); }
 .study-hero h1 { max-width: 780px; margin: 8px 0 14px; color: var(--it-text); font-size: clamp(38px, 5vw, 66px); font-weight: 420; letter-spacing: -.045em; line-height: 1.1; }
 .study-hero > p:not(.study-section__kicker) { max-width: 720px; margin: 0; color: var(--it-text-soft); font-size: 15px; line-height: 1.8; }
+.study-hero__pico { margin-top: 18px; }
 .study-section__kicker { margin: 0 0 8px; color: var(--it-text-faint); font-family: var(--it-mono); font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
 .study-core-question { display: grid; gap: 7px; max-width: 760px; margin-top: 30px; padding: 18px 20px; border-left: 2px solid var(--it-accent); background: color-mix(in srgb, var(--it-accent) 5%, transparent); }
 .study-core-question span { color: var(--it-accent); font-size: 11px; }

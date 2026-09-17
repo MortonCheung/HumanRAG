@@ -1,9 +1,12 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { GlobalNav } from '../components/navigation/GlobalNav';
 import { SpatialViewportProvider } from '../features/spatial/SpatialViewport';
 import { AppHistoryProvider } from './appHistory';
 import { ROUTES } from './routes';
+import { usePicoStore } from '../features/pico/picoStore';
+
+const LazyPicoDock = lazy(() => import('../features/pico/PicoDock'));
 
 interface ChromeVisibilityValue {
   revealOpeningChrome: (locationKey: string) => void;
@@ -22,13 +25,17 @@ export function RootChromeShell() {
   }, []);
   const visibility = useMemo(() => ({ revealOpeningChrome }), [revealOpeningChrome]);
   const concealed = location.pathname === ROUTES.root && revealedOpeningKey !== location.key;
+  const picoOpen = usePicoStore((state) => state.open);
 
   return (
     <AppHistoryProvider>
       <SpatialViewportProvider>
         <ChromeVisibilityContext.Provider value={visibility}>
           <GlobalNav concealed={concealed} />
-          <Outlet />
+          <div className="root-workspace" data-pico-open={picoOpen || undefined}>
+            <div className="root-workspace__route"><Outlet /></div>
+            <Suspense fallback={null}><LazyPicoDock /></Suspense>
+          </div>
         </ChromeVisibilityContext.Provider>
       </SpatialViewportProvider>
     </AppHistoryProvider>

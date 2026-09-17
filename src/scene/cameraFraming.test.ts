@@ -76,6 +76,18 @@ describe('continuous camera and effective viewport', () => {
     expect(controls.getTarget(new THREE.Vector3()).distanceTo(point)).toBeLessThan(1e-8);
     controls.dispose();
   });
+
+  it('Pico Dock 打开后把可用空间收窄到 Dock 左边界', () => {
+    const rect = usableViewport(
+      1440,
+      900,
+      { left: 0, top: 0, width: 1440, height: 64 },
+      undefined,
+      undefined,
+      { left: 1020, top: 64, width: 420, height: 836 },
+    );
+    expect(rect).toEqual({ left: 0, top: 64, width: 1020, height: 836 });
+  });
 });
 
 describe('Opening 取景（手册第 10 章 / 第 13 章）', () => {

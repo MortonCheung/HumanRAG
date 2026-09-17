@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { ArrowRight, CaretLeft, CaretRight, Check, Question } from '@phosphor-icons/react';
 import { TransitionLink as Link } from '../../../app/pageNavigation';
 import { useAppBack } from '../../../app/appHistory';
@@ -17,6 +17,8 @@ import type { LearningReference, LearningResource } from '../../../domain/learni
 import '../../teaching/teaching.css';
 import '../../teaching/tcp-lesson.css';
 import '../study.css';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { AskPicoButton } from '../../pico/AskPicoButton';
 
 function ConceptWorkbench({ concepts, objective }: { concepts: string[]; objective: string }) {
   const [index, setIndex] = useState(0);
@@ -31,6 +33,7 @@ function ConceptWorkbench({ concepts, objective }: { concepts: string[]; objecti
 
 export function StudyWorkspacePage() {
   const { libraryId, treeId, pointId } = useParams<{ libraryId: string; treeId: string; pointId: string }>();
+  const location = useLocation();
   const learnerId = useUserStore((state) => state.activeProfileId);
   const [scratchpad, setScratchpad] = useState('');
   const [questionDraft, setQuestionDraft] = useState('');
@@ -55,12 +58,21 @@ export function StudyWorkspacePage() {
   const openQuestions = questions.filter((question) => question.learnerId === learnerId && question.pointId === pointId && question.status === 'open');
   const parent = getWorkspaceParent({ kind: 'learn', libraryId, treeId, pointId });
   const exit = useAppBack(parent);
+  const picoContext = useMemo(() => point && pointId ? ({
+    key: `study:${pointId}`,
+    route: location.pathname,
+    pageType: 'study' as const,
+    title: point.name,
+    treeId,
+    selectedNode: { id: pointId, name: point.name, description: point.description || node?.description },
+  }) : null, [location.pathname, node?.description, point, pointId, treeId]);
+  usePicoPageContext(picoContext);
 
   return <div className="page study-page">
     <WorkspaceHeader title={point?.name ?? node?.name ?? '学习'} backLabel="返回" onBack={exit} primaryAction={libraryId && treeId && pointId ? <Link className="context-nav__button context-nav__button--primary" to={ROUTES.pointTeach(libraryId, treeId, pointId)}>带我学</Link> : undefined} />
     {!point || !libraryId || !treeId || !pointId ? <main className="page__inner"><h1 className="page-title">没有找到这个知识点</h1><p className="page-lead">它可能已被移除，或不属于当前知识树。</p></main> : <div className="study-workspace">
       <main className="study-workspace__main">
-        <header className="study-hero"><p className="study-section__kicker">学习 · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</p><h1>{point.name}</h1><p>{point.description || node?.description}</p><div className="study-core-question"><span>核心问题</span><strong>{point.id === TCP_NODE_ID ? '为什么发送方不能无限增加发送速率？' : objective}</strong></div></header>
+        <header className="study-hero"><p className="study-section__kicker">学习 · {point.estimatedMinutes ?? unit?.estimatedMinutes ?? 12} 分钟</p><h1>{point.name}</h1><p>{point.description || node?.description}</p><AskPicoButton className="study-hero__pico" context={{ type: 'knowledge', nodeId: point.id, title: point.name, description: point.description || node?.description }} /><div className="study-core-question"><span>核心问题</span><strong>{point.id === TCP_NODE_ID ? '为什么发送方不能无限增加发送速率？' : objective}</strong></div></header>
 
         <section className="study-section" aria-labelledby="study-prerequisites"><p className="study-section__kicker">开始之前</p><h2 id="study-prerequisites">先确认这些前置</h2>{prerequisites.length ? <ul className="study-inline-list">{prerequisites.map((entry) => <li key={entry.id}>{entry.name}</li>)}</ul> : <p className="study-section__lead">无需额外前置，可以直接从核心问题开始。</p>}</section>
 

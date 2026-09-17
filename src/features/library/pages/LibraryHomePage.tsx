@@ -10,6 +10,7 @@ import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { useSpatialOccluder } from '../../spatial/SpatialViewport';
 import { useSpatialStageStore } from '../../spatial/spatialStageStore';
 import { MOTION } from '../../../motion/tokens';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
 
 export function LibraryHomePage() {
   const reducedMotion = Boolean(useReducedMotion());
@@ -32,6 +33,14 @@ export function LibraryHomePage() {
   }, [location.state, trees]);
   useEffect(() => { selectStageTree(selectedTreeId); }, [selectedTreeId, selectStageTree]);
   const selectedTree = trees.find((tree) => tree.id === selectedTreeId) ?? null;
+  const picoContext = useMemo(() => ({
+    key: `library:${selectedTreeId ?? 'overview'}`,
+    route: location.pathname,
+    pageType: 'library' as const,
+    title: selectedTree?.name ?? domain.library.name,
+    treeId: selectedTree?.id,
+  }), [domain.library.name, location.pathname, selectedTree]);
+  usePicoPageContext(picoContext);
 
   return (
     <main className="page library-manager">

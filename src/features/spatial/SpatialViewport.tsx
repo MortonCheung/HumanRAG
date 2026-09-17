@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 export interface ViewportRect { left: number; top: number; width: number; height: number }
-type Occluder = 'navigation' | 'inspector' | 'stage';
+type Occluder = 'navigation' | 'inspector' | 'stage' | 'pico';
 interface SpatialViewportValue {
   rect: ViewportRect;
   register: (kind: Occluder, element: HTMLElement | null) => void;
@@ -10,13 +10,17 @@ interface SpatialViewportValue {
 const SpatialViewportContext = createContext<SpatialViewportValue | null>(null);
 
 /** Geometry, not camera constants, defines the usable canvas rectangle. */
-export function usableViewport(width: number, height: number, navigation?: ViewportRect, inspector?: ViewportRect, stage?: ViewportRect): ViewportRect {
-  if (stage) return {
-    left: Math.max(0, stage.left),
-    top: Math.max(0, stage.top),
-    width: Math.max(0, Math.min(width, stage.left + stage.width) - Math.max(0, stage.left)),
-    height: Math.max(0, Math.min(height, stage.top + stage.height) - Math.max(0, stage.top)),
-  };
+export function usableViewport(width: number, height: number, navigation?: ViewportRect, inspector?: ViewportRect, stage?: ViewportRect, pico?: ViewportRect): ViewportRect {
+  if (stage) {
+    const left = Math.max(0, stage.left);
+    const right = Math.min(width, stage.left + stage.width, pico?.left ?? width);
+    return {
+      left,
+      top: Math.max(0, stage.top),
+      width: Math.max(0, right - left),
+      height: Math.max(0, Math.min(height, stage.top + stage.height) - Math.max(0, stage.top)),
+    };
+  }
   const top = Math.min(height, Math.max(0, navigation ? navigation.top + navigation.height : 0));
   let right = width;
   let bottom = height;
@@ -25,6 +29,7 @@ export function usableViewport(width: number, height: number, navigation?: Viewp
     if (inspector.width >= width * 0.65) bottom = Math.max(top, inspector.top);
     else right = Math.max(0, inspector.left);
   }
+  if (pico) right = Math.min(right, Math.max(0, pico.left));
   return { left: 0, top, width: right, height: bottom - top };
 }
 
@@ -34,7 +39,7 @@ export function SpatialViewportProvider({ children }: { children: ReactNode }) {
   const [rect, setRect] = useState<ViewportRect>(() => ({ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight }));
   const measure = useCallback(() => {
     const bounds = (kind: Occluder) => elements.current.get(kind)?.getBoundingClientRect();
-    const next = usableViewport(window.innerWidth, window.innerHeight, bounds('navigation'), bounds('inspector'), bounds('stage'));
+    const next = usableViewport(window.innerWidth, window.innerHeight, bounds('navigation'), bounds('inspector'), bounds('stage'), bounds('pico'));
     setRect((previous) => Object.keys(next).every((key) => Math.abs(previous[key as keyof ViewportRect] - next[key as keyof ViewportRect]) < 0.5) ? previous : next);
   }, []);
   const register = useCallback((kind: Occluder, element: HTMLElement | null) => {

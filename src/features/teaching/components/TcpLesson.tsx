@@ -1,16 +1,19 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { TransitionLink as Link } from '../../../app/pageNavigation';
 import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight, CaretLeft, CaretRight, Pause, Play } from '@phosphor-icons/react';
 import { useReducedMotion } from 'motion/react';
-import { TCP_FRAGMENTS, TCP_NODE_ID, TCP_RULES, TCP_VERSION, getTcpQuestion, getTcpTask, tcpResultKey, tcpWindows, type TcpDifficulty } from '../../../data/v6/handcrafted/tcpLesson';
+import { TCP_FRAGMENTS, TCP_NODE_ID, TCP_RULES, TCP_UNIT_ID, TCP_VERSION, getTcpQuestion, getTcpTask, tcpResultKey, tcpWindows, type TcpDifficulty } from '../../../data/v6/handcrafted/tcpLesson';
 import { currentTcpTaskId, tcpEventId, useTeachingStore, type PracticeReturnContext } from '../../../store/teachingStore';
 import { useProgressStore } from '../../../store/progressStore';
 import { deriveLearningStateFromEvidence, LEARNING_STATE_LABELS } from '../../../domain/learning/deriveLearningState';
 import { useUserStore } from '../../../store/userStore';
 import { WorkspaceHeader } from '../../workspace/WorkspaceHeader';
 import { TcpTaskInputs } from './TcpTaskInputs';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { AskPicoButton } from '../../pico/AskPicoButton';
+import { activeQuestionContext, questionExplicitContext } from '../../pico/questionContext';
 
 const STAGES = { ready: '开始之前', diagnostic: '先试一次', clarification: '再看关键一步', teaching: '看清变化', guided: '试着应用', independent: '独立验证', complete: '本轮完成', paused: '本轮结束' };
 const PHASES = ['诊断', '理解', '示范', '尝试', '独立验证'];
@@ -30,6 +33,16 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
   const eventId = session && task ? tcpEventId(session, task.id) : '';
   const hintShown = session?.hints.includes(eventId) ?? false;
   const learningState = deriveLearningStateFromEvidence(TCP_NODE_ID, learnerId, records);
+  const picoContext = useMemo(() => ({
+    key: `teach:${TCP_NODE_ID}:${session?.stage ?? 'restoring'}:${session?.attempt ?? 0}:${taskId ?? 'overview'}`,
+    route: location.pathname,
+    pageType: 'teach' as const,
+    title: question?.stem ?? 'TCP 慢启动',
+    selectedNode: { id: TCP_NODE_ID, name: 'TCP 慢启动' },
+    teaching: session ? { unitId: TCP_UNIT_ID, stepId: session.stage, stepTitle: STAGES[session.stage], stepKind: session.stage } : undefined,
+    activeQuestion: question ? activeQuestionContext(question, session?.feedback ? { selected: session.drafts[eventId] ?? '' } : undefined) : undefined,
+  }), [eventId, location.pathname, question, session, taskId]);
+  usePicoPageContext(picoContext);
 
   useEffect(() => { useTeachingStore.getState().ensureTcpSession(practiceReturn); }, [learnerId, practiceReturn]);
   useEffect(() => { if (taskId) useTeachingStore.getState().presentTcpTask(); }, [taskId, session?.id, session?.attempt]);
@@ -58,7 +71,7 @@ export function TcpLesson({ parent }: { parent: { to: string; state?: unknown } 
             <TcpTaskInputs task={task} value={session.drafts[eventId] ?? ''} disabled={Boolean(session.feedback)} onChange={store.setTcpDraft} />
             {hintShown && <div className="tcp-help" role="status">{TCP_RULES}{session.stage === 'independent' && <p>本题按辅助作答记录，之后用新任务验证。</p>}</div>}
             {session.feedback ? <div className="tcp-feedback" role="status"><strong>{session.feedback.correct ? hintShown ? '辅助下完成' : '本题正确' : '还需要调整'}</strong><p>{session.feedback.text}</p>{!session.feedback.correct && <p>{session.feedback.difficulty === 'unknown' ? '这个答案尚不足以确定原因。' : TCP_FRAGMENTS[session.feedback.difficulty].title}</p>}</div> : null}
-            <div className="tcp-task__actions">{session.feedback ? <button className="text-button text-button--primary" onClick={store.advanceTcp} type="button">{session.stage === 'independent' && session.feedback.correct && session.feedback.independent ? session.taskIndex === 0 ? '下一项任务' : '查看本轮结果' : session.feedback.correct ? '继续' : '看关键一步'} <ArrowRight size={18} /></button> : <><button className="text-button text-button--primary" type="button" onClick={store.submitTcp}>提交判断 <ArrowRight size={18} /></button><button className="text-button text-button--ghost" type="button" disabled={hintShown} onClick={store.requestTcpHint}>{hintShown ? '已使用提示' : '需要提示'}</button></>}</div>
+            <div className="tcp-task__actions">{session.feedback ? <button className="text-button text-button--primary" onClick={store.advanceTcp} type="button">{session.stage === 'independent' && session.feedback.correct && session.feedback.independent ? session.taskIndex === 0 ? '下一项任务' : '查看本轮结果' : session.feedback.correct ? '继续' : '看关键一步'} <ArrowRight size={18} /></button> : <><button className="text-button text-button--primary" type="button" onClick={store.submitTcp}>提交判断 <ArrowRight size={18} /></button><button className="text-button text-button--ghost" type="button" disabled={hintShown} onClick={store.requestTcpHint}>{hintShown ? '已使用提示' : '需要提示'}</button></>}<AskPicoButton label={session.feedback ? '问问 Pico · 这道题' : '问问 Pico'} context={questionExplicitContext(question, '当前 TCP 任务', session.feedback ? { selected: session.drafts[eventId] ?? '', misconceptionText: session.feedback.correct ? undefined : session.feedback.text } : undefined)} /></div>
           </div><aside className="tcp-task__aside"><dl className="tcp-task__conditions"><div><dt>初始窗口</dt><dd>{task.initial}<small>MSS</small></dd></div><div><dt>慢启动门限</dt><dd>{task.threshold}<small>MSS</small></dd></div></dl><p className="tcp-eyebrow">任务边界</p><p>{session.stage === 'independent' ? '正向预测与观测判断，须在同一轮无帮助完成。' : '只处理无丢包、按 RTT 离散变化的简化情形。'}</p><details><summary>本例的范围</summary><p>第 0 轮为初始状态；每轮代表一个 RTT。题目给定初始窗口和门限。这里只验证无丢包情形。</p></details></aside>
         </section> : <section className="tcp-complete"><span className={`tcp-status tcp-status--${learningState}`}>{LEARNING_STATE_LABELS[learningState]}</span><p>{session.stage === 'paused' ? session.pauseReason : '本轮的正向预测与观测判断均无帮助通过。这个结果只说明本次验证，不代表长期掌握。'}</p><div className="tcp-complete__facts">{session.answers.slice(-6).map((answer) => <div key={answer.eventId}><span>第 {answer.attempt} 轮 · {getTcpTask(answer.questionId)?.role === 'observe' ? '观测判断' : getTcpTask(answer.questionId)?.role === 'predict' ? '窗口预测' : '过程作答'}</span><strong>{answer.correct ? answer.independent ? '独立正确' : '正确 · 非独立验证' : '需巩固'}</strong></div>)}</div><button className="text-button text-button--primary" onClick={exit} type="button">返回知识树 <ArrowRight size={18} /></button></section>}
       </main>

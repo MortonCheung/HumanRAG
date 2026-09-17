@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useAppBack } from '../../../app/appHistory';
 import { ArrowRight } from '@phosphor-icons/react';
@@ -20,6 +20,8 @@ import { teachingPhaseIndex } from '../components/TeachingStepRail';
 import { MOTION } from '../../../motion/tokens';
 import '../teaching.css';
 import '../tcp-lesson.css';
+import { usePicoPageContext } from '../../pico/PicoContextBridge';
+import { activeQuestionContext } from '../../pico/questionContext';
 
 export function TeachingSessionPage() {
   const { unitId, pointId, libraryId, treeId } = useParams();
@@ -32,6 +34,7 @@ export function TeachingSessionPage() {
 
 /** Existing content remains available without claiming the full TCP teaching capability. */
 function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string; parent: { to: string; state?: unknown } }) {
+  const location = useLocation();
   const reducedMotion = Boolean(useReducedMotion());
   const scrollPane = useRef<HTMLDivElement>(null);
   const store = useTeachingStore();
@@ -53,6 +56,18 @@ function StandardTeachingSession({ routeUnitId, parent }: { routeUnitId?: string
   };
   const misconceptionName = context.guidedMisconceptionId ? MISCONCEPTIONS.find((entry) => entry.id === context.guidedMisconceptionId)?.name : undefined;
   const nodeName = unit ? contentRepository.getNode(unit.nodeId)?.name ?? unit.title : routeUnit?.title ?? '当前知识点';
+  const activeQuestion = questionIds[0] ? contentRepository.getQuestion(questionIds[0]) : undefined;
+  const activeAnswer = activeQuestion ? store.answers.find((entry) => entry.questionId === activeQuestion.id && entry.stepId === step?.id && entry.attempt === store.attempt) : undefined;
+  const picoContext = useMemo(() => routeUnit ? ({
+    key: `teach:${routeUnit.id}:${step?.id ?? 'restoring'}:${store.attempt}`,
+    route: location.pathname,
+    pageType: 'teach' as const,
+    title: step?.title ?? routeUnit.title,
+    selectedNode: { id: routeUnit.nodeId, name: nodeName },
+    teaching: step ? { unitId: routeUnit.id, stepId: step.id, stepTitle: step.title, stepKind: step.kind } : undefined,
+    activeQuestion: activeQuestion ? activeQuestionContext(activeQuestion, activeAnswer) : undefined,
+  }) : null, [activeAnswer, activeQuestion, location.pathname, nodeName, routeUnit, step, store.attempt]);
+  usePicoPageContext(picoContext);
   const decision = step && unit ? (step.kind === 'summary' && store.incompleteStepIds.length > 0
     ? '你可以继续浏览总结；未提交的题目不会生成掌握证据，本轮只记录为未完成。'
     : !submitted && step.kind === 'diagnostic'
