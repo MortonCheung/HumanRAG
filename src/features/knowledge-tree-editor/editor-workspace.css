@@ -1,7 +1,7 @@
-.tree-structure-editor-page__workspace { height: calc(100dvh - var(--it-nav-height) - 64px); min-height: 440px; grid-template-columns: minmax(0, 1fr) 360px; border-radius: 12px; }
+.tree-structure-editor-page__workspace { height: calc(100dvh - var(--it-nav-height) - 64px); min-height: 440px; grid-template-columns: minmax(0, 1fr) 360px; border-radius: 0; }
 .tree-editor-panel { display: grid; grid-template-rows: auto minmax(72px, 22%) minmax(0, 1fr); background: var(--it-surface); }
 .editor-node-search { padding: 16px; }
-.editor-node-search input { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--it-rule-strong); border-radius: 8px; background: var(--it-bg); color: var(--it-text); }
+.editor-node-search input { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--it-rule-strong); border-radius: var(--it-radius-input); background: var(--it-bg); color: var(--it-text); }
 .tree-structure-editor-page__list { padding: 0 10px 10px; }
 .tree-structure-editor-page .point-list__select { min-height: 44px; }
 .tree-structure-editor-page .point-list__meta strong { font-size: 13px; }
@@ -27,7 +27,7 @@
 .settings-form .editor-field input, .settings-form .editor-field textarea { font-size: 15px; }
 .tree-genesis-page__preview-copy p:empty { display: none; }
 .point-placement-page__tree { height: min(46dvh, 420px); }
-.point-placement-page__fields input[type="search"] { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--it-rule-strong); border-radius: 8px; background: var(--it-bg); color: var(--it-text); }
+.point-placement-page__fields input[type="search"] { width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--it-rule-strong); border-radius: var(--it-radius-input); background: var(--it-bg); color: var(--it-text); }
 .point-placement-page__fields input[type="search"]:focus-visible { outline: 2px solid var(--it-accent); outline-offset: 3px; }
 .point-placement-page__fields .editor-check { min-height: 36px; }
 .point-placement-page__fields fieldset { max-height: 200px; overflow: auto; }

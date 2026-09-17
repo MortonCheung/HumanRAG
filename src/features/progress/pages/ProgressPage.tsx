@@ -76,7 +76,7 @@ export function ProgressPage() {
           <p><span>{dashboard.profile.major}</span><span>{dashboard.profile.identity}</span><span>目标：{dashboard.profile.goal}</span></p>
         </div>
         <div className="learning-dashboard__profile-actions">
-          <span className="demo-badge">DEMO DATA</span>
+          <span className="demo-badge">演示数据</span>
           <LearningRecordDrawer records={dashboard.learningRecords} open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)} />
         </div>
       </motion.header>
@@ -84,29 +84,29 @@ export function ProgressPage() {
 
       <div className="learning-dashboard__grid">
         <motion.section className="learning-dashboard__panel learning-dashboard__overall" aria-labelledby="overall-performance-title" {...enter(1)}>
-          <h2 id="overall-performance-title" className="learning-dashboard__kicker">OVERALL PERFORMANCE</h2>
+          <h2 id="overall-performance-title" className="learning-dashboard__kicker">整体表现</h2>
           <div className="learning-dashboard__accuracy" aria-label={`整体正确率 ${dashboard.totals.accuracy === null ? '暂无' : `${percent(dashboard.totals.accuracy)}%`}`}>
             {percent(dashboard.totals.accuracy)}{dashboard.totals.accuracy !== null && <span>%</span>}
           </div>
-          <p className="learning-dashboard__accuracy-label">Overall Accuracy</p>
+          <p className="learning-dashboard__accuracy-label">整体正确率</p>
           <dl className="learning-dashboard__metric-matrix">
-            <div><dt>ANSWERS</dt><dd>{dashboard.totals.answered}</dd></div>
-            <div><dt>CORRECT</dt><dd>{dashboard.totals.correct}</dd></div>
-            <div><dt>INCORRECT</dt><dd>{dashboard.totals.incorrect}</dd></div>
-            <div><dt>ACTIVE DAYS</dt><dd>{dashboard.totals.activeDays}</dd></div>
-            <div><dt>LONGEST STREAK</dt><dd>{dashboard.totals.longestStreak}</dd></div>
-            <div><dt>KNOWLEDGE POINTS</dt><dd>{dashboard.totals.touchedPoints}</dd></div>
+            <div><dt>作答</dt><dd>{dashboard.totals.answered}</dd></div>
+            <div><dt>正确</dt><dd>{dashboard.totals.correct}</dd></div>
+            <div><dt>错误</dt><dd>{dashboard.totals.incorrect}</dd></div>
+            <div><dt>活跃天数</dt><dd>{dashboard.totals.activeDays}</dd></div>
+            <div><dt>最长连续学习</dt><dd>{dashboard.totals.longestStreak}</dd></div>
+            <div><dt>涉及知识点</dt><dd>{dashboard.totals.touchedPoints}</dd></div>
           </dl>
         </motion.section>
 
         <motion.section className="learning-dashboard__panel learning-dashboard__domains" aria-labelledby="domain-performance-title" {...enter(2)}>
           <div className="learning-dashboard__section-heading">
-            <h2 id="domain-performance-title" className="learning-dashboard__kicker">DOMAIN PERFORMANCE</h2>
-            <span>ALL ANSWERS</span>
+            <h2 id="domain-performance-title" className="learning-dashboard__kicker">方向表现</h2>
+            <span>{dashboard.totals.answered} 题</span>
           </div>
           <div className="learning-dashboard__domain-list">
             {dashboard.branchStats.map((branch, index) => <article key={branch.branchId} className="learning-dashboard__domain">
-              <div><strong>{branch.name}</strong><span>{branch.answered} answers · {branch.touchedPoints} points</span><b>{percent(branch.accuracy)}{branch.accuracy !== null && '%'}</b></div>
+              <div><strong>{branch.name}</strong><span>{branch.answered} 题 · {branch.touchedPoints} 个知识点</span><b>{percent(branch.accuracy)}{branch.accuracy !== null && '%'}</b></div>
               <i aria-hidden="true"><motion.span
                 initial={reducedMotion ? false : { width: 0 }}
                 animate={{ width: `${(branch.accuracy ?? 0) * 100}%` }}
@@ -119,24 +119,23 @@ export function ProgressPage() {
 
         <motion.section className="learning-dashboard__panel learning-dashboard__space" aria-labelledby="learning-space-title" {...enter(3)}>
           <div className="learning-dashboard__section-heading">
-            <h2 id="learning-space-title" className="learning-dashboard__kicker">LEARNING SPACE</h2>
-            <span>4 SYSTEM TREES</span>
+            <h2 id="learning-space-title" className="learning-dashboard__kicker">学习空间</h2>
           </div>
           <LearningOverviewScene />
         </motion.section>
 
         <motion.section className="learning-dashboard__panel learning-dashboard__activity" aria-labelledby="learning-activity-title" {...enter(4)}>
           <div className="learning-dashboard__section-heading learning-dashboard__activity-heading">
-            <h2 id="learning-activity-title" className="learning-dashboard__kicker">LEARNING ACTIVITY</h2>
-            <p><span>ACTIVE <b>{dashboard.totals.activeDays}</b> DAYS</span><span>LONGEST <b>{dashboard.totals.longestStreak}</b> DAYS</span></p>
+            <h2 id="learning-activity-title" className="learning-dashboard__kicker">学习活动</h2>
+            <p><span><b>{dashboard.totals.activeDays}</b> 个活跃日</span><span>最长连续 <b>{dashboard.totals.longestStreak}</b> 天</span></p>
           </div>
           <LearningActivityHeatmap activity={dashboard.activity} range={dashboard.activityRange} />
         </motion.section>
 
         <motion.section className="learning-dashboard__panel learning-dashboard__attention" aria-labelledby="needs-attention-title" {...enter(5)}>
           <div className="learning-dashboard__section-heading">
-            <h2 id="needs-attention-title" className="learning-dashboard__kicker">NEEDS ATTENTION</h2>
-            <span>{dashboard.totals.openMisconceptions} OPEN</span>
+            <h2 id="needs-attention-title" className="learning-dashboard__kicker">需要关注</h2>
+            <span>{dashboard.totals.openMisconceptions} 待处理</span>
           </div>
           <div className="learning-dashboard__attention-list">
             {dashboard.attention.length ? dashboard.attention.map((item) => <Link key={item.id} to={actionPath(item.nodeId, 'teach')}>
@@ -144,7 +143,7 @@ export function ProgressPage() {
             </Link>) : <p>当前没有待处理误区。</p>}
           </div>
           <div className="learning-dashboard__next">
-            <span className="learning-dashboard__kicker">NEXT</span>
+            <span className="learning-dashboard__kicker">下一步</span>
             {dashboard.recommendation ? <>
               <strong><Link className="learning-dashboard__next-point" to={actionPath(dashboard.recommendation.pointId, 'study')}>{dashboard.recommendation.pointName}</Link></strong>
               <p>{dashboard.recommendation.reasons[0]}</p>

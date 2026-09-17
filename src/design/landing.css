@@ -12,14 +12,14 @@
 .it-landing__copy h1 > span { display: block; white-space: nowrap; }
 .it-landing__period { color: var(--it-accent); }
 .it-landing__actions { margin-top: 40px; padding-bottom: 18vh; }
-.it-landing__primary { min-height: 56px; min-width: 226px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: space-between; gap: 38px; border: 1px solid var(--it-control-border); border-radius: 8px; background: var(--it-accent); color: #10241d; font-size: 15px; font-weight: 570; pointer-events: auto; transition: background .18s, transform .18s var(--it-ease); }
+.it-landing__primary { min-height: 56px; min-width: 226px; padding: 0 20px; display: inline-flex; align-items: center; justify-content: space-between; gap: 38px; border: 1px solid var(--it-control-border); border-radius: var(--it-radius-button); background: var(--it-accent); color: #10241d; font-size: 15px; font-weight: 570; pointer-events: auto; transition: background .18s, transform .18s var(--it-ease); }
 .it-landing__primary svg { transition: transform .25s var(--it-ease); }
 .it-landing__primary:hover { background: #c6e8db; }
 .it-landing__primary:hover svg { transform: translateX(4px); }
 .it-landing__primary:active { transform: translateY(1px); }
 .it-landing.is-entering::before { opacity: 0; }
 .it-landing.is-entering .it-landing__primary { pointer-events: none; }
-.entry-pending, .scene-recovery { position: fixed; z-index: 151; right: 28px; bottom: 28px; padding: 20px 24px; border: 1px solid var(--it-rule-strong); border-radius: 12px; background: var(--it-surface); color: var(--it-text-soft); font-size: 14px; }
+.entry-pending, .scene-recovery { position: fixed; z-index: 151; right: 28px; bottom: 28px; padding: 20px 24px; border: 1px solid var(--it-rule-strong); border-radius: var(--it-radius-button); background: var(--it-surface); color: var(--it-text-soft); font-size: 14px; }
 .entry-pending button { background: none; min-height: 44px; padding: 0 12px; color: var(--it-accent); margin-left: 20px; }
 .scene-recovery p { margin: 0 0 16px; }
 .scene-recovery > div { display: flex; gap: 12px; }

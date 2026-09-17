@@ -20,12 +20,12 @@
   --it-success: #91b596;
   --it-danger: #e0a497;
 
-  --it-radius-button: 8px;
-  --it-radius-input: 8px;
-  --it-radius-control: 8px;
-  --it-radius-panel: 10px;
+  --it-radius-button: 4px;
+  --it-radius-input: 4px;
+  --it-radius-control: 4px;
+  --it-radius-panel: 0px;
   --it-nav-height: 64px;
-  --it-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --it-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --it-mono: "SFMono-Regular", Consolas, "Geist Mono", monospace;
 }
 @media (max-width: 767px) { :root { --it-nav-height: 56px; } }

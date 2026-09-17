@@ -12,7 +12,7 @@
 .tcp-lesson__lead { max-width: 850px; color: var(--it-text-soft); line-height: 1.9; font-size: 16px; margin: -10px 0 28px; }
 .tcp-intro { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 88px); padding: 8px 0 0; align-items: center; }
 .tcp-intro__copy > p:first-child { margin: 0 0 30px; color: var(--it-text-soft); font-size: clamp(20px, 2.3vw, 28px); line-height: 1.65; letter-spacing: -.035em; }
-.tcp-intro__notation { min-height: 310px; display: grid; grid-template-columns: 1fr auto; align-content: center; align-items: end; gap: 30px; padding: 36px; color: var(--it-accent); border: 1px solid var(--it-rule); border-radius: 20px; background: radial-gradient(ellipse at 28% 0, rgb(163 207 188 / .09), transparent 70%), #101719; box-shadow: inset 0 1px rgb(223 246 234 / .04); }
+.tcp-intro__notation { min-height: 310px; display: grid; grid-template-columns: 1fr auto; align-content: center; align-items: end; gap: 30px; padding: 36px; color: var(--it-accent); border: 1px solid var(--it-rule); border-radius: 0; background: transparent; }
 .tcp-intro__notation small { display: block; font-size: 12px; margin-bottom: 10px; color: var(--it-text-faint); }
 .tcp-intro__notation span { font-size: clamp(32px, 3.8vw, 58px); letter-spacing: -.05em; font-weight: 350; }
 .tcp-intro__packets { display: grid; grid-template-columns: repeat(4, 13px); gap: 5px; transform: skewY(-12deg); padding-bottom: 10px; }
@@ -34,7 +34,7 @@
 .tcp-task { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: clamp(32px, 6vw, 90px); }.tcp-task__main { min-width: 0; }.tcp-task h2 { margin: 0 0 30px; max-width: 840px; font-size: clamp(20px, 2vw, 27px); font-weight: 450; line-height: 1.7; }
 .tcp-task__aside { border-left: 1px solid var(--it-rule); padding-left: 24px; color: var(--it-text-faint); font-size: 13px; line-height: 1.9; }.tcp-task__aside details { margin-top: 30px; }.tcp-task__aside summary { cursor: pointer; }
 .tcp-response { padding: 0; margin: 0; border: 0; min-width: 0; }.tcp-response__values { display: flex; flex-wrap: wrap; gap: 16px; }.tcp-response label, .tcp-parameters label { display: flex; flex-direction: column; gap: 10px; color: var(--it-text-soft); font-size: 13px; }.tcp-response__values label { flex: 1 1 110px; max-width: 230px; }
-.tcp-response input, .tcp-response select, .tcp-demo-controls input, .tcp-parameters input { width: 100%; min-height: 48px; border: 1px solid var(--it-control-border, #67756f); border-radius: 8px; background: var(--it-bg); color: var(--it-text); padding: 9px 12px; font: inherit; }.tcp-response input { font-size: 23px; font-variant-numeric: tabular-nums; }.tcp-response input:focus, .tcp-response select:focus, .tcp-demo-controls input:focus { outline: 2px solid var(--it-accent); outline-offset: 3px; }.tcp-response__reason { margin-top: 24px; }.tcp-response select { font-size: 14px; text-overflow: ellipsis; }.tcp-response:disabled { opacity: .75; }
+.tcp-response input, .tcp-response select, .tcp-demo-controls input, .tcp-parameters input { width: 100%; min-height: 48px; border: 1px solid var(--it-control-border, #67756f); border-radius: var(--it-radius-input); background: var(--it-bg); color: var(--it-text); padding: 9px 12px; font: inherit; }.tcp-response input { font-size: 23px; font-variant-numeric: tabular-nums; }.tcp-response input:focus, .tcp-response select:focus, .tcp-demo-controls input:focus { outline: 2px solid var(--it-accent); outline-offset: 3px; }.tcp-response__reason { margin-top: 24px; }.tcp-response select { font-size: 14px; text-overflow: ellipsis; }.tcp-response:disabled { opacity: .75; }
 .tcp-task__actions, .tcp-stage-end { display: flex; gap: 12px; margin-top: 30px; align-items: center; }.tcp-stage-end { justify-content: flex-end; border-top: 1px solid var(--it-rule); padding-top: 24px; }
 .tcp-feedback, .tcp-help { border-left: 2px solid var(--it-accent); padding: 2px 0 2px 20px; margin-top: 28px; color: var(--it-text-soft); line-height: 1.8; font-size: 14px; }.tcp-feedback strong { color: var(--it-accent); }.tcp-feedback p, .tcp-help p { margin: 6px 0; }
 .tcp-observations { display: flex; margin: 0 0 28px; padding: 0; list-style: none; border-block: 1px solid var(--it-rule); overflow-x: auto; }.tcp-observations li { flex: 1; min-width: 78px; display: flex; flex-direction: column; gap: 6px; padding: 20px 10px; }.tcp-observations span, .tcp-observations small { font-size: 12px; color: var(--it-text-faint); }.tcp-observations strong { font-size: 26px; font-weight: 450; }
@@ -57,10 +57,10 @@
 .tcp-reason:has(input:checked) { color: var(--it-text); background: rgb(173 217 197 / .07); box-shadow: inset 2px 0 var(--it-accent); }
 .tcp-reason:hover { background: rgb(173 217 197 / .04); }
 .tcp-response .tcp-reason input { appearance: auto; flex: none; width: 16px; height: 16px; min-height: 0; padding: 0; margin: 0; accent-color: var(--it-accent); }
-.tcp-response__values input { background: #11191b; border-color: var(--it-rule-strong); min-height: 62px; border-radius: 10px; }
+.tcp-response__values input { background: #11191b; border-color: var(--it-rule-strong); min-height: 62px; border-radius: var(--it-radius-input); }
 .tcp-task__main { max-width: 800px; }
 .tcp-task h2 { font-size: clamp(21px, 2.2vw, 29px); line-height: 1.7; letter-spacing: -.025em; }
-.tcp-demo-stage { margin-top: 22px; padding: 28px 24px; border: 1px solid var(--it-rule); border-radius: 18px; background: radial-gradient(ellipse at 75% 0, rgb(147 196 174 / .06), transparent 70%), #101719; box-shadow: inset 0 1px rgb(223 246 234 / .035); }
+.tcp-demo-stage { margin-top: 22px; padding: 28px 24px; border: 1px solid var(--it-rule); border-radius: 0; background: transparent; }
 .tcp-chart__grid { stroke: var(--it-rule); stroke-width: .6; fill: none; }
 .tcp-chart__line { filter: drop-shadow(0 0 5px rgb(174 219 199 / .18)); }
 .tcp-window__number { display: inline-block; animation: tcp-number .34s cubic-bezier(.22,1,.36,1); }
@@ -81,7 +81,7 @@
   .tcp-intro__notation span { font-size: 42px; }
   .tcp-intro__threshold span { font-size: 25px; }
   .tcp-task__actions { flex-wrap: wrap; }
-  .tcp-demo-stage { margin-inline: -8px; border-radius: 14px; }
+  .tcp-demo-stage { margin-inline: -8px; border-radius: 0; }
   .tcp-response__values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .tcp-response__values:has(> label:nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tcp-response__values label { min-width: 0; max-width: none; }

@@ -14,12 +14,12 @@
 .tree-panel__header h1, .tree-point-detail h1 { margin: 0; font-size: clamp(25px, 2.25vw, 36px); font-weight: 500; letter-spacing: -.055em; line-height: 1.1; }
 .tree-panel__header > p:not(.tree-panel-kicker), .tree-point-detail__description { margin: 17px 0 0; color: var(--it-text-soft); font-size: 13px; line-height: 1.75; }
 .tree-panel__header > span { display: block; margin-top: 15px; color: var(--it-text-faint); font: 10px/1.5 var(--it-mono); }
-.tree-recommendation { width: 100%; min-height: 72px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 5px 12px; margin-top: 22px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--it-accent) 36%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--it-accent) 5%, transparent); color: var(--it-text); text-align: left; }
+.tree-recommendation { width: 100%; min-height: 72px; display: grid; grid-template-columns: minmax(0, 1fr) 18px; gap: 5px 12px; margin-top: 22px; padding: 13px 14px; border: 1px solid color-mix(in srgb, var(--it-accent) 36%, transparent); border-radius: var(--it-radius-button); background: color-mix(in srgb, var(--it-accent) 5%, transparent); color: var(--it-text); text-align: left; }
 .tree-recommendation > span { color: var(--it-accent); font: 9px/1 var(--it-mono); letter-spacing: .08em; }
 .tree-recommendation > strong { grid-column: 1; font-size: 14px; font-weight: 560; }
 .tree-recommendation > small { grid-column: 1; color: var(--it-text-soft); font-size: 10px; line-height: 1.55; }
 .tree-recommendation > svg { grid-column: 2; grid-row: 1 / 4; align-self: center; color: var(--it-text-faint); }
-.tree-panel-search { min-height: 42px; display: flex; align-items: center; gap: 9px; margin-top: 22px; padding: 0 11px; border: 1px solid var(--it-rule); border-radius: 7px; color: var(--it-text-faint); }
+.tree-panel-search { min-height: 42px; display: flex; align-items: center; gap: 9px; margin-top: 22px; padding: 0 11px; border: 1px solid var(--it-rule); border-radius: var(--it-radius-input); color: var(--it-text-faint); }
 .tree-panel-search:focus-within { border-color: var(--it-accent); color: var(--it-text-soft); }
 .tree-panel-search input { min-width: 0; width: 100%; height: 40px; padding: 0; border: 0; outline: 0; background: transparent; color: var(--it-text); font-size: 12px; }
 .tree-panel-search input::placeholder { color: var(--it-text-faint); opacity: 1; }
@@ -30,7 +30,7 @@
 .point-group__header > svg { color: var(--it-text-faint); transition: color 180ms var(--it-ease); }
 .point-group ul { margin: 0; padding: 0 0 8px; overflow: hidden; list-style: none; }
 .point-group li + li { border-top: 1px solid rgb(224 231 242 / .065); }
-.point-group li button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 7px minmax(0, 1fr) 18px; align-items: center; gap: 14px; padding: 11px 4px; border-radius: 6px; background: transparent; text-align: left; transition: background 180ms var(--it-ease); }
+.point-group li button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 7px minmax(0, 1fr) 18px; align-items: center; gap: 14px; padding: 11px 4px; border-radius: 0; background: transparent; text-align: left; transition: background 180ms var(--it-ease); }
 .point-group li button:hover { background: rgb(224 231 242 / .045); }
 .point-group li button > i { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 10px currentColor; }
 .point-group li button > span { min-width: 0; display: grid; gap: 6px; }
@@ -49,17 +49,20 @@
 .tree-point-detail__recommendation { margin-top: 26px; padding: 18px 0; border-block: 1px solid var(--it-rule); }
 .tree-point-detail__recommendation h2 { margin: 0 0 10px; font-size: 12px; font-weight: 560; }
 .tree-point-detail__recommendation ul { margin: 0; padding-left: 18px; color: var(--it-text-soft); font-size: 11px; line-height: 1.7; }
-.tree-point-detail__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 30px 0 0; padding: 1px; background: var(--it-rule); }
-.tree-point-detail__facts > div { display: grid; gap: 8px; padding: 15px; background: var(--it-bg); }
+.tree-point-detail__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 30px 0 0; border-block: 1px solid var(--it-rule); }
+.tree-point-detail__facts > div { display: grid; gap: 8px; padding: 15px 0; border-bottom: 1px solid var(--it-rule); }
+.tree-point-detail__facts > div:nth-child(odd) { padding-right: 18px; border-right: 1px solid var(--it-rule); }
+.tree-point-detail__facts > div:nth-child(even) { padding-left: 18px; }
+.tree-point-detail__facts > div:nth-last-child(-n + 2) { border-bottom: 0; }
 .tree-point-detail__facts dt { color: var(--it-text-faint); font-size: 9px; }
 .tree-point-detail__facts dd { margin: 0; font-size: 12px; }
 .tree-point-detail__section { margin-top: 32px; padding-top: 25px; border-top: 1px solid var(--it-rule); }
 .tree-point-detail__section h2 { margin: 0 0 14px; font-size: 13px; font-weight: 540; }
 .tree-point-detail__section ul { margin: 0; padding-left: 19px; color: var(--it-text-soft); font-size: 12px; line-height: 1.8; }
-.point-actions { display: grid; gap: 8px; margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--it-rule); }
-.point-actions > button { min-height: 58px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid var(--it-rule); border-radius: 8px; background: transparent; color: var(--it-text-soft); text-align: left; transition: border-color 180ms var(--it-ease), background 180ms var(--it-ease), color 180ms var(--it-ease); }
-.point-actions > button:hover { border-color: var(--it-rule-strong); background: rgb(224 231 242 / .04); color: var(--it-text); }
-.point-actions > button.is-recommended { border-color: color-mix(in srgb, var(--it-accent) 42%, transparent); background: color-mix(in srgb, var(--it-accent) 6%, transparent); }
+.point-actions { display: grid; margin-top: 34px; border-top: 1px solid var(--it-rule); }
+.point-actions > button { min-height: 62px; display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--it-rule); border-radius: 0; background: transparent; color: var(--it-text-soft); text-align: left; transition: background 180ms var(--it-ease), color 180ms var(--it-ease), box-shadow 180ms var(--it-ease); }
+.point-actions > button:hover { background: rgb(224 231 242 / .035); color: var(--it-text); }
+.point-actions > button.is-recommended { background: color-mix(in srgb, var(--it-accent) 4%, transparent); box-shadow: inset 2px 0 color-mix(in srgb, var(--it-accent) 72%, transparent); }
 .point-actions > button > span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .point-actions strong { color: var(--it-text); font-size: 12px; font-weight: 560; }
 .point-actions small { color: var(--it-text-faint); font: 9px/1 var(--it-mono); }
@@ -71,6 +74,9 @@
   .knowledge-tree-workspace__body { height: auto; min-height: calc(100dvh - var(--it-nav-height)); grid-template-columns: 1fr; grid-template-rows: minmax(300px, 43dvh) auto; }
   .knowledge-tree-workspace__panel { min-height: 52dvh; border-top: 1px solid var(--it-rule); border-left: 0; box-shadow: 0 -20px 54px rgb(0 0 0 / .2); }
   .tree-panel, .tree-point-detail { padding: 30px 20px 46px; }
+  .tree-point-detail__facts { grid-template-columns: 1fr; }
+  .tree-point-detail__facts > div:nth-child(n) { padding: 14px 0; border-right: 0; border-bottom: 1px solid var(--it-rule); }
+  .tree-point-detail__facts > div:last-child { border-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .point-group__header > svg, .point-group li button, .point-group li button > svg, .point-actions > button { transition: none; }

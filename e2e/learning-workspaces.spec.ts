@@ -70,7 +70,7 @@ test.describe('学习、带我学与测验分工', () => {
 
     await openProductArea(page, '我的学习');
     await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
-    await expect(page.getByText('ANSWERS', { exact: true }).locator('..')).toContainText('129');
+    await expect(page.getByText('作答', { exact: true }).locator('..')).toContainText('129');
     await expect(page.getByRole('link', { name: '带我巩固' })).toHaveAttribute('href', pointPath('teach'));
 
     await page.goto('/library/computer/tree/tree-408/path');

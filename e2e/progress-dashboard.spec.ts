@@ -7,10 +7,10 @@ test('我的学习在首屏汇总全局表现，并以 Morph 档案保留详细�
   await page.goto('/progress');
 
   await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
-  await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'LEARNING ACTIVITY' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'NEEDS ATTENTION' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'DOMAIN PERFORMANCE' })).toBeVisible();
+  await expect(page.getByText('整体正确率', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '学习活动' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '需要关注' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '方向表现' })).toBeVisible();
   await expect(page.locator('.learning-dashboard__cta')).toBeVisible();
 
   await expect(page.locator('.recent-evidence, .evidence-status, .learning-record')).toHaveCount(0);

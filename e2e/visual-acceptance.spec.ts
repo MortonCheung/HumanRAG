@@ -98,7 +98,7 @@ test('生成 1440 × 900 比赛视觉验收矩阵', async ({ page }) => {
   await page.getByRole('button', { name: '提交答案' }).click();
   await page.getByRole('button', { name: '完成验证' }).click();
   await openProductArea(page, '我的学习');
-  await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();
+  await expect(page.getByText('整体正确率', { exact: true })).toBeVisible();
   await page.waitForTimeout(450);
   await shot(page, `${desktopDir}/15-learning-evidence.png`);
 });
@@ -137,6 +137,6 @@ test('生成 390 × 844 核心移动端验收矩阵', async ({ page }) => {
   await expect(page.locator('.tcp-response')).toBeVisible();
   await shot(page, `${mobileDir}/14-verification.png`);
   await page.goto('/progress');
-  await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();
+  await expect(page.getByText('整体正确率', { exact: true })).toBeVisible();
   await shot(page, `${mobileDir}/15-learning-evidence.png`);
 });

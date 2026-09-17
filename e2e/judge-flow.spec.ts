@@ -32,7 +32,7 @@ test.describe('评委主流程与一级路由', () => {
     await openProductArea(page, '我的学习');
     await expect(page).toHaveURL(/\/progress$/);
     await expect(page.getByRole('banner', { name: '页面导航' })).toContainText('我的学习');
-    await expect(page.getByText('Overall Accuracy', { exact: true })).toBeVisible();
+    await expect(page.getByText('整体正确率', { exact: true })).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

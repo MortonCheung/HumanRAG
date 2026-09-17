@@ -19,7 +19,7 @@
   height: 34px;
   padding: 0 14px;
   border: 1px solid var(--it-control-border);
-  border-radius: 8px;
+  border-radius: var(--it-radius-button);
   background: var(--it-surface-raised);
   color: var(--it-text);
   font-size: 12px;
@@ -107,8 +107,10 @@
 .learning-dashboard__attention-list > p { margin: 16px 0; color: var(--it-text-faint); font-size: 11px; }
 .learning-dashboard__next { padding-top: 13px; border-top: 1px solid var(--it-rule); }
 .learning-dashboard__next > strong { display: block; margin-top: 8px; font-size: 14px; font-weight: 560; }
+.learning-dashboard__next-point { color: inherit; text-decoration: none; transition: color 160ms var(--it-ease); }
+.learning-dashboard__next-point:hover { color: var(--it-accent); }
 .learning-dashboard__next > p { display: -webkit-box; overflow: hidden; margin: 5px 0 10px; color: var(--it-text-soft); font-size: 10px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.learning-dashboard__cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 33px; padding: 0 13px; border-radius: 7px; background: var(--it-accent); color: #081015; font-size: 11px; font-weight: 650; text-decoration: none; transition: filter 160ms var(--it-ease), transform 140ms var(--it-ease); }
+.learning-dashboard__cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 33px; padding: 0 13px; border-radius: var(--it-radius-button); background: var(--it-accent); color: #081015; font-size: 11px; font-weight: 650; text-decoration: none; transition: filter 160ms var(--it-ease), transform 140ms var(--it-ease); }
 .learning-dashboard__cta:hover { color: #081015; filter: brightness(1.06); transform: translateY(-1px); }
 .learning-dashboard__cta:active { transform: translateY(1px); }
 
@@ -116,28 +118,29 @@
 .learning-record-drawer {
   position: fixed;
   z-index: 121;
-  top: calc(var(--it-nav-height) + 12px);
-  right: 12px;
-  bottom: 12px;
+  top: var(--it-nav-height);
+  right: 0;
+  bottom: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  width: min(520px, calc(100vw - 24px));
+  width: min(520px, 100vw);
   overflow: hidden;
-  border: 1px solid var(--it-rule-strong);
-  border-radius: 16px;
+  border: 0;
+  border-left: 1px solid var(--it-rule-strong);
+  border-radius: 0;
   background: var(--it-surface-raised);
-  box-shadow: -24px 0 70px rgb(3 6 12 / .48);
+  box-shadow: -18px 0 52px rgb(3 6 12 / .34);
 }
 .learning-record-drawer__header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 76px; padding: 16px 18px 15px 24px; border-bottom: 1px solid var(--it-rule); }
 .learning-record-drawer__header span { color: var(--it-text-faint); font: 9px/1 var(--it-mono); letter-spacing: .12em; }
 .learning-record-drawer__header h2 { margin: 7px 0 0; font-size: 20px; font-weight: 560; }
-.learning-record-drawer__close { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: var(--it-accent); color: #081015; }
+.learning-record-drawer__close { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--it-radius-button); background: var(--it-accent); color: #081015; }
 .learning-record-drawer__close:hover { filter: brightness(1.06); }
 .learning-record-drawer__body { min-height: 0; overflow-y: auto; padding: 0 24px 28px; }
 .learning-record-drawer__empty { padding: 44px 0; }
 .learning-record-drawer__empty strong { font-size: 15px; font-weight: 560; }
 .learning-record-drawer__empty p { max-width: 38ch; margin: 10px 0 0; color: var(--it-text-soft); font-size: 12px; line-height: 1.7; }
-.learning-record-drawer__more { width: 100%; min-height: 38px; margin-top: 18px; border: 1px solid var(--it-control-border); border-radius: 8px; background: transparent; color: var(--it-text); font-size: 12px; }
+.learning-record-drawer__more { width: 100%; min-height: 38px; margin-top: 18px; border: 1px solid var(--it-control-border); border-radius: var(--it-radius-button); background: transparent; color: var(--it-text); font-size: 12px; }
 .learning-record-drawer__more:hover { border-color: var(--it-accent); background: var(--it-surface-hover); }
 
 .learning-record { padding: 20px 0; border-bottom: 1px solid var(--it-rule); }

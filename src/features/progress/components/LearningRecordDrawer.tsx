@@ -105,7 +105,7 @@ export function LearningRecordDrawer({ records, open, onOpen, onClose }: {
           transition={transition}
         >
           <header className="learning-record-drawer__header">
-            <div><span>LEARNING ARCHIVE</span><h2 id="learning-record-drawer-title">学习档案</h2></div>
+            <div><span>学习证据</span><h2 id="learning-record-drawer-title">学习档案</h2></div>
             <button ref={closeRef} type="button" className="learning-record-drawer__close" aria-label="关闭学习档案" onClick={onClose}><X size={22} weight="bold" /></button>
           </header>
           <div className="learning-record-drawer__body">
